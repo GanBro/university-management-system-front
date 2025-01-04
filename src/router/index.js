@@ -1,3 +1,4 @@
+// src/router/index.js
 import Vue from 'vue'
 import Router from 'vue-router'
 
@@ -67,7 +68,6 @@ export const constantRoutes = [
       }
     ]
   },
-  // ... 其他路由配置
   {
     path: '/',
     component: Layout,
@@ -76,8 +76,46 @@ export const constantRoutes = [
       path: 'dashboard',
       name: 'Dashboard',
       component: () => import('@/views/dashboard/index'),
-      meta: { title: 'Dashboard', icon: 'dashboard' }
+      meta: { title: '首页', icon: 'dashboard' }
     }]
+  },
+  {
+    path: '/university',
+    component: Layout,
+    redirect: '/university/list',
+    name: 'University',
+    meta: {
+      title: '高校管理',
+      icon: 'university'
+    },
+    children: [
+      {
+        path: 'list',
+        name: 'UniversityList',
+        component: () => import('@/views/university/list'),
+        meta: { title: '高校列表' }
+      },
+      {
+        path: 'create',
+        name: 'UniversityCreate',
+        component: () => import('@/views/university/form'),
+        meta: { title: '添加高校' }
+      },
+      {
+        path: 'edit/:id',
+        name: 'UniversityEdit',
+        component: () => import('@/views/university/form'),
+        meta: { title: '编辑高校' },
+        hidden: true
+      },
+      {
+        path: 'detail/:id',
+        name: 'UniversityDetail',
+        component: () => import('@/views/university/detail'),
+        meta: { title: '高校详情' },
+        hidden: true
+      }
+    ]
   },
 
   {

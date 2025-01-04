@@ -1,3 +1,4 @@
+// src/utils/request.js
 import axios from 'axios'
 import { Message } from 'element-ui'
 import store from '@/store'
@@ -5,80 +6,72 @@ import { getToken } from '@/utils/auth'
 
 // 创建axios对象
 const service = axios.create({
-  baseURL: process.env.VUE_APP_BASE_API, // 服务器地址 url = base url + request url
-  // withCredentials: true, // send cookies when cross-domain requests
-  timeout: 5000 // 设置请求超时时间
+  baseURL: process.env.VUE_APP_BASE_API,
+  timeout: 5000
 })
 
 // 请求拦截器
 service.interceptors.request.use(
   config => {
-    // do something before request is sent
-    // 判断是否发送token
     if (store.getters.token) {
-      // let each request carry token
-      // ['X-Token'] is a custom headers key
-      // pl如果存在token，那么设置到请求头中
       config.headers['X-Token'] = getToken()
     }
     return config
   },
   error => {
-    // do something with request error
-    console.log(error) // for debug
+    console.log(error)
     return Promise.reject(error)
   }
 )
 
 // 响应拦截
 service.interceptors.response.use(
-  /**
-   * If you want to get http information such as headers or status
-   * Please return  response => response
-   */
-
-  /**
-   * Determine the request status by custom code
-   * Here is just an example
-   * You can also judge the status by HTTP Status Code
-   */
   response => {
-    const res = response.data
-    // console.log('响应拦截', res)
+    // 如果是文件下载，直接返回响应
+    if (response.config.responseType === 'blob') {
+      // 检查响应状态码
+      if (response.status === 200) {
+        return response
+      } else {
+        Message({
+          message: '文件导出失败',
+          type: 'error',
+          duration: 5 * 1000
+        })
+        return Promise.reject(new Error('文件导出失败'))
+      }
+    }
 
-    // if the custom code is not 200, it is judged as an error.
+    const res = response.data
+
     if (res.code !== 200) {
       Message({
         message: res.message || 'Error',
         type: 'error',
         duration: 5 * 1000
       })
-      //
-      // // 50008: Illegal token; 50012: Other clients logged in; 50014: Token expired;
-      // if (res.code === 50008 || res.code === 50012 || res.code === 50014) {
-      //   // to re-login
-      //   MessageBox.confirm('You have been logged out, you can cancel to stay on this page, or log in again', 'Confirm logout', {
-      //     confirmButtonText: 'Re-Login',
-      //     cancelButtonText: 'Cancel',
-      //     type: 'warning'
-      //   }).then(() => {
-      //     store.dispatch('user/resetToken').then(() => {
-      //       location.reload()
-      //     })
-      //   })
-      // }
       return Promise.reject(new Error(res.message || 'Error'))
     } else {
       return res
     }
   },
   error => {
-    console.log('err' + error) // for debug
-    Message({
-      message: error.message,
-      type: 'error',
-      duration: 5 * 1000
-    })
+    // 处理文件下载失败的情况
+    if (error.config && error.config.responseType === 'blob') {
+      // 如果是文件下载请求失败
+      Message({
+        message: '文件导出失败：' + error.message,
+        type: 'error',
+        duration: 5 * 1000
+      })
+    } else {
+      // 其他请求失败的情况
+      Message({
+        message: error.message,
+        type: 'error',
+        duration: 5 * 1000
+      })
+    }
     return Promise.reject(error)
   }
 )
