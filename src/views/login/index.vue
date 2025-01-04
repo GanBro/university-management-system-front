@@ -9,7 +9,6 @@
       auto-complete="on"
       label-position="left"
     >
-
       <div class="title-container">
         <h3 class="title">全国高等院校信息管理系统登录</h3>
       </div>
@@ -65,7 +64,6 @@
       >
         注册
       </el-button>
-
     </el-form>
   </div>
 </template>
@@ -77,6 +75,7 @@ export default {
   name: 'Login',
   data() {
     const validateUsername = (rule, value, callback) => {
+      console.log('验证用户名:', value)
       if (!validUsername(value)) {
         callback(new Error('请输入用户名'))
       } else {
@@ -84,6 +83,7 @@ export default {
       }
     }
     const validatePassword = (rule, value, callback) => {
+      console.log('验证密码:', value)
       if (value.length < 6) {
         callback(new Error('密码长度必须大于6位'))
       } else {
@@ -112,6 +112,10 @@ export default {
       immediate: true
     }
   },
+  created() {
+    // 页面创建时移除token
+    this.$store.dispatch('user/resetToken')
+  },
   methods: {
     showPwd() {
       if (this.passwordType === 'password') {
@@ -123,21 +127,25 @@ export default {
         this.$refs.password.focus()
       })
     },
-    // views/login/index.vue
     handleLogin() {
+      console.log('开始验证表单')
       this.$refs.loginForm.validate(valid => {
+        console.log('表单验证结果:', valid)
         if (valid) {
           this.loading = true
           console.log('开始登录流程，用户信息:', this.user)
 
           this.$store.dispatch('user/login', this.user)
             .then(() => {
-              console.log('登录成功，获取用户信息')
+              console.log('登录成功，开始获取用户信息')
               return this.$store.dispatch('user/getInfo')
             })
-            .then(({ role }) => {
-              console.log('获取用户信息成功，角色:', role)
+            .then((data) => {
+              console.log('获取到的完整用户信息:', data)
+              const { role } = data.user || data
+              console.log('解析到的用户角色:', role)
               this.loading = false
+
               if (role === 'admin') {
                 console.log('管理员登录，跳转到管理首页')
                 this.$router.push({ path: '/', replace: true })
@@ -149,7 +157,14 @@ export default {
             .catch(error => {
               this.loading = false
               console.error('登录失败:', error)
+              this.$message.error(error.message || '登录失败，请重试')
             })
+            .finally(() => {
+              this.loading = false
+            })
+        } else {
+          console.log('表单验证未通过')
+          return false
         }
       })
     },
@@ -161,7 +176,6 @@ export default {
 </script>
 
 <style lang="scss">
-
 $bg: #283443;
 $light_gray: #fff;
 $cursor: #fff;
