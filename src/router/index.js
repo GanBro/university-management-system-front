@@ -46,7 +46,28 @@ export const constantRoutes = [
     component: () => import('@/views/404'),
     hidden: true
   },
-
+  // 用户端路由
+  {
+    path: '/user',
+    component: () => import('@/views/user/layout'),
+    redirect: '/user/home',
+    hidden: true,
+    children: [
+      {
+        path: 'home',
+        name: 'UserHome',
+        component: () => import('@/views/user/home'),
+        meta: { title: '首页' }
+      },
+      {
+        path: 'profile',
+        name: 'UserProfile',
+        component: () => import('@/views/user/profile'),
+        meta: { title: '个人中心' }
+      }
+    ]
+  },
+  // ... 其他路由配置
   {
     path: '/',
     component: Layout,

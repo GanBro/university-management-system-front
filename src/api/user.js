@@ -11,6 +11,7 @@ export function login(data) {
 }
 
 export function getInfo(token) {
+  console.log('请求用户信息, token:', token)
   return request({
     url: 'getUserByToken',
     method: 'get',

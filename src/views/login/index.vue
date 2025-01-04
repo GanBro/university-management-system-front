@@ -123,22 +123,33 @@ export default {
         this.$refs.password.focus()
       })
     },
-    // 处理登录请求
+    // views/login/index.vue
     handleLogin() {
       this.$refs.loginForm.validate(valid => {
         if (valid) {
-          console.log('验证成功，开始登录:', this.user)
           this.loading = true
-          this.$store.dispatch('user/login', this.user).then(() => {
-            console.log('登录成功，跳转页面')
-            this.$router.push({ path: this.redirect || '/' })
-            this.loading = false
-          }).catch(error => {
-            console.error('登录失败:', error)
-            this.loading = false
-          })
-        } else {
-          console.log('验证失败')
+          console.log('开始登录流程，用户信息:', this.user)
+
+          this.$store.dispatch('user/login', this.user)
+            .then(() => {
+              console.log('登录成功，获取用户信息')
+              return this.$store.dispatch('user/getInfo')
+            })
+            .then(({ role }) => {
+              console.log('获取用户信息成功，角色:', role)
+              this.loading = false
+              if (role === 'admin') {
+                console.log('管理员登录，跳转到管理首页')
+                this.$router.push({ path: '/', replace: true })
+              } else {
+                console.log('普通用户登录，跳转到用户首页')
+                this.$router.push({ path: '/user/home', replace: true })
+              }
+            })
+            .catch(error => {
+              this.loading = false
+              console.error('登录失败:', error)
+            })
         }
       })
     },

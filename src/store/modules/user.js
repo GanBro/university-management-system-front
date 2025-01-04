@@ -7,7 +7,8 @@ const getDefaultState = () => {
   return {
     token: getToken(),
     name: '',
-    avatar: ''
+    avatar: '',
+    role: '' // 添加角色字段
   }
 }
 
@@ -25,6 +26,9 @@ const mutations = {
   },
   SET_AVATAR: (state, avatar) => {
     state.avatar = avatar
+  },
+  SET_ROLE: (state, role) => {
+    state.role = role
   }
 }
 
@@ -34,13 +38,13 @@ const actions = {
     const { username, password } = userInfo
     return new Promise((resolve, reject) => {
       login({ username: username.trim(), password: password }).then(response => {
-        console.log('API 请求成功，返回数据:', response)
+        console.log('登录响应:', response)
         const { data } = response
         commit('SET_TOKEN', data.token)
         setToken(data.token)
-        resolve()
+        resolve(data)
       }).catch(error => {
-        console.error('API 请求失败:', error)
+        console.error('登录失败:', error)
         reject(error)
       })
     })
@@ -48,32 +52,58 @@ const actions = {
 
   // get user info
   getInfo({ commit, state }) {
+    console.log('开始获取用户信息, 当前状态:', {
+      token: state.token,
+      role: state.role,
+      name: state.name
+    })
+
+    // 如果已经有用户信息，直接返回
+    if (state.name && state.role) {
+      console.log('已有用户信息，直接返回:', {
+        name: state.name,
+        role: state.role
+      })
+      return Promise.resolve({ name: state.name, role: state.role })
+    }
+
     return new Promise((resolve, reject) => {
       getInfo(state.token).then(response => {
         const { data } = response
-        console.log(data)
+        console.log('获取到的用户信息:', data)
 
-        if (!data) {
-          return reject('Verification failed, please Login again.')
+        if (!data || !data.user) {
+          reject('Verification failed, please Login again.')
+          return
         }
 
-        const { name, avatar } = data
+        // 从 data.user 中解构数据
+        const { username: name, avatar, role } = data.user
+
+        console.log('设置用户信息:', {
+          name,
+          role,
+          avatar
+        })
 
         commit('SET_NAME', name)
         commit('SET_AVATAR', avatar)
-        resolve(data)
+        commit('SET_ROLE', role)
+
+        // 返回处理后的用户信息，包括角色信息
+        resolve({ name, role, avatar })
       }).catch(error => {
+        console.error('获取用户信息失败:', error)
         reject(error)
       })
     })
   },
-
-  // 用户登出
+  // user logout
   logout({ commit, state }) {
     return new Promise((resolve, reject) => {
-      removeToken() // 清空token
+      removeToken() // must remove  token  first
       resetRouter()
-      commit('RESET_STATE') // 清空vuex
+      commit('RESET_STATE')
       resolve()
     })
   },
@@ -94,4 +124,3 @@ export default {
   mutations,
   actions
 }
-
