@@ -1,3 +1,4 @@
+// src/store/modules/user.js
 import { login, getInfo } from '@/api/user'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { resetRouter } from '@/router'
