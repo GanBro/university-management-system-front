@@ -50,7 +50,7 @@ export function batchDeleteUniversities(ids) {
   return request({
     url: '/api/universities/batch',
     method: 'delete',
-    data: { ids }
+    data: ids // 直接发送数组
   })
 }
 
@@ -67,5 +67,12 @@ export function exportUniversityList(params) {
     params: exportParams,
     responseType: 'blob',
     timeout: 60000
+  })
+}
+
+export function getUniversityOptions() {
+  return request({
+    url: '/api/universities/options',
+    method: 'get'
   })
 }

@@ -23,6 +23,10 @@
       <el-button class="filter-item" type="primary" icon="el-icon-plus" @click="handleCreate">
         添加高校
       </el-button>
+      <!-- 添加批量删除按钮 -->
+      <el-button class="filter-item" type="danger" icon="el-icon-delete" @click="handleBatchDelete">
+        批量删除
+      </el-button>
       <el-button
         :loading="downloadLoading"
         class="filter-item"
@@ -54,11 +58,6 @@
       <el-table-column label="省份" width="110" align="center">
         <template slot-scope="scope">
           <span>{{ scope.row.province }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column label="城市" width="110" align="center">
-        <template slot-scope="scope">
-          <span>{{ scope.row.city }}</span>
         </template>
       </el-table-column>
       <el-table-column label="类型" width="110" align="center">
@@ -105,7 +104,6 @@
           <el-checkbox-group v-model="exportConfig.fields">
             <el-checkbox label="name">高校名称</el-checkbox>
             <el-checkbox label="province">省份</el-checkbox>
-            <el-checkbox label="city">城市</el-checkbox>
             <el-checkbox label="type">类型</el-checkbox>
             <el-checkbox label="level">层次</el-checkbox>
           </el-checkbox-group>
@@ -120,7 +118,7 @@
 </template>
 
 <script>
-import { getUniversityList, deleteUniversity, batchDeleteUniversities } from '@/api/university'
+import { getUniversityList, deleteUniversity, batchDeleteUniversities, getUniversityOptions } from '@/api/university'
 import Pagination from '@/components/Pagination'
 
 export default {
@@ -140,19 +138,20 @@ export default {
         level: undefined
       },
       multipleSelection: [],
-      typeOptions: ['公立', '私立', '独立学院'],
-      levelOptions: ['双一流', '985', '211', '普通高校'],
-      provinceOptions: ['北京市', '上海市', '江苏省', '浙江省'], // 这里需要补充完整的省份列表
+      typeOptions: [],
+      levelOptions: [],
+      provinceOptions: [],
       downloadLoading: false,
       // 导出相关配置
       exportDialogVisible: false,
       exportConfig: {
-        fields: ['name', 'province', 'city', 'type', 'level']
+        fields: ['name', 'province', 'type', 'level']
       }
     }
   },
   created() {
     this.getList()
+    this.getOptions()
   },
   methods: {
     async getList() {
@@ -165,6 +164,16 @@ export default {
       } catch (error) {
         console.error('Failed to get university list:', error)
         this.listLoading = false
+      }
+    },
+    async getOptions() {
+      try {
+        const { data } = await getUniversityOptions()
+        this.typeOptions = data.types
+        this.levelOptions = data.levels
+        this.provinceOptions = data.provinces
+      } catch (error) {
+        console.error('Failed to get options:', error)
       }
     },
     handleFilter() {
@@ -228,7 +237,6 @@ export default {
     handleDownload() {
       this.exportDialogVisible = true
     },
-    // 在 methods 中修改导出方法
     async handleExportConfirm() {
       try {
         this.exportDialogVisible = false
