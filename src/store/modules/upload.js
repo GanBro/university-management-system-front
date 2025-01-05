@@ -1,5 +1,5 @@
 // src/store/modules/upload.js
-import request from '@/utils/request'
+import { uploadFile } from '@/api/upload'
 
 const state = {
   uploadUrl: '/upload',
@@ -20,14 +20,8 @@ const actions = {
       const formData = new FormData()
       formData.append('file', file)
 
-      request({
-        url: state.uploadUrl,
-        method: 'post',
-        data: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+      // 调用 API 中的 uploadFile 方法来发送请求
+      uploadFile(formData)
         .then(response => {
           if (response.code === 200) {
             resolve(response)
