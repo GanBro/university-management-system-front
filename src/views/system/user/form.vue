@@ -12,11 +12,31 @@
       </el-form-item>
 
       <el-form-item label="密码" prop="password" v-if="isCreate">
-        <el-input v-model="form.password" type="password" />
+        <el-input
+          v-model="form.password"
+          :type="passwordVisible ? 'text' : 'password'"
+          class="password-input"
+        >
+          <i
+            slot="suffix"
+            :class="['el-icon-view', 'cursor-pointer']"
+            @click="passwordVisible = !passwordVisible"
+          ></i>
+        </el-input>
       </el-form-item>
 
       <el-form-item label="确认密码" prop="confirmPassword" v-if="isCreate">
-        <el-input v-model="form.confirmPassword" type="password" />
+        <el-input
+          v-model="form.confirmPassword"
+          :type="confirmPasswordVisible ? 'text' : 'password'"
+          class="password-input"
+        >
+          <i
+            slot="suffix"
+            :class="['el-icon-view', 'cursor-pointer']"
+            @click="confirmPasswordVisible = !confirmPasswordVisible"
+          ></i>
+        </el-input>
       </el-form-item>
 
       <el-form-item label="邮箱" prop="email">
@@ -34,23 +54,23 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item label="状态" prop="status">
-        <el-radio-group v-model="form.status">
-          <el-radio label="active">启用</el-radio>
-          <el-radio label="inactive">禁用</el-radio>
-        </el-radio-group>
-      </el-form-item>
-
       <el-form-item label="头像">
         <el-upload
           class="avatar-uploader"
-          action="/api/upload"
+          :http-request="handleAvatarUpload"
           :show-file-list="false"
-          :on-success="handleAvatarSuccess"
           :before-upload="beforeAvatarUpload"
         >
-          <img v-if="form.avatar" :src="form.avatar" class="avatar">
+          <img
+            v-if="form.avatar"
+            :src="form.avatar"
+            class="avatar"
+            @error="handleImageError"
+          >
           <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+          <div v-if="uploadLoading" class="upload-loading">
+            <el-loading></el-loading>
+          </div>
         </el-upload>
       </el-form-item>
 
@@ -64,6 +84,7 @@
 
 <script>
 import { createUser, updateUser, getUserDetail } from '@/api/user'
+import { mapState, mapActions } from 'vuex'
 
 export default {
   name: 'UserForm',
@@ -86,19 +107,20 @@ export default {
       }
     }
     return {
+      passwordVisible: false,
+      confirmPasswordVisible: false,
       form: {
         username: '',
         password: '',
         confirmPassword: '',
         email: '',
-        role: '',
-        status: 'active',
+        role: 'user',
         avatar: ''
       },
       rules: {
         username: [
           { required: true, message: '请输入用户名', trigger: 'blur' },
-          { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+          { min: 3, max: 100, message: '长度在 3 到 100 个字符', trigger: 'blur' }
         ],
         password: [
           { validator: validatePass, trigger: 'blur' }
@@ -121,6 +143,7 @@ export default {
     }
   },
   computed: {
+    ...mapState('upload', ['uploadLoading']),
     isCreate() {
       return !this.$route.params.id
     }
@@ -131,6 +154,7 @@ export default {
     }
   },
   methods: {
+    ...mapActions('upload', ['uploadFile']),
     async getDetail() {
       try {
         const { data } = await getUserDetail(this.$route.params.id)
@@ -141,10 +165,25 @@ export default {
         }
       } catch (error) {
         console.error('Failed to get user detail:', error)
+        this.$message.error('获取用户信息失败')
       }
     },
-    handleAvatarSuccess(res, file) {
-      this.form.avatar = res.url
+    async handleAvatarUpload({ file }) {
+      try {
+        const response = await this.uploadFile({ file })
+        if (response.code === 200) {
+          // 确保返回的是完整的URL
+          this.form.avatar = response.data
+          this.$message.success('头像上传成功')
+        }
+      } catch (error) {
+        console.error('上传失败:', error)
+        this.$message.error(error.message || '上传失败，请重试')
+      }
+    },
+    handleImageError() {
+      console.error('图片加载失败:', this.form.avatar)
+      this.$message.error('图片加载失败')
     },
     beforeAvatarUpload(file) {
       const isJPG = file.type === 'image/jpeg'
@@ -164,16 +203,29 @@ export default {
     async handleSubmit() {
       try {
         await this.$refs.form.validate()
+        const submitData = { ...this.form }
+        delete submitData.confirmPassword
+
         if (this.isCreate) {
-          await createUser(this.form)
-          this.$message.success('创建成功')
+          const { data } = await createUser(submitData)
+          if (data.code === 200) {
+            this.$message.success('用户创建成功')
+            this.$router.push('/system/user')
+          } else {
+            this.$message.error(data.message || '创建失败')
+          }
         } else {
-          await updateUser(this.$route.params.id, this.form)
-          this.$message.success('更新成功')
+          const { data } = await updateUser(this.$route.params.id, submitData)
+          if (data.code === 200) {
+            this.$message.success('更新成功')
+            this.$router.push('/system/user')
+          } else {
+            this.$message.error(data.message || '更新失败')
+          }
         }
-        this.$router.push('/system/user')
       } catch (error) {
-        console.error('Failed to submit form:', error)
+        console.error('表单提交失败:', error)
+        this.$message.error(error.message || '操作失败，请重试')
       }
     },
     handleCancel() {
@@ -191,9 +243,11 @@ export default {
   position: relative;
   overflow: hidden;
 }
+
 .avatar-uploader .el-upload:hover {
   border-color: #409EFF;
 }
+
 .avatar-uploader-icon {
   font-size: 28px;
   color: #8c939d;
@@ -202,9 +256,30 @@ export default {
   line-height: 178px;
   text-align: center;
 }
+
 .avatar {
   width: 178px;
   height: 178px;
   display: block;
+}
+
+.password-input {
+  position: relative;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.upload-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>

@@ -6,6 +6,7 @@ import settings from './modules/settings'
 import user from './modules/user'
 import dashboard from './modules/dashboard'
 import university from '@/store/modules/university'
+import upload from '@/store/modules/upload'
 
 Vue.use(Vuex)
 
@@ -15,7 +16,8 @@ const store = new Vuex.Store({
     settings,
     user,
     dashboard,
-    university
+    university,
+    upload
   },
   getters
 })
