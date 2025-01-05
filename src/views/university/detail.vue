@@ -11,7 +11,6 @@
         </el-button>
       </div>
 
-      <!-- 第一行 -->
       <el-row :gutter="20">
         <el-col :span="8">
           <div class="detail-item">
