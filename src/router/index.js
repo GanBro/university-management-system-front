@@ -119,6 +119,45 @@ export const constantRoutes = [
   },
 
   {
+    path: '/system',
+    component: Layout,
+    redirect: '/system/user/list',
+    name: 'System',
+    meta: {
+      title: '系统管理',
+      icon: 'user'
+    },
+    children: [
+      {
+        path: 'user/list',
+        name: 'UserList',
+        component: () => import('@/views/system/user/list'),
+        meta: { title: '用户列表' }
+      },
+      {
+        path: 'user/create',
+        name: 'UserCreate',
+        component: () => import('@/views/system/user/form'),
+        meta: { title: '添加用户' }
+      },
+      {
+        path: 'user/edit/:id',
+        name: 'UserEdit',
+        component: () => import('@/views/system/user/form'),
+        meta: { title: '编辑用户' },
+        hidden: true
+      },
+      {
+        path: 'user/detail/:id',
+        name: 'UserDetail',
+        component: () => import('@/views/system/user/detail'),
+        meta: { title: '用户详情' },
+        hidden: true
+      }
+    ]
+  },
+
+  {
     path: '/example',
     component: Layout,
     redirect: '/example/table',

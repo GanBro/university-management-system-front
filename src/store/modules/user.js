@@ -1,5 +1,5 @@
 // src/store/modules/user.js
-import { login, getInfo } from '@/api/user'
+import { login, getInfo, getUserList, createUser, updateUser, deleteUser } from '@/api/user'
 import { getToken, setToken, removeToken } from '@/utils/auth'
 import { resetRouter } from '@/router'
 
@@ -8,7 +8,7 @@ const getDefaultState = () => {
     token: getToken(),
     name: '',
     avatar: '',
-    role: '' // 添加角色字段
+    role: ''
   }
 }
 
@@ -114,6 +114,49 @@ const actions = {
       removeToken() // must remove  token  first
       commit('RESET_STATE')
       resolve()
+    })
+  },
+  // 获取用户列表
+  getUserList({ commit }, query) {
+    return new Promise((resolve, reject) => {
+      getUserList(query).then(response => {
+        resolve(response)
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  },
+
+  // 创建用户
+  createUser({ commit }, data) {
+    return new Promise((resolve, reject) => {
+      createUser(data).then(response => {
+        resolve(response)
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  },
+
+  // 更新用户
+  updateUser({ commit }, { id, data }) {
+    return new Promise((resolve, reject) => {
+      updateUser(id, data).then(response => {
+        resolve(response)
+      }).catch(error => {
+        reject(error)
+      })
+    })
+  },
+
+  // 删除用户
+  deleteUser({ commit }, id) {
+    return new Promise((resolve, reject) => {
+      deleteUser(id).then(response => {
+        resolve(response)
+      }).catch(error => {
+        reject(error)
+      })
     })
   }
 }
