@@ -1,52 +1,49 @@
+<!-- src/views/system/user/detail.vue -->
 <template>
   <div class="app-container">
-    <el-card v-loading="loading">
+    <el-card>
       <div slot="header">
         <span>用户详情</span>
-        <el-button
-          style="float: right; margin-left: 10px;"
-          type="primary"
-          size="small"
-          @click="handleEdit"
-        >
-          编辑
-        </el-button>
+        <el-button style="float: right; margin-left: 10px;" @click="$router.push('/system/user/list')">返回</el-button>
       </div>
 
-      <el-row :gutter="20">
-        <el-col :span="8">
-          <div class="user-info">
-            <img :src="userDetail.avatar || '/default-avatar.png'" class="user-avatar">
-            <h3>{{ userDetail.username }}</h3>
-            <p>{{ userDetail.role === 'admin' ? '管理员' : '普通用户' }}</p>
-          </div>
-        </el-col>
-        <el-col :span="16">
-          <el-descriptions title="基本信息" :column="2">
-            <el-descriptions-item label="邮箱">{{ userDetail.email }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
-              <el-tag :type="userDetail.status === 'active' ? 'success' : 'info'">
-                {{ userDetail.status === 'active' ? '启用' : '禁用' }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ userDetail.createdTime }}</el-descriptions-item>
-            <el-descriptions-item label="最后登录时间">{{ userDetail.lastLoginTime }}</el-descriptions-item>
-          </el-descriptions>
+      <el-form label-width="120px" v-loading="loading">
+        <el-form-item label="用户头像">
+          <el-avatar
+            :size="100"
+            :src="userInfo.avatar"
+            @error="() => true"
+          >
+            <img src="https://cube.elemecdn.com/e/fd/0fc7d20532fdaf769a25683617711png.png"/>
+          </el-avatar>
+        </el-form-item>
 
-          <el-divider></el-divider>
+        <el-form-item label="用户名">
+          <span>{{ userInfo.username }}</span>
+        </el-form-item>
 
-          <el-timeline>
-            <el-timeline-item
-              v-for="(activity, index) in userDetail.activities"
-              :key="index"
-              :timestamp="activity.time"
-              :type="activity.type"
-            >
-              {{ activity.content }}
-            </el-timeline-item>
-          </el-timeline>
-        </el-col>
-      </el-row>
+        <el-form-item label="邮箱">
+          <span>{{ userInfo.email }}</span>
+        </el-form-item>
+
+        <el-form-item label="角色">
+          <el-tag :type="userInfo.role === 'admin' ? 'danger' : 'success'">
+            {{ userInfo.role === 'admin' ? '管理员' : '普通用户' }}
+          </el-tag>
+        </el-form-item>
+
+        <el-form-item label="创建时间">
+          <span>{{ formatTime(userInfo.createdAt) }}</span>
+        </el-form-item>
+
+        <el-form-item label="更新时间">
+          <span>{{ formatTime(userInfo.updatedAt) }}</span>
+        </el-form-item>
+
+        <el-form-item label="最后登录时间">
+          <span>{{ formatTime(userInfo.lastLogin) }}</span>
+        </el-form-item>
+      </el-form>
     </el-card>
   </div>
 </template>
@@ -59,15 +56,15 @@ export default {
   data() {
     return {
       loading: true,
-      userDetail: {
+      userInfo: {
+        userId: '',
         username: '',
         email: '',
         role: '',
-        status: '',
         avatar: '',
-        createdTime: '',
-        lastLoginTime: '',
-        activities: []
+        createdAt: '',
+        updatedAt: '',
+        lastLogin: ''
       }
     }
   },
@@ -75,31 +72,43 @@ export default {
     this.getDetail()
   },
   methods: {
+    formatTime(time) {
+      if (!time) return '暂无'
+      const date = new Date(time)
+      return date.toLocaleString()
+    },
     async getDetail() {
+      const userId = this.$route.params.id
+      if (!userId) {
+        this.$message.error('用户ID不能为空')
+        this.$router.push('/system/user/list')
+        return
+      }
+
       try {
-        const { data } = await getUserDetail(this.$route.params.id)
-        this.userDetail = data
+        console.log('获取用户详情, userId:', userId)
+        const response = await getUserDetail(userId)
+        console.log('获取到的用户详情:', response)
+
+        if (response.code === 200) {
+          this.userInfo = response.data
+        } else {
+          throw new Error(response.message || '获取用户详情失败')
+        }
       } catch (error) {
-        console.error('Failed to get user detail:', error)
+        console.error('获取用户详情失败:', error)
+        this.$message.error(error.message || '获取用户信息失败')
+        this.$router.push('/system/user/list')
       } finally {
         this.loading = false
       }
-    },
-    handleEdit() {
-      this.$router.push(`/system/user/edit/${this.$route.params.id}`)
     }
   }
 }
 </script>
 
 <style scoped>
-.user-info {
-  text-align: center;
+.app-container {
   padding: 20px;
-}
-.user-avatar {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
 }
 </style>

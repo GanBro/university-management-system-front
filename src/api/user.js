@@ -37,9 +37,9 @@ export function getUserList(params) {
 }
 
 // 获取用户详情
-export function getUserDetail(id) {
+export function getUserDetail(userId) {
   return request({
-    url: `/users/${id}`,
+    url: `/users/${userId}`,
     method: 'get'
   })
 }

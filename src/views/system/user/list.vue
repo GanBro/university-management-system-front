@@ -182,7 +182,7 @@ export default {
 
         // 修改这里，直接使用 response 而不是 response.data
         const response = await deleteUser(row.userId)
-        if (response.code === 200) {  // 去掉 .data
+        if (response.code === 200) {
           this.$message.success('删除成功')
           this.getList()
         } else {
