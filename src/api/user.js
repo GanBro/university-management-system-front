@@ -62,20 +62,23 @@ export function updateUser(id, data) {
   })
 }
 
-// 删除用户
-export function deleteUser(id) {
+export function deleteUser(userId) {
+  // 添加参数验证
+  if (!userId) {
+    return Promise.reject(new Error('用户ID不能为空'))
+  }
   return request({
-    url: `/users/${id}`,
+    url: `/users/${userId}`,
     method: 'delete'
   })
 }
 
 // 批量删除用户
-export function batchDeleteUsers(ids) {
+export function batchDeleteUsers(userIds) {
   return request({
     url: '/users/batch',
     method: 'delete',
-    data: ids
+    data: userIds
   })
 }
 

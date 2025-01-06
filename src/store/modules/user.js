@@ -150,9 +150,9 @@ const actions = {
   },
 
   // 删除用户
-  deleteUser({ commit }, id) {
+  deleteUser({ commit }, userId) {
     return new Promise((resolve, reject) => {
-      deleteUser(id).then(response => {
+      deleteUser(userId).then(response => {
         resolve(response)
       }).catch(error => {
         reject(error)
