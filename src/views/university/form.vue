@@ -1,7 +1,6 @@
-<!-- src/views/university/form.vue -->
 <template>
   <div class="app-container">
-    <el-card>
+    <el-card v-loading="loading">
       <div slot="header" class="clearfix">
         <span>{{ isEdit ? '编辑高校' : '添加高校' }}</span>
       </div>
@@ -13,7 +12,6 @@
         label-width="120px"
         class="university-form"
       >
-        <!-- 基本信息区域 -->
         <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
           <el-col :span="12">
@@ -39,16 +37,77 @@
           </el-col>
         </el-row>
 
-        <!-- 原有的基本信息表单项... -->
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="学校类型" prop="type">
+              <el-select
+                v-model="universityForm.type"
+                placeholder="请选择类型"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in typeOptions"
+                  :key="item"
+                  :label="item"
+                  :value="item"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="学校层次" prop="level">
+              <el-select
+                v-model="universityForm.level"
+                placeholder="请选择层次"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="item in levelOptions"
+                  :key="item"
+                  :label="item"
+                  :value="item"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
 
-        <!-- Markdown内容区域 -->
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="主管部门" prop="adminDepartment">
+              <el-input v-model="universityForm.adminDepartment" placeholder="请输入主管部门" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="官方网站" prop="website">
+              <el-input v-model="universityForm.website" placeholder="请输入官方网站地址" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="招生网站" prop="admissionWebsite">
+              <el-input v-model="universityForm.admissionWebsite" placeholder="请输入招生网站地址" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="详细地址" prop="address">
+          <el-input
+            v-model="universityForm.address"
+            type="textarea"
+            :rows="2"
+            placeholder="请输入详细地址"
+          />
+        </el-form-item>
+
         <el-divider content-position="left">详细信息</el-divider>
         <el-tabs v-model="activeTab" type="border-card" class="markdown-tabs">
           <el-tab-pane label="学校简介" name="introduction">
             <markdown-editor
               v-model="universityForm.introduction"
               placeholder="请输入学校简介..."
-              @input="handleMarkdownChange('introduction', $event)"
             />
           </el-tab-pane>
 
@@ -56,7 +115,6 @@
             <markdown-editor
               v-model="universityForm.departments"
               placeholder="请输入院系设置信息..."
-              @input="handleMarkdownChange('departments', $event)"
             />
           </el-tab-pane>
 
@@ -64,15 +122,13 @@
             <markdown-editor
               v-model="universityForm.majors"
               placeholder="请输入专业介绍信息..."
-              @input="handleMarkdownChange('majors', $event)"
             />
           </el-tab-pane>
 
-          <el-tab-pane label="录取规则" name="admission_rules">
+          <el-tab-pane label="录取规则" name="admissionRules">
             <markdown-editor
-              v-model="universityForm.admission_rules"
+              v-model="universityForm.admissionRules"
               placeholder="请输入录取规则..."
-              @input="handleMarkdownChange('admission_rules', $event)"
             />
           </el-tab-pane>
 
@@ -80,7 +136,6 @@
             <markdown-editor
               v-model="universityForm.scholarships"
               placeholder="请输入奖学金设置信息..."
-              @input="handleMarkdownChange('scholarships', $event)"
             />
           </el-tab-pane>
 
@@ -88,21 +143,19 @@
             <markdown-editor
               v-model="universityForm.accommodation"
               placeholder="请输入食宿条件信息..."
-              @input="handleMarkdownChange('accommodation', $event)"
             />
           </el-tab-pane>
 
-          <el-tab-pane label="联系方式" name="contact_info">
+          <el-tab-pane label="联系方式" name="contactInfo">
             <markdown-editor
-              v-model="universityForm.contact_info"
+              v-model="universityForm.contactInfo"
               placeholder="请输入联系方式信息..."
-              @input="handleMarkdownChange('contact_info', $event)"
             />
           </el-tab-pane>
         </el-tabs>
 
         <el-form-item class="form-footer">
-          <el-button type="primary" @click="submitForm" :loading="loading">
+          <el-button type="primary" @click="submitForm" :loading="submitLoading">
             {{ isEdit ? '更新' : '创建' }}
           </el-button>
           <el-button @click="cancel">取消</el-button>
@@ -125,34 +178,39 @@ export default {
     return {
       isEdit: false,
       loading: false,
+      submitLoading: false,
       activeTab: 'introduction',
       universityForm: {
-        // 基本信息字段
         name: '',
         province: '',
-        city: '',
         address: '',
-        admin_department: '',
+        adminDepartment: '',
         website: '',
-        admission_website: '',
+        admissionWebsite: '',
         type: '',
         level: '',
-        // Markdown内容字段
         introduction: '',
         departments: '',
         majors: '',
-        admission_rules: '',
+        admissionRules: '',
         scholarships: '',
         accommodation: '',
-        contact_info: ''
+        contactInfo: ''
       },
-      provinceOptions: ['北京市', '上海市', '江苏省', '浙江省'],
+      provinceOptions: [
+        '北京市', '天津市', '河北省', '山西省', '内蒙古自治区',
+        '辽宁省', '吉林省', '黑龙江省', '上海市', '江苏省',
+        '浙江省', '安徽省', '福建省', '江西省', '山东省',
+        '河南省', '湖北省', '湖南省', '广东省', '广西壮族自治区',
+        '海南省', '重庆市', '四川省', '贵州省', '云南省',
+        '西藏自治区', '陕西省', '甘肃省', '青海省', '宁夏回族自治区',
+        '新疆维吾尔自治区', '香港特别行政区', '澳门特别行政区', '台湾省'
+      ],
       typeOptions: ['公立', '私立', '独立学院'],
       levelOptions: ['双一流', '985', '211', '普通高校'],
       rules: {
         name: [{ required: true, message: '请输入高校名称', trigger: 'blur' }],
         province: [{ required: true, message: '请选择省份', trigger: 'change' }],
-        city: [{ required: true, message: '请输入城市', trigger: 'blur' }],
         type: [{ required: true, message: '请选择类型', trigger: 'change' }]
       }
     }
@@ -168,10 +226,11 @@ export default {
       this.loading = true
       try {
         const { data } = await getUniversityDetail(this.$route.params.id)
-        // 合并数据，保留原有的默认值
         this.universityForm = {
           ...this.universityForm,
-          ...data
+          ...data,
+          adminDepartment: data.adminDepartment || '',
+          admissionWebsite: data.admissionWebsite || ''
         }
       } catch (error) {
         console.error('Failed to get university detail:', error)
@@ -179,25 +238,20 @@ export default {
       }
       this.loading = false
     },
-    handleMarkdownChange(field, value) {
-      // 实时同步Markdown内容到表单数据
-      this.universityForm[field] = value
-    },
     async submitForm() {
       this.$refs.universityForm.validate(async valid => {
         if (valid) {
-          this.loading = true
+          this.submitLoading = true
           try {
-            // 处理表单数据，确保空字符串转为null
             const formData = {
               ...this.universityForm,
               introduction: this.universityForm.introduction || null,
               departments: this.universityForm.departments || null,
               majors: this.universityForm.majors || null,
-              admission_rules: this.universityForm.admission_rules || null,
+              admissionRules: this.universityForm.admissionRules || null,
               scholarships: this.universityForm.scholarships || null,
               accommodation: this.universityForm.accommodation || null,
-              contact_info: this.universityForm.contact_info || null
+              contactInfo: this.universityForm.contactInfo || null
             }
 
             if (this.isEdit) {
@@ -210,9 +264,9 @@ export default {
             this.$router.push('/university/list')
           } catch (error) {
             console.error('Failed to submit form:', error)
-            this.$message.error('提交失败：' + error.message)
+            this.$message.error(error.message || '提交失败')
           }
-          this.loading = false
+          this.submitLoading = false
         }
       })
     },
@@ -246,4 +300,3 @@ export default {
   }
 }
 </style>
-

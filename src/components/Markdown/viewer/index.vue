@@ -1,4 +1,3 @@
-<!-- components/Markdown/viewer/index.vue -->
 <template>
   <div class="markdown-viewer" v-html="compiledMarkdown"></div>
 </template>
@@ -18,7 +17,7 @@ export default {
   computed: {
     compiledMarkdown() {
       if (!this.content) return ''
-      const rawHtml = marked(this.content)
+      const rawHtml = marked(this.content || '')
       return DOMPurify.sanitize(rawHtml)
     }
   }
@@ -73,7 +72,7 @@ export default {
     padding: 0.2em 0.4em;
     margin: 0;
     font-size: 85%;
-    background-color: rgba(27,31,35,0.05);
+    background-color: rgba(27, 31, 35, 0.05);
     border-radius: 3px;
   }
 
@@ -99,10 +98,9 @@ export default {
   }
 
   table {
-    border-spacing: 0;
     border-collapse: collapse;
-    margin-bottom: 16px;
     width: 100%;
+    margin-bottom: 16px;
 
     th, td {
       padding: 6px 13px;

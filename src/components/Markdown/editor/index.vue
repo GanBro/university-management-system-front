@@ -1,4 +1,3 @@
-<!-- components/Markdown/editor/index.vue -->
 <template>
   <div class="markdown-editor">
     <el-tabs v-model="activeTab" type="card">
@@ -12,7 +11,7 @@
         />
       </el-tab-pane>
       <el-tab-pane label="预览" name="preview">
-        <div class="markdown-preview markdown-body" v-html="compiledMarkdown"></div>
+        <div class="markdown-preview" v-html="compiledMarkdown"></div>
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -85,14 +84,12 @@ export default {
   .el-textarea {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
   }
-}
 
-.markdown-body {
-  padding: 10px;
-  line-height: 1.6;
-  font-size: 14px;
+  .markdown-preview {
+    padding: 10px;
+    line-height: 1.6;
+    font-size: 14px;
 
-  ::v-deep {
     h1, h2, h3, h4, h5, h6 {
       margin-top: 24px;
       margin-bottom: 16px;
@@ -136,6 +133,27 @@ export default {
       color: #6a737d;
       border-left: 0.25em solid #dfe2e5;
       margin: 0 0 16px 0;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+
+      tr {
+        border-top: 1px solid #c6cbd1;
+        background: #fff;
+
+        &:nth-child(2n) {
+          background-color: #f6f8fa;
+        }
+      }
+
+      th, td {
+        padding: 6px 13px;
+        border: 1px solid #dfe2e5;
+      }
     }
   }
 }
