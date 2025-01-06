@@ -47,3 +47,8 @@
 .el-range-separator {
   box-sizing: content-box;
 }
+
+// 在 styles/element-ui.scss 中添加
+.el-tabs--border-card {
+  box-shadow: none;
+}

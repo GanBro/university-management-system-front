@@ -213,7 +213,7 @@ export default {
         // 修改这里，直接使用 response 而不是 response.data
         const response = await batchDeleteUsers(userIds)
 
-        if (response.code === 200) {  // 去掉 .data
+        if (response.code === 200) {
           this.$message.success('批量删除成功')
           this.getList()
         } else {
@@ -226,7 +226,7 @@ export default {
         console.error('批量删除用户失败:', error)
         this.$message.error(error.message || '批量删除失败')
       }
-    },
+    }
   }
 }
 </script>

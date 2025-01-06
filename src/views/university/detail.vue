@@ -88,6 +88,48 @@
         </el-row>
       </div>
 
+      <!-- 学校简介 -->
+      <div v-if="universityDetail.introduction" class="detail-section">
+        <div class="section-title">学校简介</div>
+        <div class="markdown-content" v-html="compiledIntroduction"></div>
+      </div>
+
+      <!-- 院系设置 -->
+      <div v-if="universityDetail.departments" class="detail-section">
+        <div class="section-title">院系设置</div>
+        <div class="markdown-content" v-html="compiledDepartments"></div>
+      </div>
+
+      <!-- 专业介绍 -->
+      <div v-if="universityDetail.majors" class="detail-section">
+        <div class="section-title">专业介绍</div>
+        <div class="markdown-content" v-html="compiledMajors"></div>
+      </div>
+
+      <!-- 录取规则 -->
+      <div v-if="universityDetail.admissionRules" class="detail-section">
+        <div class="section-title">录取规则</div>
+        <div class="markdown-content" v-html="compiledAdmissionRules"></div>
+      </div>
+
+      <!-- 奖学金设置 -->
+      <div v-if="universityDetail.scholarships" class="detail-section">
+        <div class="section-title">奖学金设置</div>
+        <div class="markdown-content" v-html="compiledScholarships"></div>
+      </div>
+
+      <!-- 住宿条件 -->
+      <div v-if="universityDetail.accommodation" class="detail-section">
+        <div class="section-title">住宿条件</div>
+        <div class="markdown-content" v-html="compiledAccommodation"></div>
+      </div>
+
+      <!-- 联系方式 -->
+      <div v-if="universityDetail.contactInfo" class="detail-section">
+        <div class="section-title">联系方式</div>
+        <div class="markdown-content" v-html="compiledContactInfo"></div>
+      </div>
+
       <!-- 分数线组件 -->
       <admission-scores
         :scores="universityDetail.admissionScores"
@@ -129,8 +171,7 @@
             type="info"
             center
             :closable="false"
-          >
-          </el-alert>
+          />
         </div>
       </div>
 
@@ -169,8 +210,7 @@
             type="info"
             center
             :closable="false"
-          >
-          </el-alert>
+          />
         </div>
       </div>
     </el-card>
@@ -180,6 +220,7 @@
 <script>
 import { getUniversityDetail } from '@/api/university'
 import AdmissionScores from './components/AdmissionScores.vue'
+import { marked } from 'marked'
 
 export default {
   name: 'UniversityDetail',
@@ -195,6 +236,29 @@ export default {
         satisfactionRatings: [],
         recommendationRatings: []
       }
+    }
+  },
+  computed: {
+    compiledIntroduction() {
+      return this.universityDetail.introduction ? marked(this.universityDetail.introduction) : ''
+    },
+    compiledDepartments() {
+      return this.universityDetail.departments ? marked(this.universityDetail.departments) : ''
+    },
+    compiledMajors() {
+      return this.universityDetail.majors ? marked(this.universityDetail.majors) : ''
+    },
+    compiledAdmissionRules() {
+      return this.universityDetail.admissionRules ? marked(this.universityDetail.admissionRules) : ''
+    },
+    compiledScholarships() {
+      return this.universityDetail.scholarships ? marked(this.universityDetail.scholarships) : ''
+    },
+    compiledAccommodation() {
+      return this.universityDetail.accommodation ? marked(this.universityDetail.accommodation) : ''
+    },
+    compiledContactInfo() {
+      return this.universityDetail.contactInfo ? marked(this.universityDetail.contactInfo) : ''
     }
   },
   created() {
@@ -267,6 +331,39 @@ export default {
   border-left: 4px solid #409EFF;
 }
 
+.detail-section {
+  margin-top: 30px;
+  padding: 0 20px;
+}
+
+.markdown-content {
+  line-height: 1.6;
+  color: #606266;
+
+  >>> h1 {
+    font-size: 20px;
+    margin: 20px 0;
+  }
+
+  >>> h2 {
+    font-size: 18px;
+    margin: 16px 0;
+  }
+
+  >>> ul {
+    padding-left: 20px;
+    margin: 10px 0;
+  }
+
+  >>> li {
+    margin: 5px 0;
+  }
+
+  >>> p {
+    margin: 10px 0;
+  }
+}
+
 .rating-section {
   margin-top: 30px;
 }
@@ -287,16 +384,16 @@ export default {
   align-items: center;
 }
 
-::v-deep .el-rate__text {
+.el-rate__text {
   margin-left: 10px;
 }
 
-::v-deep .el-table {
+.el-table {
   border-radius: 8px;
   overflow: hidden;
 }
 
-::v-deep .el-table th {
+.el-table th {
   background-color: #f8fafc;
 }
 
@@ -306,3 +403,4 @@ export default {
   clear: both;
 }
 </style>
+
