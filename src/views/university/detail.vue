@@ -1,4 +1,3 @@
-<!-- src/views/university/detail.vue -->
 <template>
   <div class="app-container">
     <el-card v-loading="loading">
@@ -15,77 +14,109 @@
 
       <!-- 基本信息 -->
       <div class="info-section">
-        <el-row :gutter="20">
-          <el-col :span="8">
-            <div class="detail-item">
-              <label>高校名称:</label>
-              <span>{{ universityDetail.name }}</span>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="detail-item">
-              <label>所在地:</label>
-              <span>{{ universityDetail.province }}</span>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="detail-item">
-              <label>学校类型:</label>
-              <span>{{ universityDetail.type }}</span>
-            </div>
-          </el-col>
-        </el-row>
+        <el-form label-width="120px" class="basic-info">
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="学校名称">
+                <span>{{ universityDetail.name }}</span>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="所在地">
+                <span>{{ universityDetail.province }}</span>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="学校类型">
+                <span>{{ universityDetail.type }}</span>
+              </el-form-item>
+            </el-col>
+          </el-row>
 
-        <el-row :gutter="20">
-          <el-col :span="8">
-            <div class="detail-item">
-              <label>学校层次:</label>
-              <span>{{ universityDetail.level }}</span>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="detail-item">
-              <label>主管部门:</label>
-              <span>{{ universityDetail.adminDepartment }}</span>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="detail-item">
-              <label>官方网站:</label>
-              <a :href="universityDetail.website" target="_blank">{{ universityDetail.website }}</a>
-            </div>
-          </el-col>
-        </el-row>
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="学校层次">
+                <span>{{ universityDetail.level }}</span>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="主管部门">
+                <span>{{ universityDetail.adminDepartment }}</span>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="联系电话">
+                <span>{{ universityDetail.contactNumber }}</span>
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
 
+        <!-- 学校规模信息 -->
+        <div class="section-title">学校规模</div>
         <el-row :gutter="20">
-          <el-col :span="8">
-            <div class="detail-item">
-              <label>招生网站:</label>
-              <a :href="universityDetail.admissionWebsite" target="_blank">{{ universityDetail.admissionWebsite }}</a>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="detail-item">
-              <label>详细地址:</label>
-              <span>{{ universityDetail.address }}</span>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="detail-item">
-              <label>特色标签:</label>
-              <div class="tag-container">
-                <el-tag
-                  v-for="feature in universityDetail.features"
-                  :key="feature"
-                  type="success"
-                  class="feature-tag"
-                >
-                  {{ feature }}
-                </el-tag>
+          <el-col :span="6">
+            <el-card shadow="hover" class="scale-card">
+              <div class="scale-item">
+                <div class="scale-value">{{ universityDetail.studentCount ? universityDetail.studentCount.toLocaleString() : '-' }}</div>
+                <div class="scale-label">在校生数量</div>
               </div>
-            </div>
+            </el-card>
+          </el-col>
+          <el-col :span="6">
+            <el-card shadow="hover" class="scale-card">
+              <div class="scale-item">
+                <div class="scale-value">{{ universityDetail.teacherCount ? universityDetail.teacherCount.toLocaleString() : '-' }}</div>
+                <div class="scale-label">教师数量</div>
+              </div>
+            </el-card>
+          </el-col>
+          <el-col :span="6">
+            <el-card shadow="hover" class="scale-card">
+              <div class="scale-item">
+                <div class="scale-value">{{ universityDetail.libraryCount ? universityDetail.libraryCount.toLocaleString() : '-' }}</div>
+                <div class="scale-label">图书馆藏书量</div>
+              </div>
+            </el-card>
+          </el-col>
+          <el-col :span="6">
+            <el-card shadow="hover" class="scale-card">
+              <div class="scale-item">
+                <div class="scale-value">{{ universityDetail.campusArea ? (universityDetail.campusArea / 10000).toFixed(2) : '-' }}</div>
+                <div class="scale-label">校园面积(万平方米)</div>
+              </div>
+            </el-card>
           </el-col>
         </el-row>
+
+        <div class="detail-item">
+          <label>特色标签:</label>
+          <div class="tag-container">
+            <el-tag
+              v-for="feature in universityDetail.features"
+              :key="feature"
+              type="success"
+              class="feature-tag"
+            >
+              {{ feature }}
+            </el-tag>
+          </div>
+        </div>
+
+        <div class="detail-item">
+          <label>官方网站:</label>
+          <a :href="universityDetail.website" target="_blank">{{ universityDetail.website }}</a>
+        </div>
+
+        <div class="detail-item">
+          <label>招生网站:</label>
+          <a :href="universityDetail.admissionWebsite" target="_blank">{{ universityDetail.admissionWebsite }}</a>
+        </div>
+
+        <div class="detail-item">
+          <label>详细地址:</label>
+          <span>{{ universityDetail.address }}</span>
+        </div>
       </div>
 
       <!-- 学校简介 -->
@@ -294,6 +325,27 @@ export default {
 
 .info-section {
   margin-bottom: 30px;
+
+  .scale-card {
+    text-align: center;
+    margin-top: 20px;
+
+    .scale-item {
+      padding: 10px;
+
+      .scale-value {
+        font-size: 24px;
+        font-weight: bold;
+        color: #409EFF;
+        margin-bottom: 10px;
+      }
+
+      .scale-label {
+        font-size: 14px;
+        color: #606266;
+      }
+    }
+  }
 }
 
 .detail-item {
@@ -340,26 +392,26 @@ export default {
   line-height: 1.6;
   color: #606266;
 
-  >>> h1 {
+  :deep(h1) {
     font-size: 20px;
     margin: 20px 0;
   }
 
-  >>> h2 {
+  :deep(h2) {
     font-size: 18px;
     margin: 16px 0;
   }
 
-  >>> ul {
+  :deep(ul) {
     padding-left: 20px;
     margin: 10px 0;
   }
 
-  >>> li {
+  :deep(li) {
     margin: 5px 0;
   }
 
-  >>> p {
+  :deep(p) {
     margin: 10px 0;
   }
 }
@@ -402,5 +454,8 @@ export default {
   display: table;
   clear: both;
 }
-</style>
 
+.el-descriptions {
+  margin-bottom: 20px;
+}
+</style>
