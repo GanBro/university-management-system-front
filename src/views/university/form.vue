@@ -12,14 +12,15 @@
         label-width="120px"
         class="university-form"
       >
+        <!-- 基本信息部分 -->
         <el-divider content-position="left">基本信息</el-divider>
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="高校名称" prop="name">
               <el-input v-model="universityForm.name" placeholder="请输入高校名称" />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="所在省份" prop="province">
               <el-select
                 v-model="universityForm.province"
@@ -35,10 +36,15 @@
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="8">
+            <el-form-item label="联系电话" prop="contactNumber">
+              <el-input v-model="universityForm.contactNumber" placeholder="请输入联系电话" />
+            </el-form-item>
+          </el-col>
         </el-row>
 
         <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="学校类型" prop="type">
               <el-select
                 v-model="universityForm.type"
@@ -54,7 +60,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="学校层次" prop="level">
               <el-select
                 v-model="universityForm.level"
@@ -70,29 +76,28 @@
               </el-select>
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="12">
+          <el-col :span="8">
             <el-form-item label="主管部门" prop="adminDepartment">
               <el-input v-model="universityForm.adminDepartment" placeholder="请输入主管部门" />
             </el-form-item>
           </el-col>
+        </el-row>
+
+        <!-- 网站信息 -->
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="官方网站" prop="website">
               <el-input v-model="universityForm.website" placeholder="请输入官方网站地址" />
             </el-form-item>
           </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="24">
+          <el-col :span="12">
             <el-form-item label="招生网站" prop="admissionWebsite">
               <el-input v-model="universityForm.admissionWebsite" placeholder="请输入招生网站地址" />
             </el-form-item>
           </el-col>
         </el-row>
 
+        <!-- 地址信息 -->
         <el-form-item label="详细地址" prop="address">
           <el-input
             v-model="universityForm.address"
@@ -102,6 +107,69 @@
           />
         </el-form-item>
 
+        <!-- 特色标签 -->
+        <el-form-item label="特色标签" prop="features">
+          <el-select
+            v-model="universityForm.features"
+            multiple
+            placeholder="请选择特色标签"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="item in featureOptions"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
+        </el-form-item>
+
+        <!-- 规模信息 -->
+        <el-divider content-position="left">规模信息</el-divider>
+        <el-row :gutter="20">
+          <el-col :span="6">
+            <el-form-item label="在校生数量" prop="studentCount">
+              <el-input-number
+                v-model="universityForm.studentCount"
+                :min="0"
+                :controls-position="'right'"
+                placeholder="请输入在校生数量"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="教师数量" prop="teacherCount">
+              <el-input-number
+                v-model="universityForm.teacherCount"
+                :min="0"
+                :controls-position="'right'"
+                placeholder="请输入教师数量"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="图书馆藏书量" prop="libraryCount">
+              <el-input-number
+                v-model="universityForm.libraryCount"
+                :min="0"
+                :controls-position="'right'"
+                placeholder="请输入藏书量"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="校园面积(㎡)" prop="campusArea">
+              <el-input-number
+                v-model="universityForm.campusArea"
+                :min="0"
+                :controls-position="'right'"
+                placeholder="请输入校园面积"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <!-- 详细信息标签页 -->
         <el-divider content-position="left">详细信息</el-divider>
         <el-tabs v-model="activeTab" type="border-card" class="markdown-tabs">
           <el-tab-pane label="学校简介" name="introduction">
@@ -187,15 +255,21 @@ export default {
         adminDepartment: '',
         website: '',
         admissionWebsite: '',
+        contactNumber: '',
         type: '',
         level: '',
+        features: [],
         introduction: '',
         departments: '',
         majors: '',
         admissionRules: '',
         scholarships: '',
         accommodation: '',
-        contactInfo: ''
+        contactInfo: '',
+        studentCount: null,
+        teacherCount: null,
+        libraryCount: null,
+        campusArea: null
       },
       provinceOptions: [
         '北京市', '天津市', '河北省', '山西省', '内蒙古自治区',
@@ -208,10 +282,13 @@ export default {
       ],
       typeOptions: ['公立', '私立', '独立学院'],
       levelOptions: ['双一流', '985', '211', '普通高校'],
+      featureOptions: ['双一流', '985工程', '211工程', '研究型大学', '综合性大学'],
       rules: {
         name: [{ required: true, message: '请输入高校名称', trigger: 'blur' }],
         province: [{ required: true, message: '请选择省份', trigger: 'change' }],
-        type: [{ required: true, message: '请选择类型', trigger: 'change' }]
+        type: [{ required: true, message: '请选择类型', trigger: 'change' }],
+        level: [{ required: true, message: '请选择层次', trigger: 'change' }],
+        contactNumber: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
       }
     }
   },
@@ -228,9 +305,7 @@ export default {
         const { data } = await getUniversityDetail(this.$route.params.id)
         this.universityForm = {
           ...this.universityForm,
-          ...data,
-          adminDepartment: data.adminDepartment || '',
-          admissionWebsite: data.admissionWebsite || ''
+          ...data
         }
       } catch (error) {
         console.error('Failed to get university detail:', error)
@@ -297,6 +372,10 @@ export default {
   .form-footer {
     margin-top: 24px;
     text-align: center;
+  }
+
+  .el-input-number {
+    width: 100%;
   }
 }
 </style>
