@@ -4,7 +4,7 @@ import 'normalize.css/normalize.css' // A modern alternative to CSS resets
 
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
-import locale from 'element-ui/lib/locale/lang/en' // lang i18n
+import 'v-charts/lib/style.css' // 引入图表样式
 
 // 引入 v-charts
 import VCharts from 'v-charts'
@@ -37,7 +37,6 @@ if (process.env.NODE_ENV === 'production') {
 // 如果想要中文版 element-ui，按如下方式声明
 Vue.use(ElementUI)
 
-// 使用 v-charts
 Vue.use(VCharts)
 
 Vue.config.productionTip = false

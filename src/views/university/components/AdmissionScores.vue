@@ -1,219 +1,195 @@
-<!-- src/views/university/components/AdmissionScores.vue -->
 <template>
-  <div class="admission-scores-section">
+  <div class="admission-scores">
     <div class="section-header">
-      <div class="section-title">录取分数线趋势</div>
-      <el-select
-        v-model="selectedProvince"
-        placeholder="选择省份"
-        class="province-select"
-        @change="handleProvinceChange"
-      >
-        <el-option
-          v-for="province in provinces"
-          :key="province"
-          :label="province"
-          :value="province"
-        />
+      <div class="title">录取分数线</div>
+      <el-select v-model="selectedProvince" placeholder="选择省份">
+        <el-option v-for="province in provinces" :key="province" :label="province" :value="province" />
       </el-select>
     </div>
 
-    <div v-if="selectedProvince && chartData.length" class="chart-container">
-      <div class="chart-info">
-        <div class="province-title">
-          {{ selectedProvince }}历年分数线趋势
-        </div>
-        <div class="chart-legend">
-          <div class="legend-item">
-            <span class="legend-dot"></span>
-            <span>分数线</span>
-          </div>
-        </div>
-      </div>
+    <!-- 趋势图 -->
+    <div v-if="hasData" class="chart-container" ref="chart"></div>
 
-      <ve-line
-        :data="chartData"
-        :settings="chartSettings"
-        :extend="chartExtend"
-        height="400px"
-      />
-    </div>
+    <!-- 详细数据表格 -->
+    <el-table v-if="hasData" :data="filteredScores" border style="margin-top: 20px">
+      <el-table-column prop="year" label="年份" width="180" />
+      <el-table-column prop="scoreRequired" label="分数线">
+        <template slot-scope="scope">
+          <div class="score-cell">
+            <span>{{ scope.row.scoreRequired }}</span>
+            <span v-if="scope.row.change" :class="['change', scope.row.change > 0 ? 'up' : 'down']">
+              {{ scope.row.change > 0 ? '+' : ''}}{{ scope.row.change }}
+            </span>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
+
     <div v-else class="empty-state">
       <el-alert
-        :title="selectedProvince ? '暂无该省份的分数线数据' : '请选择省份查看分数线趋势'"
+        :title="selectedProvince ? '暂无该省份的分数线数据' : '请选择省份查看分数线'"
         type="info"
         center
         :closable="false"
-      >
-      </el-alert>
-    </div>
-
-    <!-- 详细数据表格 -->
-    <div v-if="selectedProvince && filteredScores.length" class="detail-table">
-      <div class="table-title">详细数据</div>
-      <el-table
-        :data="filteredScores"
-        border
-        stripe
-      >
-        <el-table-column prop="year" label="年份" width="180" />
-        <el-table-column prop="scoreRequired" label="分数线">
-          <template slot-scope="scope">
-            <div class="score-cell">
-              <span>{{ scope.row.scoreRequired }}</span>
-              <span
-                v-if="scope.row.trend"
-                :class="getTrendClass(scope.row.trend)"
-                class="trend-indicator"
-              >
-                {{ scope.row.trend > 0 ? `↑${scope.row.trend}` : `↓${Math.abs(scope.row.trend)}` }}
-              </span>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+      />
     </div>
   </div>
 </template>
 
 <script>
-import VeLine from 'v-charts/lib/line.common'
+import * as echarts from 'echarts'
+import _ from 'lodash'
 
 export default {
   name: 'AdmissionScores',
-  components: {
-    VeLine
-  },
   props: {
     scores: {
       type: Array,
-      required: true
+      default: () => []
     }
   },
   data() {
     return {
       selectedProvince: '',
-      chartSettings: {
-        labelMap: {
-          year: '年份',
-          scoreRequired: '分数线'
+      chart: null
+    }
+  },
+  computed: {
+    provinces() {
+      return _.uniq(this.scores.map(s => s.province))
+    },
+    filteredScores() {
+      if (!this.selectedProvince || !this.scores) return []
+
+      const filtered = this.scores
+        .filter(s => s.province === this.selectedProvince)
+        .sort((a, b) => a.year - b.year)
+
+      return filtered.map((score, index) => ({
+        ...score,
+        change: index > 0 ? score.scoreRequired - filtered[index - 1].scoreRequired : null
+      }))
+    },
+    hasData() {
+      return this.filteredScores.length > 0
+    }
+  },
+  watch: {
+    scores: {
+      handler(newScores) {
+        if (newScores.length && !this.selectedProvince) {
+          this.selectedProvince = this.provinces[0]
         }
       },
-      chartExtend: {
-        series: {
-          smooth: true,
-          showSymbol: true,
-          symbolSize: 8,
-          lineStyle: {
-            width: 3
-          }
+      immediate: true
+    },
+    filteredScores: {
+      handler() {
+        this.$nextTick(() => {
+          this.initChart()
+        })
+      },
+      deep: true
+    }
+  },
+  mounted() {
+    this.initChart()
+    window.addEventListener('resize', this.resizeChart)
+  },
+  beforeDestroy() {
+    window.removeEventListener('resize', this.resizeChart)
+    if (this.chart) {
+      this.chart.dispose()
+    }
+  },
+  methods: {
+    initChart() {
+      if (!this.hasData) return
+
+      if (!this.chart) {
+        this.chart = echarts.init(this.$refs.chart)
+      }
+
+      const option = {
+        tooltip: {
+          trigger: 'axis',
+          formatter: '{b}年分数线: {c}分'
         },
         grid: {
           top: 40,
+          left: 60,
           right: 20,
-          bottom: 60,
-          left: 60
+          bottom: 40
         },
-        tooltip: {
-          trigger: 'axis',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          borderWidth: 0,
-          textStyle: {
-            color: '#666'
-          },
-          axisPointer: {
-            type: 'line',
+        xAxis: {
+          type: 'category',
+          data: this.filteredScores.map(item => item.year),
+          axisTick: { show: false },
+          axisLine: {
             lineStyle: {
               color: '#ddd'
             }
           }
         },
-        xAxis: {
-          axisLine: {
-            show: true,
-            lineStyle: {
-              color: '#eee'
-            }
-          },
-          axisTick: {
-            show: false
-          }
-        },
         yAxis: {
+          type: 'value',
+          min: 500,
+          max: 700,
           splitLine: {
             lineStyle: {
+              type: 'dashed',
               color: '#eee'
             }
           }
-        }
+        },
+        series: [{
+          type: 'line',
+          data: this.filteredScores.map(item => item.scoreRequired),
+          smooth: true,
+          symbol: 'circle',
+          symbolSize: 8,
+          itemStyle: {
+            color: '#409EFF'
+          },
+          lineStyle: {
+            width: 3,
+            color: '#409EFF'
+          },
+          areaStyle: {
+            color: {
+              type: 'linear',
+              x: 0,
+              y: 0,
+              x2: 0,
+              y2: 1,
+              colorStops: [{
+                offset: 0,
+                color: 'rgba(64,158,255,0.2)'
+              }, {
+                offset: 1,
+                color: 'rgba(64,158,255,0)'
+              }]
+            }
+          }
+        }]
       }
-    }
-  },
-  computed: {
-    provinces() {
-      // 确保数据不为空
-      if (!this.scores || !Array.isArray(this.scores)) {
-        return []
+
+      this.chart.setOption(option)
+    },
+    resizeChart() {
+      if (this.chart) {
+        this.chart.resize()
       }
-      return [...new Set(this.scores.map(score => score.province))]
-    },
-    filteredScores() {
-      if (!this.selectedProvince || !this.scores) return []
-
-      // 调试日志
-      console.log('Selected Province:', this.selectedProvince)
-      console.log('All Scores:', this.scores)
-
-      const scores = this.scores
-        .filter(score => score.province === this.selectedProvince)
-        .sort((a, b) => a.year - b.year)
-        .map(score => ({
-          year: score.year,
-          scoreRequired: score.scoreRequired || score.分数线 || score.分数, // 增加可能的字段匹配
-          province: score.province
-        }))
-
-      console.log('Filtered Scores:', scores)
-
-      return scores.map((score, index) => ({
-        ...score,
-        trend: index > 0 ? score.scoreRequired - scores[index - 1].scoreRequired : null
-      }))
-    },
-    chartData() {
-      if (!this.filteredScores.length) return { columns: ['year', 'scoreRequired'], rows: [] }
-
-      return {
-        columns: ['year', 'scoreRequired'],
-        rows: this.filteredScores.map(score => ({
-          year: score.year,
-          scoreRequired: score.scoreRequired
-        }))
-      }
-    }
-  },
-  methods: {
-    handleProvinceChange(province) {
-      this.selectedProvince = province
-    },
-    getTrendClass(trend) {
-      return trend > 0 ? 'trend-up' : 'trend-down'
-    }
-  },
-  created() {
-    if (this.provinces.length === 1) {
-      this.selectedProvince = this.provinces[0]
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.admission-scores-section {
-  background-color: #fff;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
+.admission-scores {
   padding: 20px;
+  background: #fff;
+  border-radius: 4px;
 }
 
 .section-header {
@@ -221,106 +197,45 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-}
 
-.section-title {
-  font-size: 16px;
-  font-weight: bold;
-  padding-left: 10px;
-  border-left: 4px solid #409EFF;
-}
-
-.province-select {
-  width: 200px;
+  .title {
+    font-weight: bold;
+    border-left: 4px solid #409EFF;
+    padding-left: 10px;
+  }
 }
 
 .chart-container {
-  margin-top: 20px;
-}
-
-.chart-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.province-title {
-  font-size: 14px;
-  color: #666;
-}
-
-.chart-legend {
-  display: flex;
-  gap: 16px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
-}
-
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background-color: #409EFF;
-}
-
-.detail-table {
-  margin-top: 30px;
-}
-
-.table-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 16px;
+  width: 100%;
+  height: 400px;
+  margin: 20px 0;
 }
 
 .score-cell {
   display: flex;
   align-items: center;
   gap: 8px;
-}
 
-.trend-indicator {
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
+  .change {
+    padding: 2px 6px;
+    font-size: 12px;
+    border-radius: 4px;
 
-.trend-up {
-  color: #f56c6c;
-  background-color: #fef0f0;
-}
+    &.up {
+      color: #F56C6C;
+      background: #FEF0F0;
+    }
 
-.trend-down {
-  color: #67c23a;
-  background-color: #f0f9eb;
+    &.down {
+      color: #67C23A;
+      background: #F0F9EB;
+    }
+  }
 }
 
 .empty-state {
   padding: 32px 0;
   display: flex;
   justify-content: center;
-  align-items: center;
-}
-
-::v-deep .el-table {
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-::v-deep .el-table th {
-  background-color: #f8fafc;
-}
-
-::v-deep .el-table td,
-::v-deep .el-table th {
-  padding: 8px 0;
 }
 </style>
