@@ -1,3 +1,4 @@
+<!--src/components/Markdown/editor/index.vue-->
 <template>
   <div class="markdown-editor">
     <el-tabs v-model="activeTab" type="card">

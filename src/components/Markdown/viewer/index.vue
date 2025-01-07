@@ -1,3 +1,4 @@
+<!--src/components/Markdown/viewer/index.vue-->
 <template>
   <div class="markdown-viewer" v-html="compiledMarkdown"></div>
 </template>

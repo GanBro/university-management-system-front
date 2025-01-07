@@ -1,4 +1,4 @@
-<!-- src/views/user/layout/index.vue -->
+# src/views/user/layout/index.vue
 <template>
   <div class="user-layout">
     <el-container>
@@ -13,6 +13,7 @@
             >
               <el-menu-item index="/user/home">首页</el-menu-item>
               <el-menu-item index="/user/profile">个人中心</el-menu-item>
+              <el-menu-item index="/user/interactions">我的互动</el-menu-item>
             </el-menu>
             <el-button type="text" @click="handleLogout">退出登录</el-button>
           </div>

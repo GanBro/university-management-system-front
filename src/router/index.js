@@ -48,23 +48,30 @@ export const constantRoutes = [
     hidden: true
   },
   // 用户端路由
+  // src/router/index.js 中的用户路由配置需要修改为：
   {
     path: '/user',
-    component: () => import('@/views/user/layout'),
+    component: () => import('@/views/user/layout/index'),
     redirect: '/user/home',
     hidden: true,
     children: [
       {
         path: 'home',
         name: 'UserHome',
-        component: () => import('@/views/user/home'),
+        component: () => import('@/views/user/home/index'),
         meta: { title: '首页' }
       },
       {
         path: 'profile',
         name: 'UserProfile',
-        component: () => import('@/views/user/profile'),
+        component: () => import('@/views/user/profile/index'),
         meta: { title: '个人中心' }
+      },
+      {
+        path: 'interactions',
+        name: 'UserInteractions',
+        component: () => import('@/views/user/interactions/index'),
+        meta: { title: '我的互动' }
       }
     ]
   },

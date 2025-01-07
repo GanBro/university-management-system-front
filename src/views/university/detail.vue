@@ -244,6 +244,13 @@
           />
         </div>
       </div>
+      <div class="section-container">
+        <div class="section-title">互动管理</div>
+        <interaction-management
+          :university-id="Number($route.params.id)"
+          class="section-margin"
+        />
+      </div>
     </el-card>
   </div>
 </template>
@@ -251,12 +258,14 @@
 <script>
 import { getUniversityDetail } from '@/api/university'
 import AdmissionScores from './components/AdmissionScores.vue'
+import InteractionManagement from './components/InteractionManagement.vue'
 import { marked } from 'marked'
 
 export default {
   name: 'UniversityDetail',
   components: {
-    AdmissionScores
+    AdmissionScores,
+    InteractionManagement
   },
   data() {
     return {
@@ -392,26 +401,26 @@ export default {
   line-height: 1.6;
   color: #606266;
 
-  :deep(h1) {
+  ::v-deep(h1) {
     font-size: 20px;
     margin: 20px 0;
   }
 
-  :deep(h2) {
+  ::v-deep(h2) {
     font-size: 18px;
     margin: 16px 0;
   }
 
-  :deep(ul) {
+  ::v-deep(ul) {
     padding-left: 20px;
     margin: 10px 0;
   }
 
-  :deep(li) {
+  ::v-deep(li) {
     margin: 5px 0;
   }
 
-  :deep(p) {
+  ::v-deep(p) {
     margin: 10px 0;
   }
 }
@@ -457,5 +466,31 @@ export default {
 
 .el-descriptions {
   margin-bottom: 20px;
+}
+.consult-section {
+  background: #fff;
+  border-radius: 4px;
+  padding: 20px;
+}
+.section-container {
+  margin-top: 30px;
+
+  .section-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 20px;
+    padding-left: 10px;
+    border-left: 4px solid #409EFF;
+  }
+
+  .section-margin {
+    margin-top: 15px;
+  }
+}
+.interaction-management {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
 }
 </style>
