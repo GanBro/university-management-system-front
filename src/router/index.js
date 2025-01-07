@@ -156,6 +156,37 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/news',
+    component: Layout,
+    redirect: '/news/list',
+    name: 'News',
+    meta: {
+      title: '信息发布',
+      icon: 'news'
+    },
+    children: [
+      {
+        path: 'list',
+        name: 'NewsList',
+        component: () => import('@/views/news/list'),
+        meta: { title: '信息列表' }
+      },
+      {
+        path: 'create',
+        name: 'NewsCreate',
+        component: () => import('@/views/news/form'),
+        meta: { title: '发布信息' }
+      },
+      {
+        path: 'edit/:id',
+        name: 'NewsEdit',
+        component: () => import('@/views/news/form'),
+        meta: { title: '编辑信息' },
+        hidden: true
+      }
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]

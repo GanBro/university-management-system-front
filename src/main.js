@@ -5,6 +5,7 @@ import 'normalize.css/normalize.css' // A modern alternative to CSS resets
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import 'v-charts/lib/style.css' // 引入图表样式
+import waves from './directive/waves'
 
 // 引入 v-charts
 import VCharts from 'v-charts'
@@ -38,6 +39,7 @@ if (process.env.NODE_ENV === 'production') {
 Vue.use(ElementUI)
 
 Vue.use(VCharts)
+Vue.use(waves)
 
 Vue.config.productionTip = false
 
