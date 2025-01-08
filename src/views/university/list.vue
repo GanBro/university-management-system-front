@@ -126,7 +126,7 @@ export default {
   components: { Pagination },
   data() {
     return {
-      list: null,
+      list: [],
       total: 0,
       listLoading: true,
       listQuery: {
@@ -157,12 +157,23 @@ export default {
     async getList() {
       this.listLoading = true
       try {
-        const { data } = await getUniversityList(this.listQuery)
-        this.list = data.records
-        this.total = data.total
-        this.listLoading = false
+        // 处理查询参数
+        const params = {
+          page: this.listQuery.page,
+          limit: this.listQuery.limit,
+          name: this.listQuery.name || undefined,
+          province: this.listQuery.province === '全部' ? undefined : this.listQuery.province,
+          type: this.listQuery.type === '全部' ? undefined : this.listQuery.type,
+          level: this.listQuery.level === '全部' ? undefined : this.listQuery.level
+        }
+
+        const { data } = await getUniversityList(params)
+        this.list = data.records || []
+        this.total = data.total || 0
       } catch (error) {
-        console.error('Failed to get university list:', error)
+        console.error('获取高校列表失败:', error)
+        this.$message.error('获取列表失败')
+      } finally {
         this.listLoading = false
       }
     },

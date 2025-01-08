@@ -259,6 +259,7 @@ export default {
         type: '',
         level: '',
         features: [],
+        // 设置默认值为空字符串而不是 undefined
         introduction: '',
         departments: '',
         majors: '',
@@ -266,29 +267,26 @@ export default {
         scholarships: '',
         accommodation: '',
         contactInfo: '',
+        // 数值类型设置为 null
         studentCount: null,
         teacherCount: null,
         libraryCount: null,
         campusArea: null
       },
-      provinceOptions: [
-        '北京市', '天津市', '河北省', '山西省', '内蒙古自治区',
-        '辽宁省', '吉林省', '黑龙江省', '上海市', '江苏省',
-        '浙江省', '安徽省', '福建省', '江西省', '山东省',
-        '河南省', '湖北省', '湖南省', '广东省', '广西壮族自治区',
-        '海南省', '重庆市', '四川省', '贵州省', '云南省',
-        '西藏自治区', '陕西省', '甘肃省', '青海省', '宁夏回族自治区',
-        '新疆维吾尔自治区', '香港特别行政区', '澳门特别行政区', '台湾省'
-      ],
-      typeOptions: ['公立', '私立', '独立学院'],
+      typeOptions: ['公立', '私立'],
       levelOptions: ['双一流', '985', '211', '普通高校'],
-      featureOptions: ['双一流', '985工程', '211工程', '研究型大学', '综合性大学'],
+      provinceOptions: [
+        '北京市', '上海市', '天津市', '重庆市', '河北省'],
+      featureOptions: ['双一流', '985工程', '211工程'],
       rules: {
-        name: [{ required: true, message: '请输入高校名称', trigger: 'blur' }],
+        // 添加必要的验证规则
+        name: [
+          { required: true, message: '请输入高校名称', trigger: 'blur' },
+          { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
+        ],
         province: [{ required: true, message: '请选择省份', trigger: 'change' }],
         type: [{ required: true, message: '请选择类型', trigger: 'change' }],
-        level: [{ required: true, message: '请选择层次', trigger: 'change' }],
-        contactNumber: [{ required: true, message: '请输入联系电话', trigger: 'blur' }]
+        level: [{ required: true, message: '请选择层次', trigger: 'change' }]
       }
     }
   },
@@ -314,36 +312,42 @@ export default {
       this.loading = false
     },
     async submitForm() {
-      this.$refs.universityForm.validate(async valid => {
+      try {
+        const valid = await this.$refs.universityForm.validate()
         if (valid) {
           this.submitLoading = true
-          try {
-            const formData = {
-              ...this.universityForm,
-              introduction: this.universityForm.introduction || null,
-              departments: this.universityForm.departments || null,
-              majors: this.universityForm.majors || null,
-              admissionRules: this.universityForm.admissionRules || null,
-              scholarships: this.universityForm.scholarships || null,
-              accommodation: this.universityForm.accommodation || null,
-              contactInfo: this.universityForm.contactInfo || null
-            }
-
-            if (this.isEdit) {
-              await updateUniversity(this.$route.params.id, formData)
-              this.$message.success('更新成功')
-            } else {
-              await createUniversity(formData)
-              this.$message.success('创建成功')
-            }
-            this.$router.push('/university/list')
-          } catch (error) {
-            console.error('Failed to submit form:', error)
-            this.$message.error(error.message || '提交失败')
+          const formData = {
+            ...this.universityForm,
+            // 处理可能为空字符串的字段
+            introduction: this.universityForm.introduction || null,
+            departments: this.universityForm.departments || null,
+            majors: this.universityForm.majors || null,
+            admissionRules: this.universityForm.admissionRules || null,
+            scholarships: this.universityForm.scholarships || null,
+            accommodation: this.universityForm.accommodation || null,
+            contactInfo: this.universityForm.contactInfo || null,
+            // 处理数值类型
+            studentCount: this.universityForm.studentCount || null,
+            teacherCount: this.universityForm.teacherCount || null,
+            libraryCount: this.universityForm.libraryCount || null,
+            campusArea: this.universityForm.campusArea || null
           }
-          this.submitLoading = false
+
+          if (this.isEdit) {
+            await updateUniversity(this.$route.params.id, formData)
+            this.$message.success('更新成功')
+          } else {
+            await createUniversity(formData)
+            this.$message.success('创建成功')
+          }
+          this.$router.push('/university/list')
         }
-      })
+      } catch (error) {
+        console.error('表单提交失败:', error)
+        this.$message.error(error.message || '提交失败')
+      } finally {
+        this.submitLoading = false
+      }
     },
     cancel() {
       this.$router.push('/university/list')

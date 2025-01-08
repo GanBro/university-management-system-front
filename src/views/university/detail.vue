@@ -271,7 +271,29 @@ export default {
     return {
       loading: false,
       universityDetail: {
+        // 设置详细的默认值
+        name: '',
+        province: '',
+        address: '',
+        adminDepartment: '',
+        website: '',
+        admissionWebsite: '',
+        contactNumber: '',
+        type: '',
+        level: '',
         features: [],
+        introduction: '',
+        departments: '',
+        majors: '',
+        admissionRules: '',
+        scholarships: '',
+        accommodation: '',
+        contactInfo: '',
+        studentCount: null,
+        teacherCount: null,
+        libraryCount: null,
+        campusArea: null,
+        // 数组类型数据
         admissionScores: [],
         satisfactionRatings: [],
         recommendationRatings: []
@@ -305,14 +327,23 @@ export default {
     this.getDetail()
   },
   methods: {
+    // 修改获取详情方法
     async getDetail() {
       this.loading = true
       try {
         const { data } = await getUniversityDetail(this.$route.params.id)
-        this.universityDetail = data
+        // 处理可能为 null 的字段
+        this.universityDetail = {
+          ...this.universityDetail, // 保留默认值
+          ...data,
+          features: data.features || [],
+          admissionScores: data.admissionScores || [],
+          satisfactionRatings: data.satisfactionRatings || [],
+          recommendationRatings: data.recommendationRatings || []
+        }
       } catch (error) {
-        console.error('Failed to get university detail:', error)
-        this.$message.error('获取高校详情失败')
+        console.error('获取高校详情失败:', error)
+        this.$message.error('获取详情失败')
       } finally {
         this.loading = false
       }
