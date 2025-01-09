@@ -245,7 +245,7 @@ export default {
         console.error('Failed to batch delete universities:', error)
       }
     },
-    handleDownload() {
+    handleDownload: function() {
       this.exportDialogVisible = true
     },
     async handleExportConfirm() {
@@ -262,26 +262,16 @@ export default {
           fields: this.exportConfig.fields
         }
 
-        const loading = this.$loading({
-          lock: true,
-          text: '正在导出数据，请稍候...',
-          spinner: 'el-icon-loading',
-          background: 'rgba(0, 0, 0, 0.7)'
+        await this.$store.dispatch('university/exportList', exportQuery)
+        this.$message({
+          type: 'success',
+          message: '导出成功'
         })
-
-        try {
-          await this.$store.dispatch('university/exportList', exportQuery)
-          this.$message({
-            message: '导出成功',
-            type: 'success'
-          })
-        } finally {
-          loading.close()
-        }
       } catch (error) {
         this.$message({
           message: `导出失败: ${error.message}`,
-          type: 'error'
+          type: 'error',
+          duration: 5 * 1000
         })
       } finally {
         this.downloadLoading = false

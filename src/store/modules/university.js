@@ -1,10 +1,12 @@
-// src/store/modules/university.js
 import {
   getUniversityList,
   getUniversityDetail,
   createUniversity,
   updateUniversity,
-  deleteUniversity
+  deleteUniversity,
+  exportUniversityList,
+  getUniversityOptions,
+  batchDeleteUniversities
 } from '@/api/university'
 
 const state = {
@@ -117,6 +119,47 @@ const actions = {
         })
         .catch(error => {
           console.error('删除高校失败:', error)
+          reject(error)
+        })
+    })
+  },
+
+  // 批量删除
+  batchDeleteUniversities({ dispatch }, ids) {
+    return new Promise((resolve, reject) => {
+      batchDeleteUniversities(ids)
+        .then(response => {
+          resolve(response)
+        })
+        .catch(error => {
+          console.error('批量删除失败:', error)
+          reject(error)
+        })
+    })
+  },
+
+  // 导出高校列表
+  exportList({ commit }, query) {
+    return new Promise((resolve, reject) => {
+      exportUniversityList(query)
+        .then(response => {
+          // 创建 blob 并下载
+          const blob = new Blob([response.data], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+          })
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          const filename = response.headers['content-disposition']?.split('filename=')[1] || '高校列表.xlsx'
+          link.setAttribute('download', decodeURIComponent(filename))
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+          resolve(response)
+        })
+        .catch(error => {
+          console.error('导出失败:', error)
           reject(error)
         })
     })
