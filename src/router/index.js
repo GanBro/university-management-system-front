@@ -194,6 +194,49 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/notification',
+    component: Layout,
+    redirect: '/notification/list',
+    name: 'Notification',
+    meta: { title: '通知管理', icon: 'notification' },
+    children: [
+      {
+        path: 'list',
+        name: 'NotificationList',
+        component: () => import('@/views/notification/list'),
+        meta: { title: '通知列表' }
+      },
+      {
+        path: 'create',
+        name: 'NotificationCreate',
+        component: () => import('@/views/notification/form'),
+        meta: { title: '发布通知' }
+      },
+      {
+        path: 'edit/:id',
+        name: 'NotificationEdit',
+        component: () => import('@/views/notification/form'),
+        meta: { title: '编辑通知', noCache: true },
+        hidden: true
+      }
+    ]
+  },
+  {
+    path: '/message',
+    component: Layout,
+    redirect: '/message/log',
+    name: 'Message',
+    meta: { title: '消息管理', icon: 'message' },
+    children: [
+      {
+        path: 'log',
+        name: 'MessageLog',
+        component: () => import('@/views/message/log'),
+        meta: { title: '消息记录' }
+      }
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]

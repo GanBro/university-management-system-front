@@ -1,3 +1,4 @@
+<!--src/views/user/home/index.vue-->
 <template>
   <div class="university-search">
     <!-- 绿色背景header -->
@@ -387,29 +388,29 @@ export default {
     }
 
     .university-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+
       .university-card {
         background: #fff;
         border-radius: 8px;
         padding: 20px;
-        margin-bottom: 16px;
         cursor: pointer;
         transition: all 0.3s ease;
         border: 1px solid #ebeef5;
 
         &:hover {
-          transform: translateY(-2px);
           box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .card-content {
           .university-info {
-            flex: 1;
-
             .info-header {
-              margin-bottom: 16px;
+              margin-bottom: 12px;
 
               .university-name {
-                font-size: 20px;
+                font-size: 18px;
                 font-weight: bold;
                 color: #303133;
                 margin: 0;
@@ -446,7 +447,7 @@ export default {
             .contact-info {
               margin-top: 12px;
               display: flex;
-              gap: 24px;
+              gap: 16px;
               color: #606266;
               font-size: 14px;
 
@@ -477,12 +478,11 @@ export default {
     .pagination {
       margin-top: 24px;
       text-align: center;
-      padding-bottom: 24px;
+      padding: 24px 0;
     }
   }
 }
 
-// 覆盖 Element UI 默认样式
 ::v-deep(.el-button--success) {
   background-color: #10b981;
   border-color: #10b981;
