@@ -108,6 +108,20 @@
             @click="handleUniversityClick(item)"
           >
             <div class="card-content">
+              <!-- 添加logo部分 -->
+              <div class="logo-wrapper">
+                <img
+                  v-if="item.logo"
+                  :src="getLogoUrl(item.logo)"
+                  :alt="item.name + '的logo'"
+                  class="university-logo"
+                  @error="handleLogoError($event, item)"
+                >
+                <div v-else class="logo-placeholder">
+                  <span>{{ item.name.substring(0, 2) }}</span>
+                </div>
+              </div>
+
               <div class="university-info">
                 <div class="info-header">
                   <h2 class="university-name">{{ item.name }}</h2>
@@ -207,6 +221,24 @@ export default {
   },
 
   methods: {
+    // 获取logo URL
+    getLogoUrl(logo) {
+      if (!logo) return '';
+      if (logo.startsWith('http')) return logo;
+      return process.env.VUE_APP_BASE_API + logo;
+    },
+
+    // 处理logo加载失败
+    handleLogoError(e, item) {
+      const parent = e.target.parentNode;
+      const div = document.createElement('div');
+      div.className = 'logo-placeholder';
+      const span = document.createElement('span');
+      span.textContent = item.name.substring(0, 2);
+      div.appendChild(span);
+      e.target.remove();
+      parent.appendChild(div);
+    },
 
     async fetchData() {
       try {
@@ -228,37 +260,28 @@ export default {
     },
 
     updateFilter(key, value) {
-      this.searchForm[key] = value
-      this.listQuery.page = 1
-      this.fetchData()
+      this.searchForm[key] = value;
+      this.listQuery.page = 1;
+      this.fetchData();
     },
 
     handleSearch() {
-      this.listQuery.page = 1
-      this.fetchData()
+      this.listQuery.page = 1;
+      this.fetchData();
     },
 
-    // 移除 handleSort 方法
-
     handleSizeChange(val) {
-      this.listQuery.limit = val
-      this.fetchData()
+      this.listQuery.limit = val;
+      this.fetchData();
     },
 
     handleCurrentChange(val) {
-      this.listQuery.page = val
-      this.fetchData()
+      this.listQuery.page = val;
+      this.fetchData();
     },
 
     handleUniversityClick(university) {
-      // 这里需要根据实际路由配置修改
-      this.$router.push(`/university/${university.id}`)
-    },
-
-    calculateAverageRating(ratings) {
-      if (!ratings || !ratings.length) return 0
-      const sum = ratings.reduce((acc, curr) => acc + curr.rating, 0)
-      return (sum / ratings.length).toFixed(1)
+      this.$router.push(`/university/${university.id}`);
     }
   }
 }
@@ -405,7 +428,47 @@ export default {
         }
 
         .card-content {
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+
+          .logo-wrapper {
+            flex-shrink: 0;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #f5f7fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            .university-logo {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+            }
+
+            .logo-placeholder {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background-color: #e5e7eb;
+
+              span {
+                font-size: 24px;
+                font-weight: bold;
+                color: #6b7280;
+              }
+            }
+          }
+
           .university-info {
+            flex: 1;
+            min-width: 0;
+
             .info-header {
               margin-bottom: 12px;
 

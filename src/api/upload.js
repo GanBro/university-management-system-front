@@ -34,8 +34,21 @@ export function deleteFile(fileUrl) {
   })
 }
 
+// 上传logo
+export function uploadLogo(data) {
+  return request({
+    url: '/upload/logo',
+    method: 'post',
+    data,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
 export default {
   uploadFile,
   uploadAvatar,
+  uploadLogo,
   deleteFile
 }

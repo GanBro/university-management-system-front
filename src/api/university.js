@@ -76,3 +76,11 @@ export function getUniversityOptions() {
     method: 'get'
   })
 }
+
+export function updateUniversityLogo(id, logo) {
+  return request({
+    url: `/universities/${id}/logo`,
+    method: 'put',
+    data: { logo }
+  })
+}
