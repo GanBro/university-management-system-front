@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import MarkdownEditor from '@/components/Markdown/editor'
+import MarkdownEditor from '@/components/Markdown/editor/index.vue'
 import { getNewsDetail, createNews, updateNews } from '@/api/news'
 import { getUniversityList } from '@/api/university'
 

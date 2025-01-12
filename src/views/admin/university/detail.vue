@@ -257,8 +257,8 @@
 
 <script>
 import { getUniversityDetail } from '@/api/university'
-import AdmissionScores from './components/AdmissionScores.vue'
-import InteractionManagement from './components/InteractionManagement.vue'
+import AdmissionScores from '@/views/admin/university/components/AdmissionScores.vue'
+import InteractionManagement from '@/views/admin/university/components/InteractionManagement.vue'
 import { marked } from 'marked'
 
 export default {

@@ -18,12 +18,12 @@ import Layout from '@/layout'
  * redirect: noRedirect           if set noRedirect will no redirect in the breadcrumb
  * name:'router-name'             the name is used by <keep-alive> (must set!!!)
  * meta : {
-    roles: ['admin','editor']    control the page roles (you can set multiple roles)
-    title: 'title'               the name show in sidebar and breadcrumb (recommend set)
-    icon: 'svg-name'/'el-icon-x' the icon show in the sidebar
-    breadcrumb: false            if set false, the item will hidden in breadcrumb(default is true)
-    activeMenu: '/example/list'  if set path, the sidebar will highlight the path you set
-  }
+ roles: ['admin','editor']    control the page roles (you can set multiple roles)
+ title: 'title'               the name show in sidebar and breadcrumb (recommend set)
+ icon: 'svg-name'/'el-icon-x' the icon show in the sidebar
+ breadcrumb: false            if set false, the item will hidden in breadcrumb(default is true)
+ activeMenu: '/example/list'  if set path, the sidebar will highlight the path you set
+ }
  */
 
 /**
@@ -34,21 +34,20 @@ import Layout from '@/layout'
 export const constantRoutes = [
   {
     path: '/login',
-    component: () => import('@/views/login/index'),
+    component: () => import('@/views/common/login.vue'),
     hidden: true
   },
   {
     path: '/register',
-    component: () => import('@/views/register/index.vue'),
+    component: () => import('@/views/common/register.vue'),
     hidden: true
   },
   {
     path: '/404',
-    component: () => import('@/views/404'),
+    component: () => import('@/views/common/404.vue'),
     hidden: true
   },
   // 用户端路由
-  // src/router/index.js 中的用户路由配置需要修改为：
   {
     path: '/user',
     component: () => import('@/views/user/layout/index'),
@@ -82,7 +81,7 @@ export const constantRoutes = [
     children: [{
       path: 'dashboard',
       name: 'Dashboard',
-      component: () => import('@/views/dashboard/index'),
+      component: () => import('@/views/admin/dashboard/index'),
       meta: { title: '首页', icon: 'dashboard' }
     }]
   },
@@ -99,32 +98,31 @@ export const constantRoutes = [
       {
         path: 'list',
         name: 'UniversityList',
-        component: () => import('@/views/university/list'),
+        component: () => import('@/views/admin/university/list.vue'),
         meta: { title: '高校列表' }
       },
       {
         path: 'create',
         name: 'UniversityCreate',
-        component: () => import('@/views/university/form'),
+        component: () => import('@/views/admin/university/form.vue'),
         meta: { title: '添加高校' }
       },
       {
         path: 'edit/:id',
         name: 'UniversityEdit',
-        component: () => import('@/views/university/form'),
+        component: () => import('@/views/admin/university/form.vue'),
         meta: { title: '编辑高校' },
         hidden: true
       },
       {
         path: 'detail/:id',
         name: 'UniversityDetail',
-        component: () => import('@/views/university/detail'),
+        component: () => import('@/views/admin/university/detail.vue'),
         meta: { title: '高校详情' },
         hidden: true
       }
     ]
   },
-
   {
     path: '/system',
     component: Layout,
@@ -138,26 +136,26 @@ export const constantRoutes = [
       {
         path: 'user/list',
         name: 'UserList',
-        component: () => import('@/views/system/user/list'),
+        component: () => import('@/views/admin/user/list'),
         meta: { title: '用户列表' }
       },
       {
         path: 'user/create',
         name: 'UserCreate',
-        component: () => import('@/views/system/user/form'),
+        component: () => import('@/views/admin/user/form'),
         meta: { title: '添加用户' }
       },
       {
         path: 'user/edit/:id',
         name: 'UserEdit',
-        component: () => import('@/views/system/user/form'),
+        component: () => import('@/views/admin/user/form'),
         meta: { title: '编辑用户' },
         hidden: true
       },
       {
         path: 'user/detail/:id',
         name: 'UserDetail',
-        component: () => import('@/views/system/user/detail'),
+        component: () => import('@/views/admin/user/detail'),
         meta: { title: '用户详情' },
         hidden: true
       }
@@ -176,19 +174,19 @@ export const constantRoutes = [
       {
         path: 'list',
         name: 'NewsList',
-        component: () => import('@/views/news/list'),
+        component: () => import('@/views/admin/news/list'),
         meta: { title: '信息列表' }
       },
       {
         path: 'create',
         name: 'NewsCreate',
-        component: () => import('@/views/news/form'),
+        component: () => import('@/views/admin/news/form'),
         meta: { title: '发布信息' }
       },
       {
         path: 'edit/:id',
         name: 'NewsEdit',
-        component: () => import('@/views/news/form'),
+        component: () => import('@/views/admin/news/form'),
         meta: { title: '编辑信息' },
         hidden: true
       }
@@ -204,19 +202,19 @@ export const constantRoutes = [
       {
         path: 'list',
         name: 'NotificationList',
-        component: () => import('@/views/notification/list'),
+        component: () => import('@/views/admin/notification/list'),
         meta: { title: '通知列表' }
       },
       {
         path: 'create',
         name: 'NotificationCreate',
-        component: () => import('@/views/notification/form'),
+        component: () => import('@/views/admin/notification/form'),
         meta: { title: '发布通知' }
       },
       {
         path: 'edit/:id',
         name: 'NotificationEdit',
-        component: () => import('@/views/notification/form'),
+        component: () => import('@/views/admin/notification/form'),
         meta: { title: '编辑通知', noCache: true },
         hidden: true
       }
@@ -232,7 +230,7 @@ export const constantRoutes = [
       {
         path: 'log',
         name: 'MessageLog',
-        component: () => import('@/views/message/log'),
+        component: () => import('@/views/admin/message/log'),
         meta: { title: '消息记录' }
       }
     ]

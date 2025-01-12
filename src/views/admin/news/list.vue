@@ -131,8 +131,8 @@
 <script>
 import { getNewsList, createNews, updateNews, deleteNews, publishNews } from '@/api/news'
 import waves from '@/directive/waves'
-import Pagination from '@/components/Pagination'
-import MarkdownEditor from '@/components/Markdown/editor'
+import Pagination from '@/components/Pagination/index.vue'
+import MarkdownEditor from '@/components/Markdown/editor/index.vue'
 
 export default {
   name: 'NewsList',

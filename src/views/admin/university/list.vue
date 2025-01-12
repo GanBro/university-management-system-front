@@ -119,7 +119,7 @@
 
 <script>
 import { getUniversityList, deleteUniversity, batchDeleteUniversities, getUniversityOptions } from '@/api/university'
-import Pagination from '@/components/Pagination'
+import Pagination from '@/components/Pagination/index.vue'
 
 export default {
   name: 'UniversityList',

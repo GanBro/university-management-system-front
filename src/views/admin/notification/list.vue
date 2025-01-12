@@ -39,7 +39,7 @@
 
 <script>
 import { getNotificationList, deleteNotification } from '@/api/notification'
-import Pagination from '@/components/Pagination'
+import Pagination from '@/components/Pagination/index.vue'
 
 export default {
   name: 'NotificationList',

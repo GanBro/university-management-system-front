@@ -235,7 +235,7 @@
 
 <script>
 import { getUniversityDetail, createUniversity, updateUniversity } from '@/api/university'
-import MarkdownEditor from '@/components/Markdown/editor'
+import MarkdownEditor from '@/components/Markdown/editor/index.vue'
 
 export default {
   name: 'UniversityForm',

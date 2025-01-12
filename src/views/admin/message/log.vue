@@ -32,7 +32,7 @@
 
 <script>
 import { getMessageLogList } from '@/api/message'
-import Pagination from '@/components/Pagination'
+import Pagination from '@/components/Pagination/index.vue'
 
 export default {
   name: 'MessageLog',
