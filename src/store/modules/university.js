@@ -62,7 +62,7 @@ const actions = {
     })
   },
 
-  // 获取高校详情a
+  // 获取高校详情
   getDetail({ commit }, id) {
     commit('SET_DETAIL_LOADING', true)
     return new Promise((resolve, reject) => {
