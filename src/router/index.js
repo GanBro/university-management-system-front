@@ -71,6 +71,13 @@ export const constantRoutes = [
         name: 'UserInteractions',
         component: () => import('@/views/user/interactions/index'),
         meta: { title: '我的互动' }
+      },
+      // 添加高校详情路由
+      {
+        path: 'university/:id',
+        name: 'UniversityDetail',
+        component: () => import('@/views/user/university/detail.vue'),
+        meta: { title: '高校详情' }
       }
     ]
   },

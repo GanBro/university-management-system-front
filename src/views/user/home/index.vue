@@ -240,8 +240,10 @@ export default {
       parent.appendChild(div);
     },
 
+    // 获取高校列表数据
     async fetchData() {
       try {
+        // 构建查询参数
         const params = {
           page: this.listQuery.page,
           limit: this.listQuery.limit,
@@ -251,37 +253,45 @@ export default {
           level: this.searchForm.level === '全部' ? undefined : this.searchForm.level,
           adminDepartment: this.searchForm.adminDepartment === '全部' ? undefined : this.searchForm.adminDepartment
         }
+
+        // 调用获取列表的 action
         await this.$store.dispatch('university/getList', params)
-        console.log('universityList: ', this.universityList)
       } catch (error) {
-        console.error('Failed to fetch university data:', error)
-        this.$message.error('获取数据失败，请稍后重试')
+        console.error('获取高校列表失败:', error)
+        this.$message.error('获取高校列表失败，请稍后重试')
       }
     },
 
+    // 更新筛选条件
     updateFilter(key, value) {
       this.searchForm[key] = value;
       this.listQuery.page = 1;
       this.fetchData();
     },
 
+    // 搜索
     handleSearch() {
       this.listQuery.page = 1;
       this.fetchData();
     },
 
+    // 改变每页数量
     handleSizeChange(val) {
       this.listQuery.limit = val;
       this.fetchData();
     },
 
+    // 改变页码
     handleCurrentChange(val) {
       this.listQuery.page = val;
       this.fetchData();
     },
 
     handleUniversityClick(university) {
-      this.$router.push(`/university/${university.id}`);
+      this.$router.push({
+        name: 'UniversityDetail',
+        params: { id: university.id.toString() }
+      })
     }
   }
 }
