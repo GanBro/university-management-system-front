@@ -251,8 +251,8 @@ export default {
           level: this.searchForm.level === '全部' ? undefined : this.searchForm.level,
           adminDepartment: this.searchForm.adminDepartment === '全部' ? undefined : this.searchForm.adminDepartment
         }
-
         await this.$store.dispatch('university/getList', params)
+        console.log('universityList: ', this.universityList)
       } catch (error) {
         console.error('Failed to fetch university data:', error)
         this.$message.error('获取数据失败，请稍后重试')

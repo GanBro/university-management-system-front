@@ -5,7 +5,6 @@ import {
   updateUniversity,
   deleteUniversity,
   exportUniversityList,
-  getUniversityOptions,
   batchDeleteUniversities
 } from '@/api/university'
 
