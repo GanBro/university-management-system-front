@@ -1,3 +1,4 @@
+<!--src/views/admin/university/form.vue-->
 <template>
   <div class="app-container">
     <el-card v-loading="loading">
