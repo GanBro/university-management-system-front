@@ -1,4 +1,3 @@
-<!--src/views/user/home/index.vue-->
 <template>
   <div class="university-search">
     <!-- 绿色背景header -->
@@ -108,15 +107,16 @@
             @click="handleUniversityClick(item)"
           >
             <div class="card-content">
-              <!-- 添加logo部分 -->
+              <!-- logo部分 -->
               <div class="logo-wrapper">
-                <img
-                  v-if="item.logo"
-                  :src="getLogoUrl(item.logo)"
-                  :alt="item.name + '的logo'"
-                  class="university-logo"
-                  @error="handleLogoError($event, item)"
-                >
+                <template v-if="item.logo && !logoLoadErrors.has(item.logo)">
+                  <img
+                    :src="getLogoUrl(item.logo)"
+                    :alt="item.name + '的logo'"
+                    class="university-logo"
+                    @error="handleLogoError(item)"
+                  >
+                </template>
                 <div v-else class="logo-placeholder">
                   <span>{{ item.name.substring(0, 2) }}</span>
                 </div>
@@ -154,7 +154,7 @@
                   </div>
                   <div v-if="item.website" class="contact-item">
                     <i class="el-icon-link"></i>
-                    <a :href="item.website" target="_blank">访问官网</a>
+                    <a :href="item.website" target="_blank" @click.stop>访问官网</a>
                   </div>
                 </div>
               </div>
@@ -182,6 +182,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import defaultLogo from '@/assets/404_images/404.png'
 
 export default {
   name: 'UniversitySearch',
@@ -204,7 +205,8 @@ export default {
       listQuery: {
         page: 1,
         limit: 10
-      }
+      },
+      logoLoadErrors: new Set() // 记录加载失败的logo
     }
   },
 
@@ -223,21 +225,44 @@ export default {
   methods: {
     // 获取logo URL
     getLogoUrl(logo) {
-      if (!logo) return '';
-      if (logo.startsWith('http')) return logo;
-      return process.env.VUE_APP_BASE_API + logo;
+      // 如果没有 logo，返回默认 logo
+      if (!logo) {
+        return defaultLogo;
+      }
+
+      // 如果是完整的 URL，直接返回
+      if (logo.startsWith('http')) {
+        return logo;
+      }
+
+      // 如果是相对路径，需要转换为正确的资源引用
+      try {
+        // 处理相对路径
+        if (logo.includes('/')) {
+          let relativePath = logo;
+          // 确保路径以 images/ 开头
+          if (!logo.startsWith('images/')) {
+            relativePath = `images/${logo.split('/').pop()}`;
+          }
+          return require(`@/assets/${relativePath}`);
+        }
+        // 如果只是文件名，假设在 images 目录下
+        return require(`@/assets/images/${logo}`);
+      } catch (error) {
+        console.warn(`Logo loading failed for: ${logo}`, error);
+        return defaultLogo;
+      }
     },
 
-    // 处理logo加载失败
-    handleLogoError(e, item) {
-      const parent = e.target.parentNode;
-      const div = document.createElement('div');
-      div.className = 'logo-placeholder';
-      const span = document.createElement('span');
-      span.textContent = item.name.substring(0, 2);
-      div.appendChild(span);
-      e.target.remove();
-      parent.appendChild(div);
+    handleLogoError(item) {
+      const imgElement = window.event?.target;
+      if (imgElement) {
+        imgElement.src = defaultLogo;
+        // 防止循环触发 error 事件
+        imgElement.onerror = null;
+        // 如果已经显示了默认图片，则不再重试加载
+        this.logoLoadErrors.add(item.logo);
+      }
     },
 
     // 获取高校列表数据
@@ -254,6 +279,13 @@ export default {
           adminDepartment: this.searchForm.adminDepartment === '全部' ? undefined : this.searchForm.adminDepartment
         }
 
+        // 清除undefined的属性
+        Object.keys(params).forEach(key => {
+          if (params[key] === undefined) {
+            delete params[key]
+          }
+        })
+
         // 调用获取列表的 action
         await this.$store.dispatch('university/getList', params)
       } catch (error) {
@@ -264,29 +296,30 @@ export default {
 
     // 更新筛选条件
     updateFilter(key, value) {
-      this.searchForm[key] = value;
-      this.listQuery.page = 1;
-      this.fetchData();
+      this.searchForm[key] = value
+      this.listQuery.page = 1
+      this.fetchData()
     },
 
     // 搜索
     handleSearch() {
-      this.listQuery.page = 1;
-      this.fetchData();
+      this.listQuery.page = 1
+      this.fetchData()
     },
 
     // 改变每页数量
     handleSizeChange(val) {
-      this.listQuery.limit = val;
-      this.fetchData();
+      this.listQuery.limit = val
+      this.fetchData()
     },
 
     // 改变页码
     handleCurrentChange(val) {
-      this.listQuery.page = val;
-      this.fetchData();
+      this.listQuery.page = val
+      this.fetchData()
     },
 
+    // 点击高校卡片
     handleUniversityClick(university) {
       this.$router.push({
         name: 'UniversityDetail',
@@ -319,22 +352,11 @@ export default {
   .search-container {
     max-width: 1200px;
     margin: -60px auto 0;
-    padding: 0 20px;
-    padding-bottom: 40px;
+    padding: 0 20px 40px;
   }
 
   .search-card {
     margin-bottom: 20px;
-
-    .empty-state {
-      padding: 40px 0;
-      text-align: center;
-
-      p {
-        color: #909399;
-        margin-top: 8px;
-      }
-    }
 
     .search-input-wrapper {
       margin-bottom: 24px;
@@ -342,8 +364,15 @@ export default {
       margin-left: auto;
       margin-right: auto;
 
-      .el-input {
-        ::v-deep(.el-input__inner) {
+      .search-tip {
+        margin-top: 8px;
+        color: #909399;
+        font-size: 14px;
+        text-align: center;
+      }
+
+      ::v-deep .el-input {
+        .el-input__inner {
           height: 48px;
           line-height: 48px;
           font-size: 16px;
@@ -355,7 +384,7 @@ export default {
           }
         }
 
-        ::v-deep(.el-input-group__append) {
+        .el-input-group__append {
           border-top-right-radius: 24px;
           border-bottom-right-radius: 24px;
           background-color: #10b981;
@@ -370,13 +399,6 @@ export default {
             background-color: #0ea371;
           }
         }
-      }
-
-      .search-tip {
-        margin-top: 8px;
-        color: #909399;
-        font-size: 14px;
-        text-align: center;
       }
     }
   }
@@ -425,6 +447,10 @@ export default {
       grid-template-columns: repeat(2, 1fr);
       gap: 20px;
 
+      @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+      }
+
       .university-card {
         background: #fff;
         border-radius: 8px;
@@ -434,7 +460,8 @@ export default {
         border: 1px solid #ebeef5;
 
         &:hover {
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          transform: translateY(-2px);
         }
 
         .card-content {
@@ -457,6 +484,7 @@ export default {
               width: 100%;
               height: 100%;
               object-fit: contain;
+              background-color: #fff;
             }
 
             .logo-placeholder {
@@ -487,6 +515,9 @@ export default {
                 font-weight: bold;
                 color: #303133;
                 margin: 0;
+                @media (max-width: 768px) {
+                  font-size: 16px;
+                }
               }
             }
 
@@ -495,6 +526,10 @@ export default {
               gap: 8px;
               margin-bottom: 12px;
               flex-wrap: wrap;
+
+              .el-tag {
+                margin: 0;
+              }
             }
 
             .address-info {
@@ -502,11 +537,17 @@ export default {
               font-size: 14px;
               margin: 12px 0;
               display: flex;
-              align-items: center;
+              align-items: flex-start;
               gap: 4px;
 
               i {
                 color: #909399;
+                margin-top: 3px;
+              }
+
+              span {
+                flex: 1;
+                word-break: break-all;
               }
             }
 
@@ -515,6 +556,10 @@ export default {
               display: flex;
               gap: 8px;
               flex-wrap: wrap;
+
+              .el-tag {
+                margin: 0;
+              }
             }
 
             .contact-info {
@@ -523,6 +568,7 @@ export default {
               gap: 16px;
               color: #606266;
               font-size: 14px;
+              flex-wrap: wrap;
 
               .contact-item {
                 display: flex;
@@ -539,6 +585,7 @@ export default {
 
                   &:hover {
                     color: #66b1ff;
+                    text-decoration: underline;
                   }
                 }
               }
@@ -556,7 +603,7 @@ export default {
   }
 }
 
-::v-deep(.el-button--success) {
+::v-deep .el-button--success {
   background-color: #10b981;
   border-color: #10b981;
 
@@ -564,6 +611,55 @@ export default {
   &:focus {
     background-color: #34d399;
     border-color: #34d399;
+  }
+
+  &:active {
+    background-color: #059669;
+    border-color: #059669;
+  }
+}
+
+// 适配移动端
+@media (max-width: 768px) {
+  .university-search {
+    .search-container {
+      padding: 0 12px 24px;
+    }
+
+    .filter-section {
+      .filter-content {
+        .el-button {
+          margin-bottom: 8px;
+        }
+      }
+    }
+
+    .university-list {
+      .university-cards {
+        .university-card {
+          padding: 16px;
+
+          .card-content {
+            .logo-wrapper {
+              width: 60px;
+              height: 60px;
+            }
+
+            .university-info {
+              .basic-info,
+              .features {
+                gap: 4px;
+              }
+
+              .contact-info {
+                flex-direction: column;
+                gap: 8px;
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 </style>
