@@ -1,11 +1,13 @@
 import Vue from 'vue'
-
 import 'normalize.css/normalize.css' // A modern alternative to CSS resets
 
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import 'v-charts/lib/style.css' // 引入图表样式
 import waves from './directive/waves'
+
+// 不需要单独导入 Empty 组件
+// import { Empty } from 'element-ui'
 
 // 引入 v-charts
 import VCharts from 'v-charts'
@@ -20,23 +22,16 @@ import router from './router'
 import '@/icons' // icon
 import '@/permission' // permission control
 
-/**
- * If you don't want to use mock-server
- * you want to use MockJs for mock api
- * you can execute: mockXHR()
- *
- * Currently MockJs will be used in the production environment,
- * please remove it before going online ! ! !
- */
 if (process.env.NODE_ENV === 'production') {
   const { mockXHR } = require('../mock')
   mockXHR()
 }
 
-// set ElementUI lang to EN
-// Vue.use(ElementUI, { locale })
-// 如果想要中文版 element-ui，按如下方式声明
+// 全局注册 Element UI
 Vue.use(ElementUI)
+
+// 移除手动注册 el-empty
+// Vue.component('el-empty', Empty)
 
 Vue.use(VCharts)
 Vue.use(waves)
@@ -49,3 +44,4 @@ new Vue({
   store,
   render: h => h(App)
 })
+

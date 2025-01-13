@@ -16,28 +16,28 @@
     <div class="filter-section">
       <el-select v-model="selectedProvince" placeholder="选择省份" clearable>
         <el-option
-          v-for="item in provinceOptions"
-          :key="item"
-          :label="item"
-          :value="item"
+            v-for="item in provinceOptions"
+            :key="item"
+            :label="item"
+            :value="item"
         />
       </el-select>
       <el-select v-model="selectedYear" placeholder="选择年份" clearable>
         <el-option
-          v-for="item in yearOptions"
-          :key="item"
-          :label="item"
-          :value="item"
+            v-for="item in yearOptions"
+            :key="item"
+            :label="item"
+            :value="item"
         />
       </el-select>
     </div>
 
     <!-- 录取数据表格 -->
     <el-table
-      v-loading="loading"
-      :data="filteredScores"
-      border
-      style="width: 100%; margin-top: 20px"
+        v-loading="loading"
+        :data="filteredScores"
+        border
+        style="width: 100%; margin-top: 20px"
     >
       <el-table-column prop="year" label="年份" width="100" align="center" />
       <el-table-column prop="province" label="省份" width="120" align="center" />
@@ -58,8 +58,8 @@
           <div class="score-cell">
             <span class="score-value">{{ scope.row.scoreRequired }}</span>
             <span
-              v-if="getScoreDiff(scope.row)"
-              :class="getScoreDiffClass(scope.row)"
+                v-if="getScoreDiff(scope.row)"
+                :class="getScoreDiffClass(scope.row)"
             >
               {{ getScoreDiff(scope.row) }}
             </span>
@@ -76,8 +76,8 @@
       <el-table-column label="完成率" width="180" align="center">
         <template slot-scope="scope">
           <el-progress
-            :percentage="calculateCompletionRate(scope.row)"
-            :status="getProgressStatus(scope.row)"
+              :percentage="calculateCompletionRate(scope.row)"
+              :status="getProgressStatus(scope.row)"
           />
         </template>
       </el-table-column>
@@ -95,6 +95,10 @@ import _ from 'lodash'
 
 export default {
   name: 'AdmissionScores',
+  // 移除局部组件注册
+  // components: {
+  //   'el-empty': Empty
+  // },
   props: {
     scores: {
       type: Array,
@@ -120,15 +124,15 @@ export default {
     // 过滤后的分数数据
     filteredScores() {
       return this.scores
-        .filter(score => {
-          const matchProvince = !this.selectedProvince || score.province === this.selectedProvince
-          const matchYear = !this.selectedYear || score.year === this.selectedYear
-          return matchProvince && matchYear
-        })
-        .sort((a, b) => {
-          if (b.year !== a.year) return b.year - a.year
-          return a.province.localeCompare(b.province)
-        })
+          .filter(score => {
+            const matchProvince = !this.selectedProvince || score.province === this.selectedProvince
+            const matchYear = !this.selectedYear || score.year === this.selectedYear
+            return matchProvince && matchYear
+          })
+          .sort((a, b) => {
+            if (b.year !== a.year) return b.year - a.year
+            return a.province.localeCompare(b.province)
+          })
     },
     // 统计数据
     statisticsData() {
@@ -174,28 +178,28 @@ export default {
     getProgressStatus(row) {
       const rate = this.calculateCompletionRate(row)
       if (rate >= 100) return 'success'
-      if (rate >= 90) return ''
+      if (rate >= 90) return 'success' // 根据需要调整
       if (rate >= 80) return 'warning'
       return 'exception'
     },
     // 获取分数变化
     getScoreDiff(row) {
       const prevYearScore = this.scores.find(
-        s => s.year === row.year - 1 && s.province === row.province
+          s => s.year === row.year - 1 && s.province === row.province
       )
       if (!prevYearScore) return null
 
       const diff = row.scoreRequired - prevYearScore.scoreRequired
       if (diff === 0) return null
-      return diff > 0 ? `+${diff}` : diff
+      return diff > 0 ? `+${diff}` : diff.toString()
     },
     // 获取分数变化样式
     getScoreDiffClass(row) {
       const diff = this.getScoreDiff(row)
       if (!diff) return ''
       return {
-        'score-up': diff > 0,
-        'score-down': diff < 0
+        'score-up': diff.startsWith('+'),
+        'score-down': !diff.startsWith('+')
       }
     }
   },

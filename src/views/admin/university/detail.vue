@@ -1,3 +1,4 @@
+<!--src/views/admin/university/detail.vue-->
 <template>
   <div class="app-container">
     <el-card v-loading="loading">
@@ -93,10 +94,10 @@
           <label>特色标签:</label>
           <div class="tag-container">
             <el-tag
-              v-for="feature in universityDetail.features"
-              :key="feature"
-              type="success"
-              class="feature-tag"
+                v-for="feature in universityDetail.features"
+                :key="feature"
+                type="success"
+                class="feature-tag"
             >
               {{ feature }}
             </el-tag>
@@ -122,70 +123,70 @@
       <!-- 学校简介 -->
       <div v-if="universityDetail.introduction" class="detail-section">
         <div class="section-title">学校简介</div>
-        <div class="markdown-content" v-html="compiledIntroduction"></div>
+        <markdown-renderer :content="universityDetail.introduction" />
       </div>
 
       <!-- 院系设置 -->
       <div v-if="universityDetail.departments" class="detail-section">
         <div class="section-title">院系设置</div>
-        <div class="markdown-content" v-html="compiledDepartments"></div>
+        <markdown-renderer :content="universityDetail.departments" />
       </div>
 
       <!-- 专业介绍 -->
       <div v-if="universityDetail.majors" class="detail-section">
         <div class="section-title">专业介绍</div>
-        <div class="markdown-content" v-html="compiledMajors"></div>
+        <markdown-renderer :content="universityDetail.majors" />
       </div>
 
       <!-- 录取规则 -->
       <div v-if="universityDetail.admissionRules" class="detail-section">
         <div class="section-title">录取规则</div>
-        <div class="markdown-content" v-html="compiledAdmissionRules"></div>
+        <markdown-renderer :content="universityDetail.admissionRules" />
       </div>
 
       <!-- 奖学金设置 -->
       <div v-if="universityDetail.scholarships" class="detail-section">
         <div class="section-title">奖学金设置</div>
-        <div class="markdown-content" v-html="compiledScholarships"></div>
+        <markdown-renderer :content="universityDetail.scholarships" />
       </div>
 
       <!-- 住宿条件 -->
       <div v-if="universityDetail.accommodation" class="detail-section">
         <div class="section-title">住宿条件</div>
-        <div class="markdown-content" v-html="compiledAccommodation"></div>
+        <markdown-renderer :content="universityDetail.accommodation" />
       </div>
 
       <!-- 联系方式 -->
       <div v-if="universityDetail.contactInfo" class="detail-section">
         <div class="section-title">联系方式</div>
-        <div class="markdown-content" v-html="compiledContactInfo"></div>
+        <markdown-renderer :content="universityDetail.contactInfo" />
       </div>
 
       <!-- 分数线组件 -->
       <admission-scores
-        :scores="universityDetail.admissionScores"
-        class="section-margin"
+          :scores="universityDetail.admissionScores"
+          class="section-margin"
       />
 
       <!-- 专业满意度评分 -->
       <div class="rating-section">
         <div class="section-title">专业满意度评分</div>
         <el-table
-          v-if="universityDetail.satisfactionRatings && universityDetail.satisfactionRatings.length"
-          :data="universityDetail.satisfactionRatings"
-          border
-          style="width: 100%"
+            v-if="universityDetail.satisfactionRatings && universityDetail.satisfactionRatings.length"
+            :data="universityDetail.satisfactionRatings"
+            border
+            style="width: 100%"
         >
           <el-table-column prop="category" label="专业类别" />
           <el-table-column label="评分" width="300">
             <template slot-scope="scope">
               <div class="rating-container">
                 <el-rate
-                  v-model="scope.row.rating"
-                  disabled
-                  show-score
-                  text-color="#ff9900"
-                  score-template="{value}"
+                    v-model="scope.row.rating"
+                    disabled
+                    show-score
+                    text-color="#ff9900"
+                    score-template="{value}"
                 />
               </div>
             </template>
@@ -198,10 +199,10 @@
         </el-table>
         <div v-else class="empty-state">
           <el-alert
-            title="暂无评分数据"
-            type="info"
-            center
-            :closable="false"
+              title="暂无评分数据"
+              type="info"
+              center
+              :closable="false"
           />
         </div>
       </div>
@@ -210,21 +211,21 @@
       <div class="rating-section">
         <div class="section-title">专业推荐评分</div>
         <el-table
-          v-if="universityDetail.recommendationRatings && universityDetail.recommendationRatings.length"
-          :data="universityDetail.recommendationRatings"
-          border
-          style="width: 100%"
+            v-if="universityDetail.recommendationRatings && universityDetail.recommendationRatings.length"
+            :data="universityDetail.recommendationRatings"
+            border
+            style="width: 100%"
         >
           <el-table-column prop="majorCategory" label="专业类别" />
           <el-table-column label="评分" width="300">
             <template slot-scope="scope">
               <div class="rating-container">
                 <el-rate
-                  v-model="scope.row.rating"
-                  disabled
-                  show-score
-                  text-color="#ff9900"
-                  score-template="{value}"
+                    v-model="scope.row.rating"
+                    disabled
+                    show-score
+                    text-color="#ff9900"
+                    score-template="{value}"
                 />
               </div>
             </template>
@@ -237,18 +238,18 @@
         </el-table>
         <div v-else class="empty-state">
           <el-alert
-            title="暂无推荐数据"
-            type="info"
-            center
-            :closable="false"
+              title="暂无推荐数据"
+              type="info"
+              center
+              :closable="false"
           />
         </div>
       </div>
       <div class="section-container">
         <div class="section-title">互动管理</div>
         <interaction-management
-          :university-id="Number($route.params.id)"
-          class="section-margin"
+            :university-id="Number($route.params.id)"
+            class="section-margin"
         />
       </div>
     </el-card>
@@ -259,13 +260,14 @@
 import { getUniversityDetail } from '@/api/university'
 import AdmissionScores from '@/views/admin/university/components/AdmissionScores.vue'
 import InteractionManagement from '@/views/admin/university/components/InteractionManagement.vue'
-import { marked } from 'marked'
+import MarkdownRenderer from '@/components/MarkdownRenderer'
 
 export default {
   name: 'UniversityDetail',
   components: {
     AdmissionScores,
-    InteractionManagement
+    InteractionManagement,
+    MarkdownRenderer
   },
   data() {
     return {
@@ -298,29 +300,6 @@ export default {
         satisfactionRatings: [],
         recommendationRatings: []
       }
-    }
-  },
-  computed: {
-    compiledIntroduction() {
-      return this.universityDetail.introduction ? marked(this.universityDetail.introduction) : ''
-    },
-    compiledDepartments() {
-      return this.universityDetail.departments ? marked(this.universityDetail.departments) : ''
-    },
-    compiledMajors() {
-      return this.universityDetail.majors ? marked(this.universityDetail.majors) : ''
-    },
-    compiledAdmissionRules() {
-      return this.universityDetail.admissionRules ? marked(this.universityDetail.admissionRules) : ''
-    },
-    compiledScholarships() {
-      return this.universityDetail.scholarships ? marked(this.universityDetail.scholarships) : ''
-    },
-    compiledAccommodation() {
-      return this.universityDetail.accommodation ? marked(this.universityDetail.accommodation) : ''
-    },
-    compiledContactInfo() {
-      return this.universityDetail.contactInfo ? marked(this.universityDetail.contactInfo) : ''
     }
   },
   created() {
@@ -428,34 +407,6 @@ export default {
   padding: 0 20px;
 }
 
-.markdown-content {
-  line-height: 1.6;
-  color: #606266;
-
-  ::v-deep(h1) {
-    font-size: 20px;
-    margin: 20px 0;
-  }
-
-  ::v-deep(h2) {
-    font-size: 18px;
-    margin: 16px 0;
-  }
-
-  ::v-deep(ul) {
-    padding-left: 20px;
-    margin: 10px 0;
-  }
-
-  ::v-deep(li) {
-    margin: 5px 0;
-  }
-
-  ::v-deep(p) {
-    margin: 10px 0;
-  }
-}
-
 .rating-section {
   margin-top: 30px;
 }
@@ -498,11 +449,13 @@ export default {
 .el-descriptions {
   margin-bottom: 20px;
 }
+
 .consult-section {
   background: #fff;
   border-radius: 4px;
   padding: 20px;
 }
+
 .section-container {
   margin-top: 30px;
 
@@ -518,6 +471,7 @@ export default {
     margin-top: 15px;
   }
 }
+
 .interaction-management {
   background-color: #fff;
   padding: 20px;
