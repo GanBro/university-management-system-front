@@ -43,14 +43,7 @@
       <el-table-column prop="province" label="省份" width="120" align="center" />
       <el-table-column label="计划/实际人数" width="150" align="center">
         <template slot-scope="scope">
-          <el-tooltip effect="dark" placement="top">
-            <div slot="content">
-              <div>计划人数：{{ scope.row.planCount }}人</div>
-              <div>实际人数：{{ scope.row.actualCount }}人</div>
-              <div>完成率：{{ calculateCompletionRate(scope.row) }}%</div>
-            </div>
-            <span>{{ scope.row.planCount }}/{{ scope.row.actualCount }}</span>
-          </el-tooltip>
+          <span>{{ formatEnrollmentCount(scope.row) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="最低录取分数" align="center">
@@ -75,10 +68,18 @@
       </el-table-column>
       <el-table-column label="完成率" width="180" align="center">
         <template slot-scope="scope">
-          <el-progress
-              :percentage="calculateCompletionRate(scope.row)"
-              :status="getProgressStatus(scope.row)"
-          />
+          <template v-if="hasValidEnrollmentData(scope.row)">
+            <el-progress
+                :percentage="calculateCompletionRate(scope.row)"
+                :status="getProgressStatus(scope.row)"
+            />
+            <span class="completion-rate">{{ calculateCompletionRate(scope.row).toFixed(2) }}%</span>
+          </template>
+          <template v-else>
+            <div class="progress-placeholder">
+              <i :class="getCompletionIcon(scope.row)"></i>
+            </div>
+          </template>
         </template>
       </el-table-column>
     </el-table>
@@ -95,10 +96,6 @@ import _ from 'lodash'
 
 export default {
   name: 'AdmissionScores',
-  // 移除局部组件注册
-  // components: {
-  //   'el-empty': Empty
-  // },
   props: {
     scores: {
       type: Array,
@@ -138,21 +135,25 @@ export default {
     statisticsData() {
       if (!this.filteredScores.length) return []
 
-      const currentYear = new Date().getFullYear()
-      const latestYearData = this.scores.filter(s => s.year === currentYear)
+      const latestYear = Math.max(...this.filteredScores.map(s => s.year))
+      const relevantData = this.selectedYear
+          ? this.filteredScores
+          : this.filteredScores.filter(s => s.year === latestYear)
+
+      const validData = relevantData.filter(this.hasValidEnrollmentData)
 
       return [
         {
           label: '平均分数线',
-          value: Math.round(_.meanBy(this.filteredScores, 'scoreRequired')) + '分'
+          value: this.calculateAverageScore(relevantData)
         },
         {
           label: '计划招生总数',
-          value: _.sumBy(latestYearData, 'planCount') + '人'
+          value: this.formatNumberWithUnit(_.sumBy(validData, 'planCount'), '人')
         },
         {
           label: '实际录取总数',
-          value: _.sumBy(latestYearData, 'actualCount') + '人'
+          value: this.formatNumberWithUnit(_.sumBy(validData, 'actualCount'), '人')
         }
       ]
     },
@@ -169,16 +170,51 @@ export default {
     }
   },
   methods: {
+    // 计算平均分数线
+    calculateAverageScore(data) {
+      const average = _.meanBy(data, 'scoreRequired')
+      if (!average) return '-'
+      return Math.round(average) + '分'
+    },
+    // 格式化数字并添加单位
+    formatNumberWithUnit(number, unit = '') {
+      if (!number && number !== 0) return '-'
+      return number.toLocaleString() + unit
+    },
+    // 检查是否有有效的招生数据
+    hasValidEnrollmentData(row) {
+      return row.planCount &&
+          row.actualCount &&
+          row.planCount !== '/' &&
+          row.actualCount !== '/' &&
+          typeof row.planCount === 'number' &&
+          typeof row.actualCount === 'number'
+    },
+    // 格式化招生人数显示
+    formatEnrollmentCount(row) {
+      if (!row.planCount || !row.actualCount ||
+          row.planCount === '/' || row.actualCount === '/') {
+        return '/'
+      }
+      return `${row.planCount}/${row.actualCount}`
+    },
     // 计算完成率
     calculateCompletionRate(row) {
-      if (!row.planCount || !row.actualCount) return 0
-      return Math.round((row.actualCount / row.planCount) * 100)
+      if (!this.hasValidEnrollmentData(row)) return 0;
+      const rate = (row.actualCount / row.planCount) * 100;
+      return Math.min(rate, 100); // 返回百分比值，最大为100
+    },
+    // 获取完成率状态图标
+    getCompletionIcon(row) {
+      // 当数据无效时显示叉号图标
+      return 'el-icon-close'
     },
     // 获取进度条状态
     getProgressStatus(row) {
+      if (!this.hasValidEnrollmentData(row)) return 'info'
       const rate = this.calculateCompletionRate(row)
       if (rate >= 100) return 'success'
-      if (rate >= 90) return 'success' // 根据需要调整
+      if (rate >= 90) return 'success'
       if (rate >= 80) return 'warning'
       return 'exception'
     },
@@ -187,7 +223,7 @@ export default {
       const prevYearScore = this.scores.find(
           s => s.year === row.year - 1 && s.province === row.province
       )
-      if (!prevYearScore) return null
+      if (!prevYearScore || !row.scoreRequired || !prevYearScore.scoreRequired) return null
 
       const diff = row.scoreRequired - prevYearScore.scoreRequired
       if (diff === 0) return null
@@ -197,18 +233,14 @@ export default {
     getScoreDiffClass(row) {
       const diff = this.getScoreDiff(row)
       if (!diff) return ''
-      return {
-        'score-up': diff.startsWith('+'),
-        'score-down': !diff.startsWith('+')
-      }
+      return diff.startsWith('+') ? 'score-up' : 'score-down'
     }
   },
   watch: {
     scores: {
       immediate: true,
       handler(newScores) {
-        if (newScores && newScores.length && !this.selectedProvince) {
-          // 默认选择第一个省份
+        if (newScores?.length && !this.selectedProvince) {
           const provinces = _.uniq(newScores.map(s => s.province))
           if (provinces.length) {
             this.selectedProvince = provinces[0]
@@ -250,6 +282,10 @@ export default {
     display: flex;
     gap: 15px;
     margin-bottom: 20px;
+
+    .el-select {
+      min-width: 120px;
+    }
   }
 
   .score-cell {
@@ -283,6 +319,23 @@ export default {
     padding: 40px 0;
     text-align: center;
   }
+
+  .progress-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #F56C6C;
+
+    i {
+      font-size: 18px;
+    }
+  }
+
+  .completion-rate {
+    font-size: 14px;
+    color: #606266;
+    margin-left: 8px;
+  }
 }
 
 ::v-deep {
@@ -295,16 +348,18 @@ export default {
     color: #606266;
   }
 
-  .el-table {
-    margin-top: 20px;
-  }
-
   .el-progress {
     margin-bottom: 0;
+    width: 90%;
+    margin: 0 auto;
   }
 
   .el-progress-bar__inner {
     transition: width 0.3s ease;
+  }
+
+  .el-tooltip__popper {
+    max-width: 200px;
   }
 }
 </style>
