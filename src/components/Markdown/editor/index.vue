@@ -1,4 +1,3 @@
-// src/components/Markdown/editor/index.vue
 <template>
   <div :id="id" />
 </template>
@@ -8,6 +7,7 @@ import 'tui-editor/dist/tui-editor.css'
 import 'tui-editor/dist/tui-editor-contents.css'
 import Editor from 'tui-editor'
 import defaultOptions from './default-options'
+import { uploadFile } from '@/api/upload' // 引入上传文件的接口
 
 export default {
   name: 'WYSIWYGEditor',
@@ -51,6 +51,12 @@ export default {
       options.initialEditType = 'wysiwyg'  // Always force WYSIWYG mode
       options.height = this.height
       options.language = this.language
+
+      // 添加图片上传配置
+      options.events = {
+        addImageBlobHook: this.handleImageUpload
+      }
+
       return options
     }
   },
@@ -119,6 +125,24 @@ export default {
         return this.editor.getHtml()
       }
       return ''
+    },
+    // 处理图片上传
+    async handleImageUpload(blob, callback) {
+      try {
+        const formData = new FormData()
+        formData.append('file', blob)
+
+        // 调用上传接口
+        const res = await uploadFile(formData)
+        const imageUrl = res.data // 获取上传后的图片URL
+
+        // 将图片URL插入到Markdown编辑器中
+        callback(imageUrl, '图片描述')
+        this.$message.success('图片上传成功')
+      } catch (error) {
+        console.error('图片上传失败:', error)
+        this.$message.error('图片上传失败')
+      }
     }
   }
 }
