@@ -1,17 +1,16 @@
-<!--src/components/Markdown/editor/index.vue-->
+// src/components/Markdown/editor/index.vue
 <template>
   <div :id="id" />
 </template>
 
 <script>
-// deps for editor
 import 'tui-editor/dist/tui-editor.css'
 import 'tui-editor/dist/tui-editor-contents.css'
 import Editor from 'tui-editor'
 import defaultOptions from './default-options'
 
 export default {
-  name: 'MarkdownEditor',
+  name: 'WYSIWYGEditor',
   props: {
     value: {
       type: String,
@@ -21,7 +20,7 @@ export default {
       type: String,
       required: false,
       default() {
-        return 'markdown-editor-' + +new Date() + ((Math.random() * 1000).toFixed(0) + '')
+        return 'wysiwyg-editor-' + +new Date() + ((Math.random() * 1000).toFixed(0) + '')
       }
     },
     options: {
@@ -29,10 +28,6 @@ export default {
       default() {
         return defaultOptions
       }
-    },
-    mode: {
-      type: String,
-      default: 'markdown'
     },
     height: {
       type: String,
@@ -53,7 +48,7 @@ export default {
   computed: {
     editorOptions() {
       const options = Object.assign({}, defaultOptions, this.options)
-      options.initialEditType = this.mode
+      options.initialEditType = 'wysiwyg'  // Always force WYSIWYG mode
       options.height = this.height
       options.language = this.language
       return options
@@ -74,11 +69,6 @@ export default {
     height(newValue) {
       if (this.editor) {
         this.editor.height(newValue)
-      }
-    },
-    mode(newValue) {
-      if (this.editor) {
-        this.editor.changeMode(newValue)
       }
     }
   },

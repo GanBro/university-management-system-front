@@ -1,11 +1,12 @@
 // src/components/Markdown/editor/default-options.js
 export default {
   minHeight: '200px',
-  previewStyle: 'vertical',
+  initialEditType: 'wysiwyg',  // Force WYSIWYG mode
+  previewStyle: 'tab',
   useCommandShortcut: true,
   useDefaultHTMLSanitizer: true,
   usageStatistics: false,
-  hideModeSwitch: false,
+  hideModeSwitch: true,  // Hide the mode switch button
   toolbarItems: [
     'heading',
     'bold',
@@ -25,7 +26,6 @@ export default {
     'image',
     'link',
     'divider',
-    'code',
-    'codeblock'
+    'code'
   ]
 }
