@@ -84,3 +84,44 @@ export function updateUniversityLogo(id, logo) {
     data: { logo }
   })
 }
+
+// 获取院校满意度
+export function getUniversitySatisfaction(id) {
+  return request({
+    url: `/universities/${id}/satisfaction`,
+    method: 'get'
+  })
+}
+
+// 获取专业满意度
+export function getMajorSatisfaction(id) {
+  return request({
+    url: `/universities/${id}/major-satisfaction`,
+    method: 'get'
+  })
+}
+
+// 获取专业推荐
+export function getMajorRecommendations(id) {
+  return request({
+    url: `/universities/${id}/recommendations`,
+    method: 'get'
+  })
+}
+
+// 获取咨询列表
+export function getConsultations(id) {
+  return request({
+    url: `/universities/${id}/consultations`,
+    method: 'get'
+  })
+}
+
+// 提交咨询
+export function submitConsultation(id, data) {
+  return request({
+    url: `/universities/${id}/consultations`,
+    method: 'post',
+    data
+  })
+}

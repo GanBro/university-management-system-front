@@ -1,3 +1,4 @@
+<!--src/views/user/home/index.vue-->
 <template>
   <div class="university-search">
     <!-- 绿色背景header -->
@@ -227,41 +228,41 @@ export default {
     getLogoUrl(logo) {
       // 如果没有 logo，返回默认 logo
       if (!logo) {
-        return defaultLogo;
+        return defaultLogo
       }
 
       // 如果是完整的 URL，直接返回
       if (logo.startsWith('http')) {
-        return logo;
+        return logo
       }
 
       // 如果是相对路径，需要转换为正确的资源引用
       try {
         // 处理相对路径
         if (logo.includes('/')) {
-          let relativePath = logo;
+          let relativePath = logo
           // 确保路径以 images/ 开头
           if (!logo.startsWith('images/')) {
-            relativePath = `images/${logo.split('/').pop()}`;
+            relativePath = `images/${logo.split('/').pop()}`
           }
-          return require(`@/assets/${relativePath}`);
+          return require(`@/assets/${relativePath}`)
         }
         // 如果只是文件名，假设在 images 目录下
-        return require(`@/assets/images/${logo}`);
+        return require(`@/assets/images/${logo}`)
       } catch (error) {
-        console.warn(`Logo loading failed for: ${logo}`, error);
-        return defaultLogo;
+        console.warn(`Logo loading failed for: ${logo}`, error)
+        return defaultLogo
       }
     },
 
     handleLogoError(item) {
-      const imgElement = window.event?.target;
+      const imgElement = window.event?.target
       if (imgElement) {
-        imgElement.src = defaultLogo;
+        imgElement.src = defaultLogo
         // 防止循环触发 error 事件
-        imgElement.onerror = null;
+        imgElement.onerror = null
         // 如果已经显示了默认图片，则不再重试加载
-        this.logoLoadErrors.add(item.logo);
+        this.logoLoadErrors.add(item.logo)
       }
     },
 

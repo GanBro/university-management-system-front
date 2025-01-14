@@ -1,22 +1,31 @@
-<!--src/views/user/university/detail.vue-->
 <template>
-  <div class="university-detail">
+  <div class="university-detail" v-loading="loading">
     <!-- 头部区域 -->
     <div class="header-bg">
       <div class="header-content">
         <div class="basic-info">
+          <!-- Logo区域 -->
           <div class="logo-wrapper">
-            <img v-if="universityData.logo" :src="getLogoUrl(universityData.logo)" :alt="universityData.name + '的logo'" class="university-logo">
+            <img
+                v-if="universityData.logo"
+                :src="getLogoUrl(universityData.logo)"
+                :alt="universityData.name + '的logo'"
+                class="university-logo"
+                @error="handleLogoError"
+            >
             <div v-else class="logo-placeholder">
               <span>{{ universityData.name ? universityData.name.substring(0, 2) : 'N/A' }}</span>
             </div>
           </div>
+
+          <!-- 基本信息区域 -->
           <div class="info-content">
             <h1 class="university-name">{{ universityData.name }}</h1>
             <div class="tags-wrapper">
-              <el-tag size="small">{{ universityData.type }}</el-tag>
-              <el-tag size="small" type="success">{{ universityData.level }}</el-tag>
+              <el-tag size="small">{{ universityData.province }}</el-tag>
               <el-tag size="small" type="warning">{{ universityData.adminDepartment }}</el-tag>
+              <el-tag size="small" type="success">{{ universityData.level }}</el-tag>
+              <el-tag size="small" type="info">{{ universityData.type }}</el-tag>
             </div>
           </div>
         </div>
@@ -64,39 +73,86 @@
         </el-row>
       </div>
 
-      <!-- 标签页内容 -->
+      <!-- 内容标签页 -->
       <el-card class="content-card">
-        <el-tabs v-model="activeTab" type="border-card">
+        <el-tabs v-model="activeTab">
+          <!-- 首页标签 -->
+          <el-tab-pane label="首页" name="home">
+            <el-row :gutter="20">
+              <!-- 左侧评分区域 -->
+              <el-col :span="16">
+                <!-- 院校满意度 -->
+                <satisfaction-card
+                    :satisfaction-ratings="satisfactionRatings"
+                    @more="handleMoreSatisfaction"
+                />
+
+                <!-- 专业满意度 -->
+                <major-satisfaction-card
+                    :major-satisfaction="majorSatisfaction"
+                    @more="handleMoreMajorSatisfaction"
+                />
+
+                <!-- 专业推荐人数 -->
+                <recommendation-count-card
+                    :recommendation-counts="recommendationCounts"
+                    @more="handleMoreRecommendations"
+                />
+
+                <!-- 专业推荐指数 -->
+                <recommendation-index-card
+                    :recommendation-index="recommendationIndex"
+                    @more="handleMoreRecommendationIndex"
+                />
+              </el-col>
+
+              <!-- 右侧咨询区域 -->
+              <el-col :span="8">
+                <consultation-card
+                    :university-id="universityId"
+                    :consultations="consultations"
+                    @questionClick="handleQuestionClick"
+                    @ask="handleAsk"
+                />
+              </el-col>
+            </el-row>
+          </el-tab-pane>
+
           <el-tab-pane label="学校简介" name="introduction">
             <div v-if="universityData.introduction">
               <markdown-renderer :content="universityData.introduction" />
             </div>
             <div v-else class="empty-text">暂无简介信息</div>
           </el-tab-pane>
+
           <el-tab-pane label="院系设置" name="departments">
             <div v-if="universityData.departments">
               <markdown-renderer :content="universityData.departments" />
             </div>
             <div v-else class="empty-text">暂无院系信息</div>
           </el-tab-pane>
+
           <el-tab-pane label="专业介绍" name="majors">
             <div v-if="universityData.majors">
               <markdown-renderer :content="universityData.majors" />
             </div>
             <div v-else class="empty-text">暂无专业信息</div>
           </el-tab-pane>
+
           <el-tab-pane label="录取规则" name="admissionRules">
             <div v-if="universityData.admissionRules">
               <markdown-renderer :content="universityData.admissionRules" />
             </div>
             <div v-else class="empty-text">暂无录取规则信息</div>
           </el-tab-pane>
+
           <el-tab-pane label="奖学金设置" name="scholarships">
             <div v-if="universityData.scholarships">
               <markdown-renderer :content="universityData.scholarships" />
             </div>
             <div v-else class="empty-text">暂无奖学金信息</div>
           </el-tab-pane>
+
           <el-tab-pane label="食宿条件" name="accommodation">
             <div v-if="universityData.accommodation">
               <markdown-renderer :content="universityData.accommodation" />
@@ -160,25 +216,73 @@
 <script>
 import { mapState } from 'vuex'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
+import defaultLogo from '@/assets/404_images/404.png'
+import SatisfactionCard from '../components/SatisfactionCard'
+import MajorSatisfactionCard from '../components/MajorSatisfactionCard'
+import RecommendationCountCard from '../components/RecommendationCountCard'
+import RecommendationIndexCard from '../components/RecommendationIndexCard'
+import ConsultationCard from '../components/ConsultationCard'
 
 export default {
   name: 'UniversityDetail',
 
   components: {
-    MarkdownRenderer
+    MarkdownRenderer,
+    SatisfactionCard,
+    MajorSatisfactionCard,
+    RecommendationCountCard,
+    RecommendationIndexCard,
+    ConsultationCard
   },
 
   data() {
     return {
-      activeTab: 'introduction',
-      loading: false
+      loading: false,
+      activeTab: 'home'
     }
   },
 
   computed: {
     ...mapState({
-      universityData: state => state.university.currentUniversity || {}
-    })
+      universityData: state => state.university.currentUniversity || {},
+      satisfactionData: state => state.university.satisfactionData || {},
+      majorSatisfaction: state => state.university.majorSatisfaction || [],
+      recommendations: state => state.university.recommendations || {},
+      consultations: state => state.university.consultations || []
+    }),
+
+    universityId() {
+      return this.$route.params.id
+    },
+
+    // 处理满意度数据
+    satisfactionRatings() {
+      return [
+        {
+          label: '综合满意度',
+          rating: this.satisfactionData.overall || 0,
+          count: this.satisfactionData.overall_count || 0
+        },
+        {
+          label: '环境满意度',
+          rating: this.satisfactionData.environment || 0,
+          count: this.satisfactionData.environment_count || 0
+        },
+        {
+          label: '生活满意度',
+          rating: this.satisfactionData.life || 0,
+          count: this.satisfactionData.life_count || 0
+        }
+      ]
+    },
+
+    recommendationCounts() {
+      return this.recommendations.counts || []
+    },
+
+    recommendationIndex() {
+      return this.recommendations.index || []
+    }
   },
 
   created() {
@@ -189,10 +293,17 @@ export default {
     async fetchData() {
       try {
         this.loading = true
-        const id = this.$route.params.id
-        await this.$store.dispatch('university/getDetail', id)
+        await this.$store.dispatch('university/getDetail', this.universityId)
+
+        // 获取满意度等相关数据
+        await Promise.all([
+          this.$store.dispatch('university/getSatisfactionData', this.universityId),
+          this.$store.dispatch('university/getMajorSatisfaction', this.universityId),
+          this.$store.dispatch('university/getRecommendations', this.universityId),
+          this.$store.dispatch('university/getConsultations', this.universityId)
+        ])
       } catch (error) {
-        console.error('Failed to fetch university details:', error)
+        console.error('获取大学详情失败:', error)
         this.$message.error('获取大学详情失败')
       } finally {
         this.loading = false
@@ -200,13 +311,76 @@ export default {
     },
 
     getLogoUrl(logo) {
-      if (!logo) return ''
+      if (!logo) return defaultLogo
       if (logo.startsWith('http')) return logo
       return process.env.VUE_APP_BASE_API + logo
     },
 
+    handleLogoError(event) {
+      event.target.src = defaultLogo
+    },
+
     formatNumber(num) {
       return num ? num.toLocaleString() : '暂无数据'
+    },
+
+    getRatingColor(rating) {
+      if (rating >= 4.5) return '#10b981'  // 绿色
+      if (rating >= 4.0) return '#3b82f6'  // 蓝色
+      return '#f59e0b'  // 橙色
+    },
+
+    // 查看更多相关方法
+    handleMoreSatisfaction() {
+      this.$router.push({
+        name: 'UniversitySatisfaction',
+        params: { id: this.universityId }
+      })
+    },
+
+    handleMoreMajorSatisfaction() {
+      this.$router.push({
+        name: 'UniversityMajorSatisfaction',
+        params: { id: this.universityId }
+      })
+    },
+
+    handleMoreRecommendations() {
+      this.$router.push({
+        name: 'UniversityRecommendations',
+        params: { id: this.universityId }
+      })
+    },
+
+    handleMoreRecommendationIndex() {
+      this.$router.push({
+        name: 'UniversityRecommendationIndex',
+        params: { id: this.universityId }
+      })
+    },
+
+    // 咨询相关方法
+    handleQuestionClick(question) {
+      this.$router.push({
+        name: 'ConsultationDetail',
+        params: {
+          universityId: this.universityId,
+          questionId: question.id
+        }
+      })
+    },
+
+    async handleAsk(consultationData) {
+      try {
+        await this.$store.dispatch('university/submitConsultation', {
+          id: this.universityId,
+          consultationData
+        })
+        this.$message.success('提交咨询成功')
+      } catch (error) {
+        console.error('提交咨询失败:', error)
+        this.$message.error('提交咨询失败，请重试')
+      }
     }
   }
 }
@@ -270,6 +444,7 @@ export default {
           .tags-wrapper {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
 
             .el-tag {
               border-radius: 12px;
@@ -309,6 +484,7 @@ export default {
 
             .value {
               color: #374151;
+              word-break: break-all;
 
               &.link {
                 color: #2563eb;
@@ -331,6 +507,21 @@ export default {
         color: #6b7280;
         text-align: center;
         padding: 40px;
+      }
+
+      ::v-deep .el-tabs__nav-wrap {
+        padding: 0 20px;
+      }
+
+      ::v-deep .el-tabs__item {
+        font-size: 16px;
+        padding: 0 20px;
+        height: 50px;
+        line-height: 50px;
+      }
+
+      ::v-deep .el-tab-pane {
+        padding: 20px;
       }
     }
 
@@ -359,6 +550,62 @@ export default {
               color: #374151;
             }
           }
+        }
+      }
+    }
+  }
+}
+
+// 响应式布局
+@media screen and (max-width: 768px) {
+  .university-detail {
+    .header-bg {
+      height: auto;
+      padding: 16px;
+
+      .header-content {
+        .basic-info {
+          flex-direction: column;
+          text-align: center;
+
+          .logo-wrapper {
+            width: 100px;
+            height: 100px;
+          }
+
+          .info-content {
+            .university-name {
+              font-size: 20px;
+            }
+
+            .tags-wrapper {
+              justify-content: center;
+            }
+          }
+        }
+      }
+    }
+
+    .main-content {
+      margin-top: -20px;
+      padding: 0 16px 20px;
+
+      .info-cards {
+        .el-col {
+          margin-bottom: 16px;
+        }
+      }
+
+      .content-card {
+        ::v-deep .el-tabs__item {
+          font-size: 14px;
+          padding: 0 12px;
+        }
+      }
+
+      .statistics-cards {
+        .el-col {
+          margin-bottom: 16px;
         }
       }
     }
