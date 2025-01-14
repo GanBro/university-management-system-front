@@ -75,7 +75,7 @@ export const constantRoutes = [
       // 添加高校详情路由
       {
         path: 'university/:id',
-        name: 'UniversityDetail',
+        name: 'UserUniversityDetail',
         component: () => import('@/views/user/university/detail.vue'),
         meta: { title: '高校详情' }
       }
@@ -123,7 +123,7 @@ export const constantRoutes = [
       },
       {
         path: 'detail/:id',
-        name: 'UniversityDetail',
+        name: 'AdminUniversityDetail',
         component: () => import('@/views/admin/university/detail.vue'),
         meta: { title: '高校详情' },
         hidden: true

@@ -323,7 +323,7 @@ export default {
     // 点击高校卡片
     handleUniversityClick(university) {
       this.$router.push({
-        name: 'UniversityDetail',
+        name: 'UserUniversityDetail',
         params: { id: university.id.toString() }
       })
     }

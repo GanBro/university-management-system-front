@@ -198,7 +198,10 @@ export default {
       this.$router.push(`/university/edit/${row.id}`)
     },
     handleDetail(row) {
-      this.$router.push(`/university/detail/${row.id}`)
+      this.$router.push({
+        name: 'AdminUniversityDetail',
+        params: { id: row.id }
+      })
     },
     handleSelectionChange(val) {
       this.multipleSelection = val
