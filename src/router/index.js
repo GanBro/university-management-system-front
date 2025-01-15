@@ -72,15 +72,43 @@ export const constantRoutes = [
         component: () => import('@/views/user/interactions/index'),
         meta: { title: '我的互动' }
       },
-      // 添加高校详情路由
+      // 高校详情相关路由
       {
         path: 'university/:id',
         name: 'UserUniversityDetail',
         component: () => import('@/views/user/university/detail.vue'),
-        meta: { title: '高校详情' }
+        meta: { title: '高校详情' },
+        children: [
+          {
+            path: 'satisfaction',
+            name: 'UserUniversitySatisfaction',
+            component: () => import('@/views/user/university/satisfaction/index.vue'),
+            meta: { title: '满意度详情' }
+          },
+          {
+            path: 'major-satisfaction',
+            name: 'UserUniversityMajorSatisfaction',
+            component: () => import('@/views/user/university/satisfaction/major.vue'),
+            meta: { title: '专业满意度' }
+          },
+          {
+            path: 'recommendations',
+            name: 'UserUniversityRecommendations',
+            component: () => import('@/views/user/university/recommendations/index.vue'),
+            meta: { title: '专业推荐' }
+          }
+        ]
+      },
+      // 咨询详情路由
+      {
+        path: 'consultation/:id',
+        name: 'UserConsultationDetail',
+        component: () => import('@/views/user/university/consultation/detail.vue'),
+        meta: { title: '咨询详情' }
       }
     ]
   },
+  // 管理端路由
   {
     path: '/',
     component: Layout,
@@ -126,7 +154,21 @@ export const constantRoutes = [
         name: 'AdminUniversityDetail',
         component: () => import('@/views/admin/university/detail.vue'),
         meta: { title: '高校详情' },
-        hidden: true
+        hidden: true,
+        children: [
+          {
+            path: 'satisfaction',
+            name: 'AdminUniversitySatisfaction',
+            component: () => import('@/views/admin/university/satisfaction/index.vue'),
+            meta: { title: '满意度管理' }
+          },
+          {
+            path: 'consultations',
+            name: 'AdminUniversityConsultations',
+            component: () => import('@/views/admin/university/consultation/index.vue'),
+            meta: { title: '咨询管理' }
+          }
+        ]
       }
     ]
   },

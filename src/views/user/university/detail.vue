@@ -333,28 +333,28 @@ export default {
     // 查看更多相关方法
     handleMoreSatisfaction() {
       this.$router.push({
-        name: 'UniversitySatisfaction',
+        name: 'UserUniversitySatisfaction',
         params: { id: this.universityId }
       })
     },
 
     handleMoreMajorSatisfaction() {
       this.$router.push({
-        name: 'UniversityMajorSatisfaction',
+        name: 'UserUniversityMajorSatisfaction',
         params: { id: this.universityId }
       })
     },
 
     handleMoreRecommendations() {
       this.$router.push({
-        name: 'UniversityRecommendations',
+        name: 'UserUniversityRecommendations',
         params: { id: this.universityId }
       })
     },
 
     handleMoreRecommendationIndex() {
       this.$router.push({
-        name: 'UniversityRecommendationIndex',
+        name: 'UserUniversityRecommendationIndex',
         params: { id: this.universityId }
       })
     },
@@ -362,7 +362,7 @@ export default {
     // 咨询相关方法
     handleQuestionClick(question) {
       this.$router.push({
-        name: 'ConsultationDetail',
+        name: 'UserConsultationDetail',
         params: {
           universityId: this.universityId,
           questionId: question.id

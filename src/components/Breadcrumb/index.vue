@@ -1,3 +1,4 @@
+<!--src/components/Breadcrumb/index.vue-->
 <template>
   <el-breadcrumb class="app-breadcrumb" separator="/">
     <transition-group name="breadcrumb">
