@@ -203,6 +203,7 @@ export default {
       this.loading = true
       try {
         const { data } = await getInteractionList(this.listQuery)
+        console.log('互动列表数据:', data.records)
         this.interactionList = data.records
         this.total = data.total
       } catch (error) {

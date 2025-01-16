@@ -1,3 +1,4 @@
+<!--src/views/user/university/detail.vue-->
 <template>
   <div class="university-detail" v-loading="loading">
     <!-- 头部区域 -->

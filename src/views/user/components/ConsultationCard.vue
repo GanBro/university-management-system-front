@@ -25,7 +25,34 @@
       <el-button type="primary" size="medium" @click="handleAsk">我要咨询</el-button>
     </div>
 
-    <!-- 咨询对话框 -->
+    <!-- 咨询详情对话框 -->
+    <el-dialog
+      title="咨询详情"
+      :visible.sync="detailDialogVisible"
+      width="500px"
+    >
+      <div v-if="currentConsultation" class="consultation-detail">
+        <h4>{{ currentConsultation.title }}</h4>
+        <div class="meta-info">
+          <span>提交者：{{ formatUser(currentConsultation.user_id) }}</span>
+          <span>时间：{{ formatTime(currentConsultation.created_at) }}</span>
+        </div>
+        <div class="content">{{ currentConsultation.content }}</div>
+
+        <!-- 回复列表 -->
+        <div v-if="currentConsultation.replies && currentConsultation.replies.length" class="replies">
+          <div v-for="(reply, index) in currentConsultation.replies" :key="index" class="reply-item">
+            <div class="reply-meta">
+              <span class="replier">{{ formatUser(reply.user_id) }}</span>
+              <span class="time">{{ formatTime(reply.created_at) }}</span>
+            </div>
+            <div class="reply-content">{{ reply.content }}</div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
+
+    <!-- 咨询表单对话框 -->
     <el-dialog
       title="发起咨询"
       :visible.sync="dialogVisible"
@@ -74,6 +101,8 @@ export default {
   data() {
     return {
       dialogVisible: false,
+      detailDialogVisible: false,
+      currentConsultation: null,
       consultationForm: {
         title: '',
         content: ''
@@ -98,8 +127,16 @@ export default {
   },
 
   methods: {
-    handleQuestionClick(item) {
-      this.$emit('questionClick', item)
+    async handleQuestionClick(item) {
+      try {
+        // 使用 interaction module 的 getDetail action 获取详情
+        const data = await this.$store.dispatch('interaction/getDetail', item.id)
+        this.currentConsultation = data
+        this.detailDialogVisible = true
+      } catch (error) {
+        console.error('获取咨询详情失败:', error)
+        this.$message.error('获取详情失败')
+      }
     },
 
     handleAsk() {
@@ -124,47 +161,40 @@ export default {
 
     async submitConsultation() {
       try {
-        // 1. 表单验证
-        await this.$refs.consultationForm.validate();
-
-        // 2. 检查登录状态
+        await this.$refs.consultationForm.validate()
         if (!getToken()) {
-          this.$router.push('/login');
-          return;
+          this.$router.push('/login')
+          return
         }
 
-        // 3. 获取用户信息
-        await this.$store.dispatch('user/getInfo');
+        await this.$store.dispatch('user/getInfo')
 
-        // 4. 构建咨询数据
         const consultationData = {
           universityId: this.universityId,
-          userId: this.$store.state.user.id,  // 从 store 获取用户id
+          userId: this.$store.state.user.id,
           type: 'consult',
           title: this.consultationForm.title.trim(),
           content: this.consultationForm.content.trim(),
           status: 'pending',
           is_public: true
-        };
+        }
 
-        // 5. 打印提交的数据，检查 userId 是否正确
-        console.log('提交的咨询数据:', consultationData);
+        console.log('提交的咨询数据:', consultationData)
 
-        // 6. 提交咨询数据
         await this.$store.dispatch('university/submitConsultation', {
           id: this.universityId,
           consultationData
-        });
+        })
 
-        this.$message.success('提交成功');
-        this.dialogVisible = false;
-        this.resetForm();
-
+        this.$message.success('提交成功')
+        this.dialogVisible = false
+        this.resetForm()
       } catch (error) {
-        console.error('提交失败:', error);
-        this.$message.error('提交失败,请重试');
+        console.error('提交失败:', error)
+        this.$message.error('提交失败,请重试')
       }
     },
+
     resetForm() {
       if (this.$refs.consultationForm) {
         this.$refs.consultationForm.resetFields()
@@ -241,13 +271,50 @@ export default {
   }
 }
 
-::v-deep .el-dialog {
-  .el-form {
-    padding: 20px 0;
+.consultation-detail {
+  h4 {
+    margin: 0 0 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
   }
 
-  .el-form-item__label {
-    font-weight: bold;
+  .meta-info {
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 15px;
+    span {
+      margin-right: 20px;
+    }
+  }
+
+  .content {
+    padding: 15px;
+    background: #f5f7fa;
+    border-radius: 4px;
+    line-height: 1.6;
+  }
+
+  .replies {
+    margin-top: 20px;
+
+    .reply-item {
+      padding: 12px;
+      background: #f5f7fa;
+      border-radius: 4px;
+      margin-bottom: 10px;
+
+      .reply-meta {
+        margin-bottom: 8px;
+        font-size: 12px;
+        color: #666;
+
+        .replier {
+          font-weight: bold;
+          margin-right: 10px;
+        }
+      }
+    }
   }
 }
 </style>
+
