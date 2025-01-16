@@ -265,9 +265,9 @@ const actions = {
   // 提交咨询
   async submitConsultation({ dispatch }, { id, consultationData }) {
     try {
-      await submitConsultation(id, consultationData)
-      // 重新获取咨询列表
+      const response = await submitConsultation(id, consultationData)
       await dispatch('getConsultations', id)
+      return response // 添加返回值以便组件处理结果
     } catch (error) {
       console.error('提交咨询失败:', error)
       throw error

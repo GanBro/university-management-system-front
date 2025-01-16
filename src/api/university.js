@@ -118,10 +118,13 @@ export function getConsultations(id) {
 }
 
 // 提交咨询
-export function submitConsultation(id, data) {
+export function submitConsultation(universityId, data) {
   return request({
-    url: `/universities/${id}/consultations`,
+    url: `/universities/${universityId}/consultations`,
     method: 'post',
-    data
+    data: {
+      ...data,
+      universityId: universityId // 确保包含大学ID
+    }
   })
 }

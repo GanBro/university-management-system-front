@@ -8,7 +8,8 @@ const getDefaultState = () => {
     token: getToken(),
     name: '',
     avatar: '',
-    role: ''
+    role: '',
+    id: null // 用户ID字段
   }
 }
 
@@ -21,142 +22,147 @@ const mutations = {
   SET_TOKEN: (state, token) => {
     state.token = token
   },
-  SET_NAME: (state, name) => {
-    state.name = name
+  SET_USER: (state, user) => {
+    state.name = user.username
+    state.role = user.role
+    state.avatar = user.avatar
   },
-  SET_AVATAR: (state, avatar) => {
-    state.avatar = avatar
-  },
-  SET_ROLE: (state, role) => {
-    state.role = role
+  SET_USER_ID: (state, id) => {
+    state.id = id
   }
 }
 
 const actions = {
-  // user login
+  // 用户登录
   login({ commit }, userInfo) {
     const { username, password } = userInfo
     return new Promise((resolve, reject) => {
-      login({ username: username.trim(), password: password }).then(response => {
-        console.log('登录响应:', response)
-        const { data } = response
-        commit('SET_TOKEN', data.token)
-        setToken(data.token)
-        resolve(data)
-      }).catch(error => {
-        console.error('登录失败:', error)
-        reject(error)
-      })
+      login({ username: username.trim(), password: password })
+        .then(response => {
+          console.log('登录响应:', response)
+          const { data } = response
+          commit('SET_TOKEN', data.token)
+          setToken(data.token)
+          console.log('Token 已保存到 cookie:', data.token) // 添加日志
+          resolve(data)
+        })
+        .catch(error => {
+          console.error('登录失败:', error)
+          reject(error)
+        })
     })
   },
 
-  // get user info
+  // 获取用户信息
   getInfo({ commit, state }) {
-    console.log('开始获取用户信息, 当前状态:', {
-      token: state.token,
-      role: state.role,
-      name: state.name
-    })
-
-    // 如果已经有用户信息，直接返回
-    if (state.name && state.role) {
-      console.log('已有用户信息，直接返回:', {
+    // 如果已经有完整的用户信息，直接返回
+    if (state.name && state.role && state.id) {
+      return Promise.resolve({
         name: state.name,
-        role: state.role
+        role: state.role,
+        id: state.id
       })
-      return Promise.resolve({ name: state.name, role: state.role })
     }
 
     return new Promise((resolve, reject) => {
-      getInfo(state.token).then(response => {
-        const { data } = response
-        console.log('获取到的用户信息:', data)
-
-        if (!data || !data.user) {
-          reject('Verification failed, please Login again.')
-          return
-        }
-
-        // 从 data.user 中解构数据
-        const { username: name, avatar, role } = data.user
-
-        console.log('设置用户信息:', {
-          name,
-          role,
-          avatar
+      getInfo(state.token)
+        .then(response => {
+          console.log('getInfo数据:', response)
+          const { data } = response
+          if (!data || !data.user) {
+            reject('验证失败，请重新登录')
+            return
+          }
+          // 修改为 userId
+          const { username: name, avatar, role, userId } = data.user
+          commit('SET_USER', {
+            username: name,
+            role,
+            avatar
+          })
+          commit('SET_USER_ID', userId)
+          resolve({
+            name,
+            role,
+            avatar,
+            id: userId
+          })
         })
-
-        commit('SET_NAME', name)
-        commit('SET_AVATAR', avatar)
-        commit('SET_ROLE', role)
-
-        // 返回处理后的用户信息，包括角色信息
-        resolve({ name, role, avatar })
-      }).catch(error => {
-        console.error('获取用户信息失败:', error)
-        reject(error)
-      })
+        .catch(error => {
+          console.error('获取用户信息失败:', error)
+          reject(error)
+        })
     })
   },
-  // user logout
+
+  // 用户登出
   logout({ commit, state }) {
     return new Promise((resolve, reject) => {
-      removeToken() // must remove  token  first
+      removeToken() // 必须先移除 token
       resetRouter()
       commit('RESET_STATE')
       resolve()
     })
   },
 
-  // remove token
+  // 重置 token
   resetToken({ commit }) {
     return new Promise(resolve => {
-      removeToken() // must remove  token  first
+      removeToken() // 必须先移除 token
       commit('RESET_STATE')
       resolve()
     })
   },
+
   // 获取用户列表
   getUserList({ commit }, query) {
     return new Promise((resolve, reject) => {
-      getUserList(query).then(response => {
-        resolve(response)
-      }).catch(error => {
-        reject(error)
-      })
+      getUserList(query)
+        .then(response => {
+          resolve(response)
+        })
+        .catch(error => {
+          reject(error)
+        })
     })
   },
 
   // 创建用户
   createUser({ commit }, data) {
     return new Promise((resolve, reject) => {
-      createUser(data).then(response => {
-        resolve(response)
-      }).catch(error => {
-        reject(error)
-      })
+      createUser(data)
+        .then(response => {
+          resolve(response)
+        })
+        .catch(error => {
+          reject(error)
+        })
     })
   },
 
   // 更新用户
   updateUser({ commit }, { id, data }) {
     return new Promise((resolve, reject) => {
-      updateUser(id, data).then(response => {
-        resolve(response)
-      }).catch(error => {
-        reject(error)
-      })
+      updateUser(id, data)
+        .then(response => {
+          resolve(response)
+        })
+        .catch(error => {
+          reject(error)
+        })
     })
   },
 
   // 删除用户
   deleteUser({ commit }, userId) {
     return new Promise((resolve, reject) => {
-      deleteUser(userId).then(response => {
-        resolve(response)
-      }).catch(error => {
-        reject(error)
-      })
+      deleteUser(userId)
+        .then(response => {
+          resolve(response)
+        })
+        .catch(error => {
+          reject(error)
+        })
     })
   }
 }

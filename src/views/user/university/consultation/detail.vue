@@ -1,4 +1,4 @@
-# src/views/user/university/consultation/detail.vue
+<!--# src/views/user/university/consultation/detail.vue-->
 <template>
   <div class="consultation-detail">
     <el-card v-loading="loading">
@@ -127,9 +127,8 @@ export default {
     questionId() {
       return this.$route.params.questionId
     },
-
     universityId() {
-      return this.$route.params.universityId
+      return this.$route.params.id
     }
   },
 
@@ -217,10 +216,10 @@ export default {
       this.$router.push({
         name: 'UserConsultationDetail',
         params: {
-          universityId: this.universityId,
-          questionId: questionId
+          id: this.universityId, // 传递 universityId
+          questionId: questionId // 传递 questionId
         }
-      })
+      });
     },
 
     goBack() {

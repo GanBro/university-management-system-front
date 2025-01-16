@@ -359,14 +359,19 @@ export default {
       })
     },
 
-    // 咨询相关方法
     handleQuestionClick(question) {
+      console.log('跳转到咨询详情:', {
+        questionId: question.id,
+        universityId: this.universityId
+      })
+
       this.$router.push({
-        name: 'UserConsultationDetail',
-        params: {
-          universityId: this.universityId,
-          questionId: question.id
+        path: `/user/consultation/${question.id}`,
+        query: {
+          universityId: this.universityId // 使用 query 传递大学 ID
         }
+      }).catch(err => {
+        console.error('路由跳转失败:', err)
       })
     },
 

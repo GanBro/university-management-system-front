@@ -1,3 +1,4 @@
+<!--src/views/user/university/satisfaction/index.vue-->
 <template>
   <div class="satisfaction-detail">
     <el-card v-loading="loading">

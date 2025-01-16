@@ -56,6 +56,7 @@
 <script>
 import moment from 'moment'
 import { mapState } from 'vuex'
+import { getToken } from '@/utils/auth'
 
 export default {
   name: 'ConsultationCard',
@@ -92,7 +93,7 @@ export default {
 
   computed: {
     ...mapState({
-      currentUser: state => state.user.currentUser
+      currentUser: state => state.user.name
     })
   },
 
@@ -102,8 +103,7 @@ export default {
     },
 
     handleAsk() {
-      if (!this.currentUser) {
-        // 未登录时跳转到登录页
+      if (!this.currentUser || !getToken()) {
         this.$router.push({
           path: '/login',
           query: { redirect: this.$route.fullPath }
@@ -124,27 +124,47 @@ export default {
 
     async submitConsultation() {
       try {
-        await this.$refs.consultationForm.validate()
+        // 1. 表单验证
+        await this.$refs.consultationForm.validate();
 
+        // 2. 检查登录状态
+        if (!getToken()) {
+          this.$router.push('/login');
+          return;
+        }
+
+        // 3. 获取用户信息
+        await this.$store.dispatch('user/getInfo');
+
+        // 4. 构建咨询数据
+        const consultationData = {
+          universityId: this.universityId,
+          userId: this.$store.state.user.id,  // 从 store 获取用户id
+          type: 'consult',
+          title: this.consultationForm.title.trim(),
+          content: this.consultationForm.content.trim(),
+          status: 'pending',
+          is_public: true
+        };
+
+        // 5. 打印提交的数据，检查 userId 是否正确
+        console.log('提交的咨询数据:', consultationData);
+
+        // 6. 提交咨询数据
         await this.$store.dispatch('university/submitConsultation', {
           id: this.universityId,
-          consultationData: {
-            type: 'consult',
-            title: this.consultationForm.title,
-            content: this.consultationForm.content,
-            is_public: true
-          }
-        })
+          consultationData
+        });
 
-        this.$message.success('提交咨询成功')
-        this.dialogVisible = false
-        this.resetForm()
+        this.$message.success('提交成功');
+        this.dialogVisible = false;
+        this.resetForm();
+
       } catch (error) {
-        console.error('提交咨询失败:', error)
-        this.$message.error('提交咨询失败,请重试')
+        console.error('提交失败:', error);
+        this.$message.error('提交失败,请重试');
       }
     },
-
     resetForm() {
       if (this.$refs.consultationForm) {
         this.$refs.consultationForm.resetFields()

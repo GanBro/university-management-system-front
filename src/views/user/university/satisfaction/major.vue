@@ -1,3 +1,4 @@
+<!--src/views/user/university/satisfaction/major.vue-->
 <template>
   <div class="major-satisfaction">
     <el-card v-loading="loading">
