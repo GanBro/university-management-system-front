@@ -44,6 +44,13 @@ export function closeInteraction(id) {
   })
 }
 
+export function reopenInteraction(id) {
+  return request({
+    url: `/api/interactions/${id}/reopen`,
+    method: 'post'
+  })
+}
+
 // 删除互动
 export function deleteInteraction(id) {
   return request({

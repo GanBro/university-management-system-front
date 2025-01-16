@@ -17,6 +17,7 @@
     "axios": "0.18.1",
     "codemirror": "^5.48.4",
     "core-js": "3.6.5",
+    "dayjs": "^1.11.13",
     "dompurify": "^2.5.8",
     "echarts": "^4.9.0",
     "element-ui": "^2.15.6",

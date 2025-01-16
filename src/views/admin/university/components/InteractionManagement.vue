@@ -1,4 +1,3 @@
-// src/views/university/components/InteractionManagement.vue
 <template>
   <div class="interaction-section">
     <div class="section-header">
@@ -82,10 +81,10 @@
       </el-table-column>
       <el-table-column label="提交时间" width="160" align="center">
         <template slot-scope="{row}">
-          {{ row.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}
+          {{ formatDateTime(row.createdAt) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180" align="center">
+      <el-table-column label="操作" width="230" align="center">
         <template slot-scope="{row}">
           <el-button
             size="mini"
@@ -95,12 +94,18 @@
             回复
           </el-button>
           <el-button
-            v-if="row.status === 'pending' || row.status === 'replied'"
             size="mini"
-            type="warning"
-            @click="handleClose(row)"
+            :type="row.status === 'closed' ? 'success' : 'warning'"
+            @click="handleToggleStatus(row)"
           >
-            关闭
+            {{ row.status === 'closed' ? '开启' : '关闭' }}
+          </el-button>
+          <el-button
+            size="mini"
+            type="danger"
+            @click="handleDelete(row)"
+          >
+            删除
           </el-button>
         </template>
       </el-table-column>
@@ -127,7 +132,7 @@
           <h4>{{ currentInteraction.title }}</h4>
           <div class="meta-info">
             <span>提交用户：{{ currentInteraction.userName }}</span>
-            <span>提交时间：{{ currentInteraction.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+            <span>提交时间：{{ formatDateTime(currentInteraction.createdAt) }}</span>
             <span>状态：
               <el-tag :type="getStatusType(currentInteraction.status)" size="small">
                 {{ getStatusLabel(currentInteraction.status) }}
@@ -142,7 +147,7 @@
               <div class="reply-header">
                 <span class="user-name">{{ reply.userName }}</span>
                 <el-tag v-if="reply.isOfficial" size="mini" type="success">官方回复</el-tag>
-                <span class="time">{{ reply.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+                <span class="time">{{ formatDateTime(reply.createdAt) }}</span>
               </div>
               <div class="reply-content">{{ reply.content }}</div>
             </div>
@@ -175,7 +180,8 @@
 </template>
 
 <script>
-import { getInteractionList, getInteractionDetail, replyInteraction, closeInteraction } from '@/api/interaction'
+import { getInteractionList, getInteractionDetail, replyInteraction, closeInteraction, reopenInteraction, deleteInteraction } from '@/api/interaction'
+import dayjs from 'dayjs'
 
 export default {
   name: 'InteractionManagement',
@@ -223,6 +229,10 @@ export default {
     }
   },
   methods: {
+    formatDateTime(time) {
+      if (!time) return ''
+      return dayjs(time).format('YYYY-MM-DD HH:mm:ss')
+    },
     async fetchData() {
       this.loading = true
       try {
@@ -289,18 +299,43 @@ export default {
         this.submitLoading = false
       }
     },
-    async handleClose(row) {
+    async handleToggleStatus(row) {
       try {
-        await this.$confirm('确认关闭该互动？', '提示', {
+        const action = row.status === 'closed' ? '开启' : '关闭'
+        await this.$confirm(`确认${action}该互动？`, '提示', {
           type: 'warning'
         })
-        await closeInteraction(row.id)
-        this.$message.success('已关闭')
+
+        if (row.status === 'closed') {
+          await reopenInteraction(row.id)
+        } else {
+          await closeInteraction(row.id)
+        }
+
+        this.$message.success(`已${action}`)
         this.fetchData()
       } catch (error) {
         if (error !== 'cancel') {
-          console.error('Failed to close interaction:', error)
+          console.error(`Failed to ${row.status === 'closed' ? 'reopen' : 'close'} interaction:`, error)
           this.$message.error('操作失败')
+        }
+      }
+    },
+    async handleDelete(row) {
+      try {
+        await this.$confirm('确认删除该互动？此操作不可恢复', '警告', {
+          type: 'warning',
+          confirmButtonText: '确定删除',
+          confirmButtonClass: 'el-button--danger'
+        })
+
+        await deleteInteraction(row.id)
+        this.$message.success('删除成功')
+        this.fetchData()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('Failed to delete interaction:', error)
+          this.$message.error('删除失败')
         }
       }
     },
@@ -426,6 +461,56 @@ export default {
       padding-top: 20px;
       border-top: 1px solid #eee;
     }
+  }
+}
+
+// 按钮组间距
+.el-button-group {
+  .el-button {
+    margin-left: 0;
+  }
+}
+
+// 表格内按钮间距
+.el-button + .el-button {
+  margin-left: 5px;
+}
+
+// 对话框内容溢出处理
+.interaction-detail {
+  max-height: 60vh;
+  overflow-y: auto;
+
+  .reply-item {
+    .reply-content {
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+  }
+}
+
+// 过滤表单响应式布局
+.filter-form {
+  .el-form-item {
+    margin-bottom: 10px;
+
+    @media screen and (max-width: 768px) {
+      display: block;
+      margin-right: 0;
+    }
+  }
+}
+
+// 状态标签样式优化
+.el-tag {
+  &.el-tag--success {
+    background-color: #f0f9eb;
+  }
+  &.el-tag--warning {
+    background-color: #fdf6ec;
+  }
+  &.el-tag--info {
+    background-color: #f4f4f5;
   }
 }
 </style>

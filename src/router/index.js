@@ -99,13 +99,6 @@ export const constantRoutes = [
           }
         ]
       },
-      // // 咨询详情路由
-      // {
-      //   path: 'consultation/:id',
-      //   name: 'UserConsultationDetail',
-      //   component: () => import('@/views/user/university/consultation/detail.vue'),
-      //   meta: { title: '咨询详情' }
-      // }
       {
         path: 'consultation/:questionId',
         name: 'UserConsultationDetail',
