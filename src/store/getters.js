@@ -4,11 +4,12 @@ const getters = {
   token: state => state.user.token,
   avatar: state => state.user.avatar,
   name: state => state.user.name,
-  // 添加university相关的getters
   universityList: state => state.university.list,
-  universityTotal: state => state.university.total,
+  universityTotal: state => state.university.list.total,
   currentUniversity: state => state.university.currentUniversity,
   listLoading: state => state.university.listLoading,
-  detailLoading: state => state.university.detailLoading
+  detailLoading: state => state.university.detailLoading,
+  userId: state => state.user.id,
+  role: state => state.user.role
 }
 export default getters

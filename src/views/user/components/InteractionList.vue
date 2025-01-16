@@ -256,7 +256,8 @@ export default {
       try {
         await replyInteraction(this.currentInteraction.id, {
           content: this.replyContent,
-          isOfficial: false
+          isOfficial: false,
+          userId: this.userId
         })
         this.$message.success('回复成功')
         const { data } = await getInteractionDetail(this.currentInteraction.id)

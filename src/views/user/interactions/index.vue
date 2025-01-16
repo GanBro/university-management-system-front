@@ -1,3 +1,4 @@
+<!--src/views/user/interactions/index.vue-->
 <template>
   <div class="user-interactions">
     <el-card>

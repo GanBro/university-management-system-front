@@ -418,7 +418,11 @@ export default {
           try {
             await this.$store.dispatch('interaction/replyConsultation', {
               id: this.replyForm.id,
-              reply: this.replyForm.reply
+              data: {
+                userId: this.$store.state.user.id,
+                content: this.replyForm.reply,
+                isOfficial: true
+              }
             })
             this.$message.success('回复成功')
             this.replyDialogVisible = false

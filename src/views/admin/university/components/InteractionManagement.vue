@@ -276,7 +276,8 @@ export default {
       try {
         await replyInteraction(this.currentInteraction.id, {
           content: this.replyContent,
-          isOfficial: true
+          isOfficial: true,
+          userId: this.$store.state.user.id
         })
         this.$message.success('回复成功')
         this.dialogVisible = false
