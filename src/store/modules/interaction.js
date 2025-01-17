@@ -6,7 +6,8 @@ import {
   replyInteraction,
   closeInteraction,
   reopenInteraction,
-  deleteInteraction
+  deleteInteraction,
+  getInteractionStats
 } from '@/api/interaction'
 
 const state = {
@@ -38,12 +39,20 @@ const actions = {
   async getList({ commit }, query) {
     commit('SET_LIST_LOADING', true)
     try {
-      const { data } = await getInteractionList(query)
-      commit('SET_LIST', {
-        list: data.records,
-        total: data.total
-      })
-      return data
+      const response = await getInteractionList(query)
+      if (response.data && response.data.records) {
+        commit('SET_LIST', {
+          list: response.data.records,
+          total: response.data.total
+        })
+        return {
+          data: {
+            records: response.data.records,
+            total: response.data.total
+          }
+        }
+      }
+      return { data: { records: [], total: 0 } }
     } finally {
       commit('SET_LIST_LOADING', false)
     }
@@ -53,9 +62,12 @@ const actions = {
   async getDetail({ commit }, id) {
     commit('SET_DETAIL_LOADING', true)
     try {
-      const { data } = await getInteractionDetail(id)
-      commit('SET_CURRENT_INTERACTION', data)
-      return data
+      const response = await getInteractionDetail(id)
+      if (response.data) {
+        commit('SET_CURRENT_INTERACTION', response.data)
+        return { data: response.data }
+      }
+      return { data: null }
     } finally {
       commit('SET_DETAIL_LOADING', false)
     }
@@ -94,6 +106,16 @@ const actions = {
     const { data } = await deleteInteraction(id)
     await dispatch('getList')
     return data
+  },
+
+  async getStats({ commit }, params) {
+    try {
+      const response = await getInteractionStats(params)
+      return response
+    } catch (error) {
+      console.error('Failed to get stats:', error)
+      throw error
+    }
   }
 }
 

@@ -58,3 +58,11 @@ export function deleteInteraction(id) {
     method: 'delete'
   })
 }
+
+export function getInteractionStats(params) {
+  return request({
+    url: '/api/interactions/stats',
+    method: 'get',
+    params
+  })
+}

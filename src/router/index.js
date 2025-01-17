@@ -154,12 +154,6 @@ export const constantRoutes = [
             name: 'AdminUniversitySatisfaction',
             component: () => import('@/views/admin/university/satisfaction/index.vue'),
             meta: { title: '满意度管理' }
-          },
-          {
-            path: 'consultations',
-            name: 'AdminUniversityConsultations',
-            component: () => import('@/views/admin/university/consultation/index.vue'),
-            meta: { title: '咨询管理' }
           }
         ]
       }
