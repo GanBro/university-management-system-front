@@ -129,9 +129,8 @@ export default {
   methods: {
     async handleQuestionClick(item) {
       try {
-        // 获取互动详情
-        const data = await this.$store.dispatch('interaction/getDetail', item.id)
-        this.currentConsultation = data
+        const result = await this.$store.dispatch('interaction/getDetail', item.id)
+        this.currentConsultation = result.data
         this.detailDialogVisible = true
       } catch (error) {
         console.error('获取咨询详情失败:', error)
