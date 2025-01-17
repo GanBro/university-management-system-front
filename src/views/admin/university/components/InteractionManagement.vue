@@ -1,4 +1,3 @@
-// src/views/admin/university/components/InteractionManagement.vue
 <template>
   <div class="interaction-management">
     <!-- 数据概览 -->
@@ -168,59 +167,118 @@
 
     <!-- 详情对话框 -->
     <el-dialog
-      title="互动详情"
       :visible.sync="dialogVisible"
-      width="650px"
+      width="750px"
+      class="interaction-detail-dialog"
+      :title="null"
       append-to-body
     >
-      <template v-if="currentItem">
-        <div class="interaction-detail">
-          <h4>{{ currentItem.title }}</h4>
-          <div class="meta-info">
-            <span>提交用户：{{ currentItem.userName }}</span>
-            <span>提交时间：{{ formatDateTime(currentItem.createdAt) }}</span>
-            <span>状态：
-              <el-tag :type="getStatusType(currentItem.status)" size="small">
+      <div v-if="currentItem" class="interaction-detail">
+        <!-- 标题栏 -->
+        <div class="detail-header">
+          <div class="header-main">
+            <h3>{{ currentItem.title }}</h3>
+            <div class="header-meta">
+              <el-tag
+                :type="getStatusType(currentItem.status)"
+                size="small"
+              >
                 {{ getStatusLabel(currentItem.status) }}
               </el-tag>
-            </span>
-          </div>
-          <div class="content">{{ currentItem.content }}</div>
-
-          <!-- 回复列表 -->
-          <div v-if="currentItem.replies && currentItem.replies.length" class="reply-list">
-            <div v-for="reply in currentItem.replies" :key="reply.id" class="reply-item">
-              <div class="reply-header">
-                <span class="user-name">{{ reply.userName }}</span>
-                <el-tag v-if="reply.isOfficial" size="mini" type="success">官方回复</el-tag>
-                <span class="time">{{ formatDateTime(reply.createdAt) }}</span>
-              </div>
-              <div class="reply-content">{{ reply.content }}</div>
             </div>
           </div>
-
-          <!-- 回复表单 -->
-          <div v-if="currentItem.status !== 'closed'" class="reply-form">
-            <el-input
-              type="textarea"
-              v-model="replyContent"
-              :rows="4"
-              placeholder="请输入回复内容"
-            />
+          <div class="header-info">
+            <span class="info-item">
+              <i class="el-icon-user"></i>
+              {{ currentItem.userName || '匿名用户' }}
+            </span>
+            <span class="info-item">
+              <i class="el-icon-time"></i>
+              {{ formatDateTime(currentItem.createdAt) }}
+            </span>
+            <span class="info-item">
+              <i class="el-icon-view"></i>
+              {{ currentItem.viewCount || 0 }} 次浏览
+            </span>
           </div>
         </div>
-      </template>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button
-          v-if="currentItem && currentItem.status !== 'closed'"
-          type="primary"
-          @click="handleReply"
-          :loading="submitLoading"
-        >
-          回复
-        </el-button>
-      </span>
+
+        <!-- 内容区域 -->
+        <div class="detail-content">
+          <div class="content-box">
+            {{ currentItem.content }}
+          </div>
+        </div>
+
+        <!-- 回复列表 -->
+        <div class="reply-section">
+          <div class="reply-header">
+            <span class="reply-title">
+              <i class="el-icon-chat-dot-round"></i>
+              回复记录 ({{ currentItem.replies ? currentItem.replies.length : 0 }})
+            </span>
+          </div>
+
+          <div v-if="currentItem.replies && currentItem.replies.length" class="reply-list">
+            <div
+              v-for="reply in currentItem.replies"
+              :key="reply.id"
+              class="reply-item"
+              :class="{ 'official-reply': reply.isOfficial }"
+            >
+              <div class="reply-item-header">
+                <div class="user-info">
+                  <el-avatar :size="32" icon="el-icon-user-solid"></el-avatar>
+                  <span class="username">{{ reply.userName }}</span>
+                  <el-tag
+                    v-if="reply.isOfficial"
+                    type="success"
+                    size="mini"
+                    effect="dark"
+                  >官方回复</el-tag>
+                </div>
+                <span class="reply-time">
+                  {{ formatDateTime(reply.createdAt) }}
+                </span>
+              </div>
+              <div class="reply-content">
+                {{ reply.content }}
+              </div>
+            </div>
+          </div>
+          <div v-else class="no-reply">
+            <el-empty description="暂无回复" :image-size="60"></el-empty>
+          </div>
+
+          <!-- 回复输入框 -->
+          <div v-if="currentItem.status !== 'closed'" class="reply-form">
+            <el-input
+              v-model="replyContent"
+              type="textarea"
+              :rows="3"
+              placeholder="请输入回复内容..."
+              :maxlength="500"
+              show-word-limit
+            ></el-input>
+            <div class="form-actions">
+              <el-button
+                type="primary"
+                :loading="submitLoading"
+                @click="handleReply"
+              >提交回复</el-button>
+            </div>
+          </div>
+          <div v-else class="interaction-closed">
+            <el-alert
+              title="该互动已关闭，无法继续回复"
+              type="warning"
+              :closable="false"
+              center
+              show-icon
+            ></el-alert>
+          </div>
+        </div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -568,109 +626,159 @@ export default {
     text-align: right;
   }
 
+  .interaction-detail-dialog {
+    :deep(.el-dialog__header) {
+      padding: 0;
+    }
+
+    :deep(.el-dialog__body) {
+      padding: 0;
+    }
+  }
+
   .interaction-detail {
-    h4 {
-      margin: 0 0 15px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #eee;
-    }
+    .detail-header {
+      padding: 24px;
+      background-color: #fff;
+      border-bottom: 1px solid #ebeef5;
 
-    .meta-info {
-      margin-bottom: 15px;
-      color: #666;
-      span {
-        margin-right: 20px;
+      .header-main {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 16px;
+
+        h3 {
+          margin: 0;
+          font-size: 20px;
+          line-height: 28px;
+          color: #1f2f3d;
+          flex: 1;
+          padding-right: 20px;
+        }
       }
-    }
 
-    .content {
-      padding: 15px;
-      background: #f5f7fa;
-      border-radius: 4px;
-      margin-bottom: 20px;
-    }
+      .header-info {
+        display: flex;
+        align-items: center;
+        color: #909399;
+        font-size: 13px;
 
-    .reply-list {
-      margin: 20px 0;
-
-      .reply-item {
-        padding: 10px;
-        border-radius: 4px;
-        background: #f5f7fa;
-        margin-bottom: 10px;
-
-        .reply-header {
-          margin-bottom: 8px;
+        .info-item {
+          margin-right: 20px;
           display: flex;
           align-items: center;
 
-          .user-name {
-            font-weight: bold;
-            margin-right: 10px;
+          i {
+            margin-right: 4px;
           }
-
-          .el-tag {
-            margin-right: 10px;
-          }
-
-          .time {
-            color: #999;
-            font-size: 12px;
-          }
-        }
-
-        .reply-content {
-          word-break: break-all;
-          white-space: pre-wrap;
         }
       }
     }
 
-    .reply-form {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #eee;
+    .detail-content {
+      padding: 24px;
+      background-color: #fff;
+      border-bottom: 1px solid #ebeef5;
+
+      .content-box {
+        line-height: 1.8;
+        color: #303133;
+        font-size: 14px;
+        white-space: pre-wrap;
+      }
+    }
+
+    .reply-section {
+      padding: 24px;
+      background: #f8f9fb;
+
+      .reply-header {
+        margin-bottom: 20px;
+
+        .reply-title {
+          font-size: 16px;
+          font-weight: 500;
+          color: #1f2f3d;
+          display: flex;
+          align-items: center;
+
+          i {
+            margin-right: 8px;
+            color: #409EFF;
+          }
+        }
+      }
+
+      .reply-list {
+        .reply-item {
+          background: #fff;
+          border-radius: 8px;
+          padding: 16px;
+          margin-bottom: 16px;
+          box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+
+          &.official-reply {
+            background: #ecf5ff;
+            border: 1px solid #d9ecff;
+          }
+
+          .reply-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+
+            .user-info {
+              display: flex;
+              align-items: center;
+
+              .username {
+                margin: 0 10px;
+                font-weight: 500;
+                color: #303133;
+              }
+            }
+
+            .reply-time {
+              color: #909399;
+              font-size: 13px;
+            }
+          }
+
+          .reply-content {
+            color: #303133;
+            line-height: 1.6;
+            white-space: pre-wrap;
+          }
+        }
+      }
+
+      .no-reply {
+        padding: 32px 0;
+      }
+
+      .reply-form {
+        margin-top: 24px;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+
+        .form-actions {
+          margin-top: 16px;
+          text-align: right;
+        }
+      }
+
+      .interaction-closed {
+        margin-top: 24px;
+      }
     }
   }
 }
 
-/* Element UI 样式覆盖 */
-.el-button-group {
-  .el-button {
-    margin-left: 0;
-  }
+::v-deep(.el-tag--dark) {
+  margin-left: 8px;
 }
-
-.el-button + .el-button {
-  margin-left: 5px;
-}
-
-.el-tag {
-  &.el-tag--success {
-    background-color: #f0f9eb;
-  }
-  &.el-tag--warning {
-    background-color: #fdf6ec;
-  }
-  &.el-tag--info {
-    background-color: #f4f4f5;
-  }
-}
-
-/* 移动端响应式布局 */
-@media screen and (max-width: 768px) {
-  .search-bar {
-    .el-form-item {
-      display: block;
-      margin-right: 0;
-      margin-bottom: 10px;
-    }
-  }
-
-  .el-table {
-    .el-button {
-      padding: 7px 10px;
-      font-size: 12px;
-    }
-  }
-}
+</style>
