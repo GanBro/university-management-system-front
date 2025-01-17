@@ -98,12 +98,6 @@ export const constantRoutes = [
             meta: { title: '专业推荐' }
           }
         ]
-      },
-      {
-        path: 'consultation/:questionId',
-        name: 'UserConsultationDetail',
-        component: () => import('@/views/user/university/consultation/detail.vue'),
-        meta: { title: '咨询详情' }
       }
     ]
   },

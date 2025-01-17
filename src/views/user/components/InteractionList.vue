@@ -1,13 +1,8 @@
 <template>
   <div class="interaction-list-section">
-    <!-- 互动入口按钮组 -->
+    <!-- 互动入口按钮 -->
     <div class="action-buttons">
-      <el-button-group>
-        <el-button type="primary" @click="handleCreate('consult')">在线咨询</el-button>
-        <el-button type="success" @click="handleCreate('feedback')">意见反馈</el-button>
-        <el-button type="warning" @click="handleCreate('message')">留言</el-button>
-        <el-button type="info" @click="handleCreate('alumni')">校友交流</el-button>
-      </el-button-group>
+      <el-button type="primary" @click="handleCreate">新建互动</el-button>
     </div>
 
     <!-- 我的互动列表 -->
@@ -19,11 +14,6 @@
         border
         style="width: 100%"
       >
-        <el-table-column label="类型" width="120">
-          <template slot-scope="{row}">
-            <el-tag :type="getTypeStyle(row.type)">{{ getTypeLabel(row.type) }}</el-tag>
-          </template>
-        </el-table-column>
         <el-table-column prop="title" label="标题" show-overflow-tooltip />
         <el-table-column label="状态" width="100" align="center">
           <template slot-scope="{row}">
@@ -64,7 +54,7 @@
 
     <!-- 创建互动对话框 -->
     <el-dialog
-      :title="getTypeLabel(form.type)"
+      title="新建互动"
       :visible.sync="createDialogVisible"
       width="600px"
     >
@@ -101,9 +91,6 @@
         <div class="detail-header">
           <h4>{{ currentInteraction.title }}</h4>
           <div class="meta">
-            <el-tag :type="getTypeStyle(currentInteraction.type)">
-              {{ getTypeLabel(currentInteraction.type) }}
-            </el-tag>
             <el-tag :type="getStatusType(currentInteraction.status)">
               {{ getStatusLabel(currentInteraction.status) }}
             </el-tag>
@@ -194,7 +181,6 @@ export default {
       return {
         title: '',
         content: '',
-        type: '',
         isPublic: true,
         userId: this.userId
       }
@@ -203,7 +189,6 @@ export default {
       this.loading = true
       try {
         const { data } = await getInteractionList(this.listQuery)
-        console.log('互动列表数据:', data.records)
         this.interactionList = data.records
         this.total = data.total
       } catch (error) {
@@ -213,9 +198,8 @@ export default {
         this.loading = false
       }
     },
-    handleCreate(type) {
+    handleCreate() {
       this.form = this.getInitialForm()
-      this.form.type = type
       this.createDialogVisible = true
       this.$nextTick(() => {
         this.$refs.form && this.$refs.form.clearValidate()
@@ -280,24 +264,6 @@ export default {
       this.listQuery.page = val
       this.fetchData()
     },
-    getTypeStyle(type) {
-      const styleMap = {
-        consult: 'primary',
-        feedback: 'success',
-        message: 'warning',
-        alumni: 'info'
-      }
-      return styleMap[type] || ''
-    },
-    getTypeLabel(type) {
-      const labelMap = {
-        consult: '在线咨询',
-        feedback: '意见反馈',
-        message: '留言板',
-        alumni: '校友交流'
-      }
-      return labelMap[type] || type
-    },
     getStatusType(status) {
       const typeMap = {
         pending: '',
@@ -317,80 +283,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-.interaction-detail {
-  .detail-header {
-    margin-bottom: 20px;
-
-    h4 {
-      margin: 0 0 10px;
-      font-size: 16px;
-    }
-
-    .meta {
-      .el-tag {
-        margin-right: 10px;
-      }
-
-      .time {
-        color: #909399;
-        font-size: 12px;
-      }
-    }
-  }
-
-  .content {
-    padding: 15px;
-    background: #f5f7fa;
-    border-radius: 4px;
-    line-height: 1.6;
-  }
-
-  .reply-list {
-    margin-top: 20px;
-
-    .reply-item {
-      padding: 12px;
-      margin-bottom: 10px;
-      background: #f5f7fa;
-      border-radius: 4px;
-
-      .reply-header {
-        margin-bottom: 8px;
-
-        .user-name {
-          font-weight: bold;
-          margin-right: 10px;
-        }
-
-        .time {
-          color: #909399;
-          font-size: 12px;
-        }
-
-        .el-tag {
-          margin: 0 10px;
-          transform: scale(0.9);
-        }
-      }
-
-      .reply-content {
-        line-height: 1.6;
-        color: #303133;
-      }
-    }
-  }
-
-  .add-reply {
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-
-    .reply-actions {
-      margin-top: 10px;
-      text-align: right;
-    }
-  }
-}
-</style>

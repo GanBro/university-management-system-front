@@ -1,3 +1,4 @@
+// InteractionManagement.vue
 <template>
   <div class="interaction-section">
     <div class="section-header">
@@ -32,16 +33,6 @@
 
     <!-- 筛选区域 -->
     <el-form :inline="true" :model="listQuery" class="filter-form">
-      <el-form-item label="类型">
-        <el-select v-model="listQuery.type" placeholder="选择类型" clearable>
-          <el-option
-            v-for="item in typeOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
-      </el-form-item>
       <el-form-item label="关键词">
         <el-input
           v-model="listQuery.keyword"
@@ -63,11 +54,6 @@
       style="width: 100%"
     >
       <el-table-column label="ID" prop="id" width="80" align="center" />
-      <el-table-column label="类型" width="100">
-        <template slot-scope="{row}">
-          <el-tag :type="getTypeStyle(row.type)">{{ getTypeLabel(row.type) }}</el-tag>
-        </template>
-      </el-table-column>
       <el-table-column label="标题" show-overflow-tooltip>
         <template slot-scope="{row}">
           <el-link type="primary" @click="showDetail(row)">{{ row.title }}</el-link>
@@ -200,16 +186,9 @@ export default {
         page: 1,
         limit: 10,
         universityId: undefined,
-        type: undefined,
         status: undefined,
         keyword: undefined
       },
-      typeOptions: [
-        { label: '在线咨询', value: 'consult' },
-        { label: '意见反馈', value: 'feedback' },
-        { label: '留言板', value: 'message' },
-        { label: '校友交流', value: 'alumni' }
-      ],
       dialogVisible: false,
       dialogTitle: '互动详情',
       currentInteraction: null,
@@ -255,7 +234,6 @@ export default {
         page: 1,
         limit: 10,
         universityId: this.universityId,
-        type: undefined,
         status: undefined,
         keyword: undefined
       }
@@ -346,24 +324,6 @@ export default {
     handleCurrentChange(val) {
       this.listQuery.page = val
       this.fetchData()
-    },
-    getTypeStyle(type) {
-      const styleMap = {
-        consult: 'primary',
-        feedback: 'success',
-        message: 'warning',
-        alumni: 'info'
-      }
-      return styleMap[type] || ''
-    },
-    getTypeLabel(type) {
-      const labelMap = {
-        consult: '在线咨询',
-        feedback: '意见反馈',
-        message: '留言板',
-        alumni: '校友交流'
-      }
-      return labelMap[type] || type
     },
     getStatusType(status) {
       const typeMap = {
@@ -513,4 +473,3 @@ export default {
     background-color: #f4f4f5;
   }
 }
-</style>

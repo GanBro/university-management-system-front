@@ -61,14 +61,6 @@
       <!-- 搜索和筛选 -->
       <div class="search-bar">
         <el-form :inline="true" :model="searchForm" ref="searchForm">
-          <el-form-item label="咨询类型">
-            <el-select v-model="searchForm.type" placeholder="请选择" clearable>
-              <el-option label="专业咨询" value="major" />
-              <el-option label="招生咨询" value="admission" />
-              <el-option label="就业咨询" value="career" />
-              <el-option label="其他咨询" value="other" />
-            </el-select>
-          </el-form-item>
           <el-form-item label="状态">
             <el-select v-model="searchForm.status" placeholder="请选择" clearable>
               <el-option label="待回复" value="pending" />
@@ -102,13 +94,6 @@
       >
         <el-table-column type="selection" width="55" />
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="type" label="类型" width="100">
-          <template slot-scope="scope">
-            <el-tag :type="getTypeTagType(scope.row.type)">
-              {{ getTypeLabel(scope.row.type) }}
-            </el-tag>
-          </template>
-        </el-table-column>
         <el-table-column prop="title" label="咨询标题" min-width="200" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="100">
           <template slot-scope="scope">
@@ -206,14 +191,6 @@
           </div>
         </div>
 
-        <!-- 类型分布 -->
-        <div class="analysis-section">
-          <h3>咨询类型分布</h3>
-          <div class="chart-container" style="height: 300px">
-            <!-- 饼图 -->
-          </div>
-        </div>
-
         <!-- 响应时间分析 -->
         <div class="analysis-section">
           <h3>响应时间分析</h3>
@@ -243,7 +220,6 @@ export default {
 
       // 搜索表单
       searchForm: {
-        type: '',
         status: '',
         timeRange: []
       },
@@ -334,26 +310,6 @@ export default {
 
     async fetchConsultationList() {
       // TODO: 实现获取咨询列表的接口
-    },
-
-    getTypeTagType(type) {
-      const types = {
-        major: 'primary',
-        admission: 'success',
-        career: 'warning',
-        other: 'info'
-      }
-      return types[type] || 'info'
-    },
-
-    getTypeLabel(type) {
-      const labels = {
-        major: '专业咨询',
-        admission: '招生咨询',
-        career: '就业咨询',
-        other: '其他咨询'
-      }
-      return labels[type] || '未知类型'
     },
 
     getStatusTagType(status) {
@@ -469,7 +425,7 @@ export default {
 
     exportData() {
       const params = {
-        ...this.searchForm,
+        status: this.searchForm.status,
         startTime: this.searchForm.timeRange?.[0],
         endTime: this.searchForm.timeRange?.[1]
       }

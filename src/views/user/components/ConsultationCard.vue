@@ -3,7 +3,7 @@
     <div class="card-header">
       <span class="title">
         <i class="el-icon-chat-dot-round"></i>
-        考生咨询
+        互动咨询
       </span>
     </div>
 
@@ -129,7 +129,7 @@ export default {
   methods: {
     async handleQuestionClick(item) {
       try {
-        // 使用 interaction module 的 getDetail action 获取详情
+        // 获取互动详情
         const data = await this.$store.dispatch('interaction/getDetail', item.id)
         this.currentConsultation = data
         this.detailDialogVisible = true
@@ -172,7 +172,6 @@ export default {
         const consultationData = {
           universityId: this.universityId,
           userId: this.$store.state.user.id,
-          type: 'consult',
           title: this.consultationForm.title.trim(),
           content: this.consultationForm.content.trim(),
           status: 'pending',
@@ -317,4 +316,3 @@ export default {
   }
 }
 </style>
-

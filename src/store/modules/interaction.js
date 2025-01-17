@@ -5,6 +5,7 @@ import {
   createInteraction,
   replyInteraction,
   closeInteraction,
+  reopenInteraction,
   deleteInteraction
 } from '@/api/interaction'
 
@@ -42,6 +43,7 @@ const actions = {
         list: data.records,
         total: data.total
       })
+      return data
     } finally {
       commit('SET_LIST_LOADING', false)
     }
@@ -61,32 +63,51 @@ const actions = {
 
   // 创建互动
   async createInteraction({ dispatch }, interactionData) {
-    await createInteraction(interactionData)
-    return dispatch('getList')
+    const { data } = await createInteraction(interactionData)
+    await dispatch('getList')
+    return data
   },
 
   // 回复互动
   async replyInteraction({ dispatch }, { id, data }) {
-    await replyInteraction(id, data)
-    return dispatch('getList')
+    const response = await replyInteraction(id, data)
+    await dispatch('getDetail', id)
+    return response.data
   },
 
   // 关闭互动
   async closeInteraction({ dispatch }, id) {
-    await closeInteraction(id)
-    return dispatch('getList')
+    const { data } = await closeInteraction(id)
+    await dispatch('getList')
+    return data
+  },
+
+  // 重新打开互动
+  async reopenInteraction({ dispatch }, id) {
+    const { data } = await reopenInteraction(id)
+    await dispatch('getList')
+    return data
   },
 
   // 删除互动
   async deleteInteraction({ dispatch }, id) {
-    await deleteInteraction(id)
-    return dispatch('getList')
+    const { data } = await deleteInteraction(id)
+    await dispatch('getList')
+    return data
   }
+}
+
+const getters = {
+  interactionList: state => state.list,
+  currentInteraction: state => state.currentInteraction,
+  listLoading: state => state.listLoading,
+  detailLoading: state => state.detailLoading
 }
 
 export default {
   namespaced: true,
   state,
   mutations,
-  actions
+  actions,
+  getters
 }
