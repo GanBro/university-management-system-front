@@ -20,8 +20,11 @@
         </div>
         <div class="header-info">
           <span class="info-item">
-            <i class="el-icon-user"></i>
-            {{ formatUser(currentInteraction.userId) || '匿名用户' }}
+            <ImageHandler
+              :src="currentInteraction.avatar"
+              :size="24"
+            />
+            <span class="ml-2">{{ currentInteraction.userName || '匿名用户' }}</span>
           </span>
           <span class="info-item">
             <i class="el-icon-time"></i>
@@ -63,8 +66,11 @@
           >
             <div class="reply-item-header">
               <div class="user-info">
-                <el-avatar :size="32" icon="el-icon-user-solid"></el-avatar>
-                <span class="username">{{ formatUser(reply.userId) }}</span>
+                <ImageHandler
+                  :src="reply.avatar"
+                  :size="32"
+                />
+                <span class="username">{{ reply.userName || '未知用户' }}</span>
                 <template v-if="reply.isOfficial">
                   <el-tag
                     type="success"
@@ -135,9 +141,13 @@
 <script>
 import moment from 'moment'
 import { mapState } from 'vuex'
+import ImageHandler from '@/components/ImageHandler'
 
 export default {
   name: 'InteractionDetailDialog',
+  components: {
+    ImageHandler
+  },
   props: {
     visible: {
       type: Boolean,
@@ -145,7 +155,17 @@ export default {
     },
     currentInteraction: {
       type: Object,
-      default: () => ({}),
+      default: () => ({
+        title: '',
+        content: '',
+        status: '',
+        userId: null,
+        userName: '',
+        avatar: '',
+        viewCount: 0,
+        created_at: null,
+        replies: []
+      })
     },
     isAdmin: {
       type: Boolean,
@@ -162,19 +182,16 @@ export default {
     ...mapState({
       currentUser: state => state.user.name
     }),
-    // 判断当前用户是否是提问者(用于显示补充说明等操作)
     isQuestioner() {
       const currentUserId = this.$store.state.user.id
       return currentUserId && this.currentInteraction?.userId &&
         String(currentUserId) === String(this.currentInteraction.userId)
     },
-    // 获取输入框提示文字
     getInputPlaceholder() {
       if (this.isAdmin) return '请输入官方回复内容...'
       if (this.isQuestioner) return '请输入补充说明...'
       return '请输入回复内容...'
     },
-    // 获取提交按钮文字
     getSubmitButtonText() {
       if (this.isAdmin) return '官方回复'
       if (this.isQuestioner) return '补充说明'
@@ -182,16 +199,9 @@ export default {
     }
   },
   methods: {
-    // 判断某条回复是否来自提问者
     isReplyFromQuestioner(reply) {
-      // reply.userId 是回复者的ID
-      // currentInteraction.userId 是问题创建者(提问者)的ID
-      // 只有当回复者ID等于问题创建者ID时,才是提问者的回复
       return this.currentInteraction?.userId &&
         String(reply.userId) === String(this.currentInteraction.userId)
-    },
-    formatUser(userId) {
-      return userId
     },
     formatTime(time) {
       return moment(time).format('YYYY-MM-DD HH:mm')
@@ -236,7 +246,7 @@ export default {
       try {
         await this.$emit('reply', {
           content: this.replyContent.trim(),
-          isOfficial: this.isAdmin,  // 只有管理员的回复才是官方回复
+          isOfficial: this.isAdmin,
           userId: currentUserId
         })
         this.$message.success(
@@ -306,6 +316,10 @@ export default {
 
         i {
           margin-right: 4px;
+        }
+
+        .ml-2 {
+          margin-left: 8px;
         }
       }
     }
