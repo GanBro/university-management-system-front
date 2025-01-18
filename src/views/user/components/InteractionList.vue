@@ -1,3 +1,4 @@
+<!-- src/views/user/components/InteractionList.vue -->
 <template>
   <div class="interaction-list-section">
     <!-- 互动入口按钮 -->
@@ -22,7 +23,7 @@
         </el-table-column>
         <el-table-column label="时间" width="160" align="center">
           <template slot-scope="{ row }">
-            {{ row.createdAt | parseTime('{y}-{m}-{d} {h}:{i}') }}
+            {{ formatDateTime(row.createdAt) }}
           </template>
         </el-table-column>
         <el-table-column label="操作" width="120" align="center">
@@ -89,6 +90,7 @@
 <script>
 import { getInteractionList, getInteractionDetail, createInteraction, replyInteraction } from '@/api/interaction';
 import { mapGetters } from 'vuex';
+import dayjs from 'dayjs';
 import InteractionDetailDialog from '@/components/InteractionDetailDialog';
 
 export default {
@@ -222,6 +224,10 @@ export default {
       };
       return labelMap[status];
     },
+    formatDateTime(time) {
+      if (!time) return '-'
+      return dayjs(time).format('YYYY-MM-DD HH:mm:ss')
+    }
   },
 };
 </script>
