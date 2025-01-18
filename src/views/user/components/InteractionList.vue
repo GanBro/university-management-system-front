@@ -51,6 +51,7 @@
     <InteractionDetailDialog
       :visible.sync="detailDialogVisible"
       :currentInteraction="currentInteraction"
+      :isAdmin="false"
       @reply="handleAddReply"
     />
 
@@ -88,7 +89,7 @@
 <script>
 import { getInteractionList, getInteractionDetail, createInteraction, replyInteraction } from '@/api/interaction';
 import { mapGetters } from 'vuex';
-import InteractionDetailDialog from './InteractionDetailDialog.vue';
+import InteractionDetailDialog from '@/components/InteractionDetailDialog';
 
 export default {
   name: 'InteractionList',

@@ -21,7 +21,7 @@
         <div class="header-info">
           <span class="info-item">
             <i class="el-icon-user"></i>
-            {{ formatUser(currentInteraction.user_id) || '匿名用户' }}
+            {{ formatUser(currentInteraction.userId) || '匿名用户' }}
           </span>
           <span class="info-item">
             <i class="el-icon-time"></i>
@@ -46,7 +46,8 @@
         <div class="reply-header">
           <span class="reply-title">
             <i class="el-icon-chat-dot-round"></i>
-            回复记录 ({{ currentInteraction.replies ? currentInteraction.replies.length : 0 }})
+            {{ isQuestioner ? '跟进记录' : '回复记录' }}
+            ({{ currentInteraction.replies ? currentInteraction.replies.length : 0 }})
           </span>
         </div>
 
@@ -55,18 +56,36 @@
             v-for="reply in currentInteraction.replies"
             :key="reply.id"
             class="reply-item"
-            :class="{ 'official-reply': reply.isOfficial }"
+            :class="{
+              'official-reply': reply.isOfficial,
+              'questioner-reply': isReplyFromQuestioner(reply)
+            }"
           >
             <div class="reply-item-header">
               <div class="user-info">
                 <el-avatar :size="32" icon="el-icon-user-solid"></el-avatar>
-                <span class="username">{{ formatUser(reply.user_id) }}</span>
-                <el-tag
-                  v-if="reply.isOfficial"
-                  type="success"
-                  size="mini"
-                  effect="dark"
-                >官方回复</el-tag>
+                <span class="username">{{ formatUser(reply.userId) }}</span>
+                <template v-if="reply.isOfficial">
+                  <el-tag
+                    type="success"
+                    size="mini"
+                    effect="dark"
+                  >官方回复</el-tag>
+                </template>
+                <template v-else-if="isReplyFromQuestioner(reply)">
+                  <el-tag
+                    type="warning"
+                    size="mini"
+                    effect="dark"
+                  >提问者</el-tag>
+                </template>
+                <template v-else>
+                  <el-tag
+                    type="info"
+                    size="mini"
+                    effect="dark"
+                  >普通回复</el-tag>
+                </template>
               </div>
               <span class="reply-time">
                 {{ formatTime(reply.created_at) }}
@@ -78,7 +97,7 @@
           </div>
         </div>
         <div v-else class="no-reply">
-          <el-empty description="暂无回复" :image-size="60"></el-empty>
+          <el-empty :description="isQuestioner ? '暂无跟进内容' : '暂无回复'" :image-size="60"></el-empty>
         </div>
 
         <!-- 回复输入框 -->
@@ -87,36 +106,21 @@
             v-model="replyContent"
             type="textarea"
             :rows="3"
-            placeholder="请输入回复内容..."
+            :placeholder="getInputPlaceholder"
             :maxlength="500"
             show-word-limit
           ></el-input>
           <div class="form-actions">
-            <!-- 管理员可以选择以官方或普通身份回复 -->
-            <template v-if="isAdmin">
-              <el-button
-                type="primary"
-                :loading="submitLoading"
-                @click="handleReply(true)"
-              >官方回复</el-button>
-              <el-button
-                :loading="submitLoading"
-                @click="handleReply(false)"
-              >普通回复</el-button>
-            </template>
-            <!-- 普通用户只能普通回复 -->
-            <template v-else>
-              <el-button
-                type="primary"
-                :loading="submitLoading"
-                @click="handleReply(false)"
-              >提交回复</el-button>
-            </template>
+            <el-button
+              type="primary"
+              :loading="submitLoading"
+              @click="handleReply"
+            >{{ getSubmitButtonText }}</el-button>
           </div>
         </div>
         <div v-else class="interaction-closed">
           <el-alert
-            title="该互动已关闭，无法继续回复"
+            :title="isQuestioner ? '该咨询已关闭，无法继续补充' : '该互动已关闭，无法继续回复'"
             type="warning"
             :closable="false"
             center
@@ -129,8 +133,8 @@
 </template>
 
 <script>
-import moment from 'moment';
-import { mapGetters } from 'vuex';
+import moment from 'moment'
+import { mapState } from 'vuex'
 
 export default {
   name: 'InteractionDetailDialog',
@@ -143,7 +147,6 @@ export default {
       type: Object,
       default: () => ({}),
     },
-    // 新增 isAdmin 属性用于区分管理员和普通用户
     isAdmin: {
       type: Boolean,
       default: false,
@@ -153,58 +156,108 @@ export default {
     return {
       replyContent: '',
       submitLoading: false,
-    };
+    }
   },
   computed: {
-    ...mapGetters(['userId']),
+    ...mapState({
+      currentUser: state => state.user.name
+    }),
+    // 判断当前用户是否是提问者(用于显示补充说明等操作)
+    isQuestioner() {
+      const currentUserId = this.$store.state.user.id
+      return currentUserId && this.currentInteraction?.userId &&
+        String(currentUserId) === String(this.currentInteraction.userId)
+    },
+    // 获取输入框提示文字
+    getInputPlaceholder() {
+      if (this.isAdmin) return '请输入官方回复内容...'
+      if (this.isQuestioner) return '请输入补充说明...'
+      return '请输入回复内容...'
+    },
+    // 获取提交按钮文字
+    getSubmitButtonText() {
+      if (this.isAdmin) return '官方回复'
+      if (this.isQuestioner) return '补充说明'
+      return '提交回复'
+    }
   },
   methods: {
+    // 判断某条回复是否来自提问者
+    isReplyFromQuestioner(reply) {
+      // reply.userId 是回复者的ID
+      // currentInteraction.userId 是问题创建者(提问者)的ID
+      // 只有当回复者ID等于问题创建者ID时,才是提问者的回复
+      return this.currentInteraction?.userId &&
+        String(reply.userId) === String(this.currentInteraction.userId)
+    },
     formatUser(userId) {
-      // TODO: 根据用户ID获取用户名，可以考虑使用 Vuex 存储用户信息
-      return userId;
+      return userId
     },
     formatTime(time) {
-      return moment(time).format('YYYY-MM-DD HH:mm');
+      return moment(time).format('YYYY-MM-DD HH:mm')
     },
     getStatusType(status) {
       const typeMap = {
         pending: 'warning',
         replied: 'success',
         closed: 'info',
-      };
-      return typeMap[status] || '';
+      }
+      return typeMap[status] || ''
     },
     getStatusLabel(status) {
       const labelMap = {
         pending: '待回复',
         replied: '已回复',
         closed: '已关闭',
-      };
-      return labelMap[status] || '未知状态';
+      }
+      return labelMap[status] || '未知状态'
     },
-    async handleReply(isOfficial = false) {
-      if (!this.replyContent.trim()) {
-        this.$message.warning('请输入回复内容');
-        return;
+    async handleReply() {
+      const currentUserId = this.$store.state.user.id
+      if (!currentUserId) {
+        this.$message.warning('请先登录')
+        this.$router.push({
+          path: '/login',
+          query: { redirect: this.$route.fullPath }
+        })
+        return
       }
 
-      this.submitLoading = true;
+      if (!this.replyContent.trim()) {
+        this.$message.warning(
+          this.isQuestioner ? '请输入补充说明内容'
+            : this.isAdmin ? '请输入官方回复内容'
+              : '请输入回复内容'
+        )
+        return
+      }
+
+      this.submitLoading = true
       try {
         await this.$emit('reply', {
           content: this.replyContent.trim(),
-          isOfficial,
-        });
-        this.$message.success('回复成功');
-        this.replyContent = '';
+          isOfficial: this.isAdmin,  // 只有管理员的回复才是官方回复
+          userId: currentUserId
+        })
+        this.$message.success(
+          this.isQuestioner ? '补充说明已提交'
+            : this.isAdmin ? '官方回复已提交'
+              : '回复成功'
+        )
+        this.replyContent = ''
       } catch (error) {
-        console.error('回复失败:', error);
-        this.$message.error('回复失败');
+        console.error('提交失败:', error)
+        this.$message.error(
+          this.isQuestioner ? '补充说明提交失败'
+            : this.isAdmin ? '官方回复提交失败'
+              : '回复失败'
+        )
       } finally {
-        this.submitLoading = false;
+        this.submitLoading = false
       }
-    },
-  },
-};
+    }
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -305,6 +358,11 @@ export default {
           border: 1px solid #d9ecff;
         }
 
+        &.questioner-reply {
+          background: #fef3c7;
+          border: 1px solid #fcd34d;
+        }
+
         .reply-item-header {
           display: flex;
           justify-content: space-between;
@@ -350,6 +408,10 @@ export default {
       .form-actions {
         margin-top: 16px;
         text-align: right;
+
+        .el-button + .el-button {
+          margin-left: 12px;
+        }
       }
     }
 
@@ -357,5 +419,9 @@ export default {
       margin-top: 24px;
     }
   }
+}
+
+::v-deep(.el-tag--dark) {
+  margin-left: 8px;
 }
 </style>

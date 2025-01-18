@@ -29,6 +29,7 @@
     <InteractionDetailDialog
       :visible.sync="detailDialogVisible"
       :currentInteraction="currentConsultation"
+      :isAdmin="false"
       @reply="handleReply"
     />
 
@@ -64,7 +65,7 @@
 import moment from 'moment';
 import { mapState } from 'vuex';
 import { getToken } from '@/utils/auth';
-import InteractionDetailDialog from './InteractionDetailDialog.vue';
+import InteractionDetailDialog from '@/components/InteractionDetailDialog';
 
 export default {
   name: 'ConsultationCard',
@@ -182,7 +183,7 @@ export default {
           id: this.currentConsultation.id,
           data: {
             content,
-            isOfficial,
+            isOfficial: false, // 用户端默认为非官方回复
             userId: this.$store.state.user.id,
           },
         });
