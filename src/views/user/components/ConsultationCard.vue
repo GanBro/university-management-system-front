@@ -112,6 +112,7 @@ export default {
     async handleQuestionClick(item) {
       try {
         const result = await this.$store.dispatch('interaction/getDetail', item.id);
+        console.log('获取到的详情数据:', result.data)
         this.currentConsultation = result.data;
         this.detailDialogVisible = true;
       } catch (error) {

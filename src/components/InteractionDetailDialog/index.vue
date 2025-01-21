@@ -1,7 +1,8 @@
 <!-- src/components/InteractionDetailDialog/index.vue -->
 <template>
   <el-dialog
-    :visible.sync="visible"
+    :visible="dialogVisible"
+    @update:visible="handleVisibleChange"
     width="750px"
     class="interaction-detail-dialog"
     :title="null"
@@ -28,7 +29,7 @@
           </span>
           <span class="info-item">
             <i class="el-icon-time"></i>
-            {{ formatTime(currentInteraction.created_at) }}
+            {{ formatTime(currentInteraction.createdAt) }}
           </span>
           <span class="info-item">
             <i class="el-icon-view"></i>
@@ -94,7 +95,7 @@
                 </template>
               </div>
               <span class="reply-time">
-                {{ formatTime(reply.created_at) }}
+                {{ formatTime(reply.createdAt) }}
               </span>
             </div>
             <div class="reply-content">
@@ -139,7 +140,7 @@
 </template>
 
 <script>
-import moment from 'moment'
+import dayjs from 'dayjs'
 import { mapState } from 'vuex'
 import ImageHandler from '@/components/ImageHandler'
 
@@ -161,9 +162,10 @@ export default {
         status: '',
         userId: null,
         userName: '',
-        avatar: '',
+        avatar: null,
         viewCount: 0,
-        created_at: null,
+        createdAt: null,
+        updatedAt: null,
         replies: []
       })
     },
@@ -174,8 +176,17 @@ export default {
   },
   data() {
     return {
+      dialogVisible: false,
       replyContent: '',
       submitLoading: false,
+    }
+  },
+  watch: {
+    visible: {
+      immediate: true,
+      handler(val) {
+        this.dialogVisible = val
+      }
     }
   },
   computed: {
@@ -199,12 +210,17 @@ export default {
     }
   },
   methods: {
+    handleVisibleChange(val) {
+      this.dialogVisible = val
+      this.$emit('update:visible', val)
+    },
     isReplyFromQuestioner(reply) {
       return this.currentInteraction?.userId &&
         String(reply.userId) === String(this.currentInteraction.userId)
     },
     formatTime(time) {
-      return moment(time).format('YYYY-MM-DD HH:mm')
+      if (!time) return '-'
+      return dayjs(time).format('YYYY-MM-DD HH:mm')
     },
     getStatusType(status) {
       const typeMap = {
