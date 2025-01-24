@@ -191,10 +191,11 @@ export default {
   },
   computed: {
     ...mapState({
-      currentUser: state => state.user.name
+      currentUser: state => state.user.name,
+      userId: state => state.user.userId
     }),
     isQuestioner() {
-      const currentUserId = this.$store.state.user.id
+      const currentUserId = this.$store.state.user.userId
       return currentUserId && this.currentInteraction?.userId &&
         String(currentUserId) === String(this.currentInteraction.userId)
     },
@@ -239,22 +240,29 @@ export default {
       return labelMap[status] || '未知状态'
     },
     async handleReply() {
-      const currentUserId = this.$store.state.user.id
-      if (!currentUserId) {
+      const vuexState = this.$store.state.user
+      console.log('回复时状态:', {
+        storeUserId: vuexState.userId,
+        computedUserId: this.userId
+      })
+
+      if (!vuexState.userId) {
+        try {
+          await this.$store.dispatch('user/getInfo')
+          console.log('重新获取用户信息后:', this.$store.state.user)
+        } catch (err) {
+          console.error('获取用户信息失败:', err)
+        }
+      }
+
+      if (!this.$store.state.user.userId) {
         this.$message.warning('请先登录')
-        this.$router.push({
-          path: '/login',
-          query: { redirect: this.$route.fullPath }
-        })
+        this.$router.push('/login')
         return
       }
 
       if (!this.replyContent.trim()) {
-        this.$message.warning(
-          this.isQuestioner ? '请输入补充说明内容'
-            : this.isAdmin ? '请输入官方回复内容'
-              : '请输入回复内容'
-        )
+        this.$message.warning('请输入回复内容')
         return
       }
 
@@ -263,21 +271,13 @@ export default {
         await this.$emit('reply', {
           content: this.replyContent.trim(),
           isOfficial: this.isAdmin,
-          userId: currentUserId
+          userId: this.$store.state.user.userId
         })
-        this.$message.success(
-          this.isQuestioner ? '补充说明已提交'
-            : this.isAdmin ? '官方回复已提交'
-              : '回复成功'
-        )
+        this.$message.success('回复成功')
         this.replyContent = ''
       } catch (error) {
-        console.error('提交失败:', error)
-        this.$message.error(
-          this.isQuestioner ? '补充说明提交失败'
-            : this.isAdmin ? '官方回复提交失败'
-              : '回复失败'
-        )
+        console.error('回复失败:', error)
+        this.$message.error('回复失败')
       } finally {
         this.submitLoading = false
       }

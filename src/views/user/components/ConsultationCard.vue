@@ -1,3 +1,4 @@
+<!--src/views/user/components/ConsultationCard.vue-->
 <template>
   <el-card class="consultation-card">
     <div class="card-header">
@@ -62,25 +63,25 @@
 </template>
 
 <script>
-import moment from 'moment';
-import { mapState } from 'vuex';
-import { getToken } from '@/utils/auth';
-import InteractionDetailDialog from '@/components/InteractionDetailDialog';
+import moment from 'moment'
+import { mapState } from 'vuex'
+import { getToken } from '@/utils/auth'
+import InteractionDetailDialog from '@/components/InteractionDetailDialog'
 
 export default {
   name: 'ConsultationCard',
   components: {
-    InteractionDetailDialog,
+    InteractionDetailDialog
   },
   props: {
     universityId: {
       type: [String, Number],
-      required: true,
+      required: true
     },
     consultations: {
       type: Array,
-      required: true,
-    },
+      required: true
+    }
   },
   data() {
     return {
@@ -89,117 +90,151 @@ export default {
       currentConsultation: null,
       consultationForm: {
         title: '',
-        content: '',
+        content: ''
       },
       rules: {
         title: [
           { required: true, message: '请输入咨询标题', trigger: 'blur' },
-          { min: 2, max: 50, message: '标题长度在 2 到 50 个字符', trigger: 'blur' },
+          { min: 2, max: 50, message: '标题长度在 2 到 50 个字符', trigger: 'blur' }
         ],
         content: [
           { required: true, message: '请输入咨询内容', trigger: 'blur' },
-          { min: 10, max: 500, message: '内容长度在 10 到 500 个字符', trigger: 'blur' },
-        ],
-      },
-    };
+          { min: 10, max: 500, message: '内容长度在 10 到 500 个字符', trigger: 'blur' }
+        ]
+      }
+    }
   },
   computed: {
     ...mapState({
-      currentUser: (state) => state.user.name,
-    }),
+      currentUser: state => state.user.name,
+      userId: state => state.user.userId
+    })
+  },
+  async created() {
+    const token = getToken()
+    if (token) {
+      try {
+        await this.$store.dispatch('user/getInfo')
+      } catch (err) {
+        console.error('获取用户信息失败:', err)
+      }
+    }
   },
   methods: {
     async handleQuestionClick(item) {
       try {
-        const result = await this.$store.dispatch('interaction/getDetail', item.id);
-        console.log('获取到的详情数据:', result.data)
-        this.currentConsultation = result.data;
-        this.detailDialogVisible = true;
+        const result = await this.$store.dispatch('interaction/getDetail', item.id)
+        console.log('获取咨询详情:', result.data)
+        this.currentConsultation = result.data
+        this.detailDialogVisible = true
       } catch (error) {
-        console.error('获取咨询详情失败:', error);
-        this.$message.error('获取详情失败');
+        console.error('获取详情失败:', error)
+        this.$message.error('获取详情失败')
       }
     },
+
     handleAsk() {
-      if (!this.currentUser || !getToken()) {
+      const token = getToken()
+      console.log('点击咨询-当前状态:', {
+        token,
+        currentUser: this.currentUser,
+        userId: this.userId,
+        vuexState: this.$store.state.user
+      })
+
+      if (!token || !this.currentUser || !this.userId) {
+        this.$message.warning('请先登录')
         this.$router.push({
           path: '/login',
-          query: { redirect: this.$route.fullPath },
-        });
-        return;
+          query: { redirect: this.$route.fullPath }
+        })
+        return
       }
-      this.dialogVisible = true;
+      this.dialogVisible = true
     },
-    formatUser(userId) {
-      // TODO: 根据用户ID获取用户名，可以考虑使用 Vuex 存储用户信息
-      return userId;
-    },
+
     formatTime(time) {
-      return moment(time).format('YYYY-MM-DD HH:mm');
+      return moment(time).format('YYYY-MM-DD HH:mm')
     },
+
+    formatUser(userId) {
+      return userId
+    },
+
     async submitConsultation() {
       try {
-        await this.$refs.consultationForm.validate();
-        if (!getToken()) {
-          this.$router.push('/login');
-          return;
-        }
+        await this.$refs.consultationForm.validate()
+        await this.$store.dispatch('user/getInfo')
 
-        await this.$store.dispatch('user/getInfo');
+        console.log('提交咨询-当前状态:', {
+          userId: this.userId,
+          currentUser: this.currentUser,
+          token: getToken()
+        })
+
+        if (!this.userId) {
+          this.$message.warning('用户信息获取失败，请重新登录')
+          return
+        }
 
         const consultationData = {
           universityId: this.universityId,
-          userId: this.$store.state.user.id,
+          userId: this.userId,
           title: this.consultationForm.title.trim(),
           content: this.consultationForm.content.trim(),
           status: 'pending',
-          is_public: true,
-        };
+          is_public: true
+        }
 
         await this.$store.dispatch('university/submitConsultation', {
           id: this.universityId,
-          consultationData,
-        });
+          consultationData
+        })
 
-        this.$message.success('提交成功');
-        this.dialogVisible = false;
-        this.resetForm();
+        this.$message.success('提交成功')
+        this.dialogVisible = false
+        this.resetForm()
       } catch (error) {
-        console.error('提交失败:', error);
-        this.$message.error('提交失败,请重试');
+        console.error('提交失败:', error)
+        this.$message.error('提交失败，请重试')
       }
     },
+
     resetForm() {
       if (this.$refs.consultationForm) {
-        this.$refs.consultationForm.resetFields();
+        this.$refs.consultationForm.resetFields()
       }
       this.consultationForm = {
         title: '',
-        content: '',
-      };
+        content: ''
+      }
     },
-    async handleReply({ content, isOfficial }) {
+
+    async handleReply({ content }) {
+      if (!this.userId) {
+        this.$message.warning('请先登录')
+        return
+      }
+
       try {
         await this.$store.dispatch('interaction/replyInteraction', {
           id: this.currentConsultation.id,
           data: {
             content,
-            isOfficial: false, // 用户端默认为非官方回复
-            userId: this.$store.state.user.id,
-          },
-        });
-        this.$message.success('回复成功');
+            isOfficial: false,
+            userId: this.userId
+          }
+        })
 
-        // 刷新当前互动详情
-        const result = await this.$store.dispatch('interaction/getDetail', this.currentConsultation.id);
-        this.currentConsultation = result.data;
+        this.$message.success('回复成功')
+        const result = await this.$store.dispatch('interaction/getDetail', this.currentConsultation.id)
+        this.currentConsultation = result.data
       } catch (error) {
-        console.error('回复失败:', error);
-        this.$message.error('回复失败');
+        this.$message.error('回复失败')
       }
-    },
-  },
-};
+    }
+  }
+}
 </script>
 
 <style lang="scss" scoped>

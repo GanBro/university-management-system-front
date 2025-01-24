@@ -67,22 +67,6 @@
             </el-form>
           </el-tab-pane>
 
-          <!-- 互动记录标签页 -->
-          <el-tab-pane label="互动记录" name="interactions">
-            <div class="interaction-list">
-              <div v-for="item in interactions" :key="item.id" class="interaction-item">
-                <div class="interaction-header">
-                  <el-tag size="small" :type="getInteractionTagType(item.type)">{{ item.type }}</el-tag>
-                  <span class="interaction-time">{{ formatDate(item.created_at) }}</span>
-                </div>
-                <div class="interaction-content">
-                  <h4>{{ item.title }}</h4>
-                  <p>{{ item.content }}</p>
-                </div>
-              </div>
-            </div>
-          </el-tab-pane>
-
           <!-- 消息通知标签页 -->
           <el-tab-pane label="消息通知" name="notifications">
             <div class="notification-settings">
@@ -176,7 +160,6 @@ export default {
           { required: true, trigger: 'blur', validator: validateConfirmPassword }
         ]
       },
-      interactions: [],
       notificationSettings: {
         system: true,
         interaction: true
@@ -203,7 +186,6 @@ export default {
   },
   created() {
     this.initProfileForm()
-    this.fetchInteractions()
   },
   methods: {
     formatDate(date) {
@@ -214,32 +196,6 @@ export default {
     initProfileForm() {
       this.profileForm.username = this.userInfo.username
       this.profileForm.email = '2551921037@qq.com'
-    },
-    async fetchInteractions() {
-      this.interactions = [
-        {
-          id: 1,
-          type: '咨询',
-          title: '关于计算机专业的咨询',
-          content: '请问贵校计算机专业的具体分数线是多少？',
-          created_at: '2025-01-20'
-        },
-        {
-          id: 2,
-          type: '反馈',
-          title: '专业介绍页面优化建议',
-          content: '建议增加更多专业详细信息',
-          created_at: '2025-01-18'
-        }
-      ]
-    },
-    getInteractionTagType(type) {
-      const types = {
-        '咨询': 'primary',
-        '反馈': 'success',
-        '留言': 'info'
-      }
-      return types[type] || 'info'
     },
     handleEdit() {
       if (this.isEditing) {
@@ -341,43 +297,6 @@ export default {
     .password-form {
       max-width: 500px;
       margin-top: 20px;
-    }
-  }
-
-  .interaction-list {
-    .interaction-item {
-      padding: 15px;
-      border-bottom: 1px solid #ebeef5;
-
-      &:last-child {
-        border-bottom: none;
-      }
-
-      .interaction-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 10px;
-
-        .interaction-time {
-          color: #909399;
-          font-size: 13px;
-        }
-      }
-
-      .interaction-content {
-        h4 {
-          margin: 0 0 5px;
-          font-size: 16px;
-          color: #303133;
-        }
-
-        p {
-          margin: 0;
-          color: #606266;
-          font-size: 14px;
-        }
-      }
     }
   }
 

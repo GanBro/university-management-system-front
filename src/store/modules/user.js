@@ -56,38 +56,31 @@ const actions = {
 
   // 获取用户信息
   getInfo({ commit, state }) {
-    // 如果已经有完整的用户信息，直接返回
-    if (state.name && state.role && state.id) {
+    if (state.name && state.role && state.userId) {
       return Promise.resolve({
         name: state.name,
         role: state.role,
-        id: state.id
+        userId: state.userId
       })
     }
 
     return new Promise((resolve, reject) => {
       getInfo(state.token)
         .then(response => {
-          console.log('getInfo数据:', response)
+          console.log('getInfo响应:', response)
           const { data } = response
           if (!data || !data.user) {
             reject('验证失败，请重新登录')
             return
           }
-          // 修改为 userId
+
           const { username: name, avatar, role, userId } = data.user
-          commit('SET_USER', {
-            username: name,
-            role,
-            avatar
-          })
+          console.log('提交用户信息:', { name, role, avatar, userId })
+
+          commit('SET_USER', { username: name, role, avatar })
           commit('SET_USER_ID', userId)
-          resolve({
-            name,
-            role,
-            avatar,
-            userId
-          })
+
+          resolve(data.user)
         })
         .catch(error => {
           console.error('获取用户信息失败:', error)
