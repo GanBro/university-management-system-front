@@ -9,7 +9,7 @@ const getDefaultState = () => {
     name: '',
     avatar: '',
     role: '',
-    id: null // 用户ID字段
+    userId: null // 用户ID字段
   }
 }
 
@@ -27,8 +27,8 @@ const mutations = {
     state.role = user.role
     state.avatar = user.avatar
   },
-  SET_USER_ID: (state, id) => {
-    state.id = id
+  SET_USER_ID: (state, userId) => {
+    state.userId = userId
   }
 }
 
@@ -42,6 +42,7 @@ const actions = {
           console.log('登录响应:', response)
           const { data } = response
           commit('SET_TOKEN', data.token)
+          commit('SET_USER_ID', data.userId) // 存储 userId
           setToken(data.token)
           console.log('Token 已保存到 cookie:', data.token) // 添加日志
           resolve(data)
@@ -85,7 +86,7 @@ const actions = {
             name,
             role,
             avatar,
-            id: userId
+            userId
           })
         })
         .catch(error => {

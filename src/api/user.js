@@ -89,3 +89,20 @@ export function getRoleList() {
     method: 'get'
   })
 }
+
+// 更新用户个人信息
+export function updateProfile(data) {
+  return request({
+    url: '/users/profile',
+    method: 'put',
+    data
+  })
+}
+
+export function updatePassword(data) {
+  return request({
+    url: '/users/updatePassword',
+    method: 'put',
+    data
+  })
+}

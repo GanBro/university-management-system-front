@@ -9,7 +9,7 @@ const getters = {
   currentUniversity: state => state.university.currentUniversity,
   listLoading: state => state.university.listLoading,
   detailLoading: state => state.university.detailLoading,
-  userId: state => state.user.id,
+  userId: state => state.user.userId,
   role: state => state.user.role
 }
 export default getters
