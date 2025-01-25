@@ -106,3 +106,26 @@ export function updatePassword(data) {
     data
   })
 }
+
+export function followUniversity(userId, universityId) {
+  return request({
+    url: '/users/follow',
+    method: 'post',
+    data: { userId, universityId }
+  })
+}
+
+export function unfollowUniversity(userId, universityId) {
+  return request({
+    url: '/users/unfollow',
+    method: 'post',
+    data: { userId, universityId }
+  })
+}
+
+export function getFollowedUniversities(userId) {
+  return request({
+    url: `/users/${userId}/followed-universities`,
+    method: 'get'
+  })
+}

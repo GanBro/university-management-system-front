@@ -92,6 +92,93 @@
               </el-card>
             </div>
           </el-tab-pane>
+
+          <!-- 关注高校标签页 -->
+          <el-tab-pane label="关注高校" name="universities">
+            <div class="university-follow">
+              <!-- 切换按钮 -->
+              <div class="mb-6 flex justify-between items-center">
+                <div class="tabs">
+                  <el-button-group>
+                    <el-button
+                      :type="followTab === 'add' ? 'primary' : ''"
+                      @click="followTab = 'add'"
+                    >
+                      <i class="el-icon-plus"></i> 添加高校
+                    </el-button>
+                    <el-button
+                      :type="followTab === 'followed' ? 'primary' : ''"
+                      @click="followTab = 'followed'"
+                    >
+                      <i class="el-icon-star-on"></i> 已关注
+                    </el-button>
+                  </el-button-group>
+                </div>
+              </div>
+
+              <!-- 添加高校面板 -->
+              <div v-if="followTab === 'add'">
+                <el-form :inline="true" class="mb-4">
+                  <el-form-item>
+                    <el-input
+                      v-model="universitySearch.name"
+                      placeholder="请输入院校名称"
+                      prefix-icon="el-icon-search"
+                    ></el-input>
+                  </el-form-item>
+                  <el-form-item>
+                    <el-select v-model="universitySearch.province" placeholder="所在地">
+                      <el-option label="北京" value="北京"></el-option>
+                      <el-option label="上海" value="上海"></el-option>
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item>
+                    <el-select v-model="universitySearch.type" placeholder="隶属">
+                      <el-option label="教育部" value="教育部"></el-option>
+                      <el-option label="省属" value="省属"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </el-form>
+
+                <el-table :data="universities" border>
+                  <el-table-column prop="name" label="院校名称"></el-table-column>
+                  <el-table-column prop="province" label="所在地"></el-table-column>
+                  <el-table-column prop="type" label="隶属"></el-table-column>
+                  <el-table-column label="操作" width="120">
+                    <template slot-scope="scope">
+                      <el-button
+                        type="text"
+                        @click="handleFollow(scope.row)"
+                        :disabled="scope.row.isFollowed"
+                      >
+                        {{ scope.row.isFollowed ? '已关注' : '关注' }}
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+
+              <!-- 已关注面板 -->
+              <div v-else>
+                <div v-if="followedUniversities.length === 0" class="empty-state">
+                  <el-empty description="暂无关注的高校"></el-empty>
+                </div>
+                <div v-else class="followed-grid">
+                  <el-card v-for="uni in followedUniversities" :key="uni.id" class="mb-4">
+                    <div class="flex justify-between items-center">
+                      <div>
+                        <h4 class="mb-2">{{ uni.name }}</h4>
+                        <p class="text-gray-500">{{ uni.province }} | {{ uni.type }}</p>
+                      </div>
+                      <el-button type="text" @click="handleUnfollow(uni.id)">
+                        <i class="el-icon-close"></i>
+                      </el-button>
+                    </div>
+                  </el-card>
+                </div>
+              </div>
+            </div>
+          </el-tab-pane>
         </el-tabs>
       </el-card>
     </div>
@@ -100,7 +187,8 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import { updatePassword, updateProfile } from '@/api/user'
+import { updatePassword, updateProfile, followUniversity, unfollowUniversity, getFollowedUniversities } from '@/api/user'
+import { getUniversityList } from '@/api/university'
 import { validatePassword, validatePasswordMatch } from '@/utils/validate'
 
 export default {
@@ -134,6 +222,14 @@ export default {
     return {
       activeTab: 'profile',
       isEditing: false,
+      followTab: 'add',
+      universitySearch: {
+        name: '',
+        province: '',
+        type: ''
+      },
+      universities: [],
+      followedUniversities: [],
       profileForm: {
         username: '',
         email: ''
@@ -184,8 +280,16 @@ export default {
       }
     }
   },
+  watch: {
+    'universitySearch': {
+      handler: 'loadUniversities',
+      deep: true
+    }
+  },
   created() {
     this.initProfileForm()
+    this.loadUniversities()
+    this.loadFollowedUniversities()
   },
   methods: {
     formatDate(date) {
@@ -236,6 +340,56 @@ export default {
           })
         }
       })
+    },
+    // 关注高校相关方法
+    async loadUniversities() {
+      try {
+        const { data } = await getUniversityList({
+          name: this.universitySearch.name,
+          province: this.universitySearch.province,
+          type: this.universitySearch.type
+        })
+        this.universities = data.records.map(uni => ({
+          ...uni,
+          isFollowed: this.followedUniversities.some(f => f.id === uni.id)
+        }))
+      } catch (error) {
+        this.$message.error('加载高校列表失败')
+      }
+    },
+
+    async loadFollowedUniversities() {
+      try {
+        const { data } = await getFollowedUniversities(this.userId)
+        this.followedUniversities = data
+      } catch (error) {
+        this.$message.error('加载已关注高校失败')
+      }
+    },
+
+    async handleFollow(university) {
+      try {
+        await followUniversity(this.userId, university.id)
+        university.isFollowed = true
+        this.followedUniversities.push({...university})
+        this.$message.success('关注成功')
+      } catch (error) {
+        this.$message.error('关注失败')
+      }
+    },
+
+    async handleUnfollow(id) {
+      try {
+        await unfollowUniversity(this.userId, id)
+        const university = this.universities.find(u => u.id === id)
+        if (university) {
+          university.isFollowed = false
+        }
+        this.followedUniversities = this.followedUniversities.filter(u => u.id !== id)
+        this.$message.success('已取消关注')
+      } catch (error) {
+        this.$message.error('取消关注失败')
+      }
     }
   }
 }
@@ -329,6 +483,19 @@ export default {
           }
         }
       }
+    }
+  }
+
+  .university-follow {
+    .followed-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .empty-state {
+      padding: 40px 0;
+      text-align: center;
     }
   }
 }
