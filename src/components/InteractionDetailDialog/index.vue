@@ -273,7 +273,6 @@ export default {
           isOfficial: this.isAdmin,
           userId: this.$store.state.user.userId
         })
-        this.$message.success('回复成功')
         this.replyContent = ''
       } catch (error) {
         console.error('回复失败:', error)

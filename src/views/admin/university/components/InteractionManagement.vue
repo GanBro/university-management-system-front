@@ -336,7 +336,7 @@ export default {
           data: {
             content,
             isOfficial,
-            userId: this.$store.state.user.id
+            userId: this.$store.state.user.userId
           }
         });
         this.$message.success('回复成功');
