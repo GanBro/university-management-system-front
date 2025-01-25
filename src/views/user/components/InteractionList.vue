@@ -1,12 +1,9 @@
-<!-- src/views/user/components/InteractionList.vue -->
 <template>
   <div class="interaction-list-section">
-    <!-- 新建互动按钮 -->
     <div class="action-buttons">
       <el-button type="primary" @click="handleCreate">新建互动</el-button>
     </div>
 
-    <!-- 互动列表 -->
     <div class="my-interactions">
       <h3>我的互动记录</h3>
       <el-table
@@ -33,7 +30,6 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
           background
@@ -48,7 +44,6 @@
       </div>
     </div>
 
-    <!-- 互动详情弹窗 -->
     <InteractionDetailDialog
       :visible.sync="detailDialogVisible"
       :currentInteraction="currentInteraction"
@@ -56,7 +51,6 @@
       @reply="handleAddReply"
     />
 
-    <!-- 新建互动弹窗 -->
     <el-dialog
       title="新建互动"
       :visible.sync="createDialogVisible"
@@ -108,11 +102,7 @@
 
       <div slot="footer">
         <el-button @click="createDialogVisible = false">取消</el-button>
-        <el-button
-          type="primary"
-          @click="submitForm"
-          :loading="submitLoading"
-        >提交</el-button>
+        <el-button type="primary" @click="submitForm" :loading="submitLoading">提交</el-button>
       </div>
     </el-dialog>
   </div>
@@ -125,16 +115,17 @@ import {
   createInteraction,
   replyInteraction
 } from '@/api/interaction';
+import { searchUniversities } from '@/api/university';
 import { mapGetters } from 'vuex';
 import dayjs from 'dayjs';
 import InteractionDetailDialog from '@/components/InteractionDetailDialog';
-import { searchUniversities } from '@/api/university'
 
 export default {
   name: 'InteractionList',
   components: {
-    InteractionDetailDialog,
+    InteractionDetailDialog
   },
+
   data() {
     return {
       loading: false,
@@ -143,46 +134,40 @@ export default {
       listQuery: {
         page: 1,
         limit: 10,
-        userId: null,
+        userId: null
       },
       createDialogVisible: false,
       detailDialogVisible: false,
       form: this.getInitialForm(),
       rules: {
-        universityId: [{
-          required: true,
-          message: '请选择关联高校',
-          trigger: 'change'
-        }],
-        title: [{
-          required: true,
-          message: '请输入标题',
-          trigger: 'blur'
-        }],
-        content: [{
-          required: true,
-          message: '请输入内容',
-          trigger: 'blur'
-        }],
+        universityId: [{ required: true, message: '请选择关联高校', trigger: 'change' }],
+        title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+        content: [{ required: true, message: '请输入内容', trigger: 'blur' }]
       },
       currentInteraction: null,
       submitLoading: false,
       universities: [],
       universityLoading: false,
-      searchTimer: null,
       searchNoData: false,
       searchNoDataText: '未找到匹配高校',
+      searchErrorTimeout: 5000
     };
   },
+
   computed: {
-    ...mapGetters(['userId']),
+    ...mapGetters(['userId'])
   },
+
   created() {
+    if (!this.userId) {
+      this.$message.error('用户未登录');
+      return;
+    }
     this.listQuery.userId = this.userId;
     this.fetchData();
   },
+
   methods: {
-    // 初始化表单
     getInitialForm() {
       return {
         universityId: null,
@@ -193,16 +178,19 @@ export default {
       };
     },
 
-    // 触发新建弹窗显示
-    handleCreate() {
-      this.createDialogVisible = true;
+    async fetchWithTimeout(promise) {
+      const timeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('请求超时')), this.searchErrorTimeout);
+      });
+      return Promise.race([promise, timeout]);
     },
 
-    // 获取互动列表
     async fetchData() {
+      if (!this.userId) return;
+
       this.loading = true;
       try {
-        const { data } = await getInteractionList(this.listQuery);
+        const { data } = await this.fetchWithTimeout(getInteractionList(this.listQuery));
         this.interactionList = data.records;
         this.total = data.total;
       } catch (error) {
@@ -213,43 +201,43 @@ export default {
       }
     },
 
-    // 高校搜索（带防抖）
-    searchUniversity(query) {
-      clearTimeout(this.searchTimer);
-      this.searchTimer = setTimeout(async () => {
-        try {
-          this.universityLoading = true;
-          const { data } = await searchUniversities(query, 10); // 直接调用导入的API方法
-          this.universities = data;
-          this.searchNoData = data.length === 0;
-          this.searchNoDataText = this.searchNoData
-            ? query ? `未找到"${query}"相关高校` : '暂无高校数据'
-            : '';
-        } catch (error) {
-          console.error('搜索失败:', error);
-          this.$message.error('搜索失败: ' + (error.response?.data?.message || '请求异常'));
-        } finally {
-          this.universityLoading = false;
-        }
-      }, 300);
+    async searchUniversity(query) {
+      try {
+        this.universityLoading = true;
+        const { data } = await this.fetchWithTimeout(searchUniversities(query, 10));
+        this.universities = data;
+        this.searchNoData = data.length === 0;
+        this.searchNoDataText = this.searchNoData
+          ? query ? `未找到"${query}"相关高校` : '暂无高校数据'
+          : '';
+      } catch (error) {
+        console.error('搜索失败:', error);
+        this.$message.error('搜索失败: ' + (error.response?.data?.message || '请求异常'));
+      } finally {
+        this.universityLoading = false;
+      }
     },
 
-    // 选择器获取焦点时加载默认数据
     async handleSelectFocus() {
       if (this.universities.length === 0) {
         await this.searchUniversity('');
       }
     },
 
-    // 提交表单
     async submitForm() {
       try {
         await this.$refs.form.validate();
-        if (!this.form.userId) {
-          this.form.userId = this.$store.getters.userId; // 确保提交时userId存在
+        if (!this.userId) {
+          this.$message.error('用户未登录');
+          return;
         }
+
+        if (!this.form.userId) {
+          this.form.userId = this.userId;
+        }
+
         this.submitLoading = true;
-        await createInteraction(this.form);
+        await this.fetchWithTimeout(createInteraction(this.form));
         this.$message.success('提交成功');
         this.createDialogVisible = false;
         this.fetchData();
@@ -262,18 +250,16 @@ export default {
       }
     },
 
-    // 弹窗关闭时重置状态
     handleDialogClose() {
       this.$refs.form.resetFields();
-      this.form = this.getInitialForm(); // 重置表单时重新获取初始值
+      this.form = this.getInitialForm();
       this.universities = [];
       this.searchNoData = false;
     },
 
-    // 查看详情
     async showDetail(row) {
       try {
-        const { data } = await getInteractionDetail(row.id);
+        const { data } = await this.fetchWithTimeout(getInteractionDetail(row.id));
         this.currentInteraction = data;
         this.detailDialogVisible = true;
       } catch (error) {
@@ -282,15 +268,21 @@ export default {
       }
     },
 
-    // 添加回复
     async handleAddReply({ content }) {
+      if (!this.userId) {
+        this.$message.error('用户未登录');
+        return;
+      }
+
       try {
-        await replyInteraction(this.currentInteraction.id, {
+        await this.fetchWithTimeout(replyInteraction(this.currentInteraction.id, {
           content,
-          userId: this.userId,
-        });
+          userId: this.userId
+        }));
         this.$message.success('回复成功');
-        const { data } = await getInteractionDetail(this.currentInteraction.id);
+        const { data } = await this.fetchWithTimeout(
+          getInteractionDetail(this.currentInteraction.id)
+        );
         this.currentInteraction = data;
         this.fetchData();
       } catch (error) {
@@ -299,43 +291,46 @@ export default {
       }
     },
 
-    // 分页大小变化
+    handleCreate() {
+      if (!this.userId) {
+        this.$message.error('用户未登录');
+        return;
+      }
+      this.createDialogVisible = true;
+    },
+
     handleSizeChange(val) {
       this.listQuery.limit = val;
       this.fetchData();
     },
 
-    // 页码变化
     handleCurrentChange(val) {
       this.listQuery.page = val;
       this.fetchData();
     },
 
-    // 状态标签类型
     getStatusType(status) {
       const typeMap = {
         pending: '',
         replied: 'success',
-        closed: 'info',
+        closed: 'info'
       };
       return typeMap[status];
     },
 
-    // 状态显示文本
     getStatusLabel(status) {
       const labelMap = {
         pending: '待回复',
         replied: '已回复',
-        closed: '已关闭',
+        closed: '已关闭'
       };
       return labelMap[status];
     },
 
-    // 格式化时间
     formatDateTime(time) {
       return time ? dayjs(time).format('YYYY-MM-DD HH:mm:ss') : '-';
     }
-  },
+  }
 };
 </script>
 
