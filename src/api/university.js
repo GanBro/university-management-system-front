@@ -128,3 +128,12 @@ export function submitConsultation(universityId, data) {
     }
   })
 }
+
+// university.js 中添加以下方法
+export function searchUniversities(keyword, limit) {
+  return request({
+    url: '/universities/search',
+    method: 'get',
+    params: { keyword, limit }
+  })
+}

@@ -235,17 +235,12 @@ export default {
       const labelMap = {
         pending: '待回复',
         replied: '已回复',
-        closed: '已关闭',
+        closed: '已关闭'
       }
       return labelMap[status] || '未知状态'
     },
     async handleReply() {
       const vuexState = this.$store.state.user
-      console.log('回复时状态:', {
-        storeUserId: vuexState.userId,
-        computedUserId: this.userId
-      })
-
       if (!vuexState.userId) {
         try {
           await this.$store.dispatch('user/getInfo')
