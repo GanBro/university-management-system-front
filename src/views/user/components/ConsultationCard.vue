@@ -165,20 +165,13 @@ export default {
       try {
         await this.$refs.consultationForm.validate()
         await this.$store.dispatch('user/getInfo')
-
-        console.log('提交咨询-当前状态:', {
-          userId: this.userId,
-          currentUser: this.currentUser,
-          token: getToken()
-        })
-
         if (!this.userId) {
           this.$message.warning('用户信息获取失败，请重新登录')
           return
         }
-
         const consultationData = {
-          universityId: this.universityId,
+          // universityId: this.universityId,
+          universityId: this.$route.params.id, // 从路由参数获取高校ID
           userId: this.userId,
           title: this.consultationForm.title.trim(),
           content: this.consultationForm.content.trim(),
