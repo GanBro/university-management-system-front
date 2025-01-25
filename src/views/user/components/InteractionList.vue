@@ -15,7 +15,7 @@
         <el-table-column prop="title" label="标题" show-overflow-tooltip />
         <el-table-column label="状态" width="100" align="center">
           <template slot-scope="{ row }">
-            <el-tag :type="getStatusType(row.status)">{{ getStatusLabel(row.status) }}</el-tag>
+            <el-tag :type="getStatus(row.status, 'type')">{{ getStatus(row.status, 'label') }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="时间" width="160" align="center">
@@ -55,7 +55,7 @@
       title="新建互动"
       :visible.sync="createDialogVisible"
       width="600px"
-      @closed="handleDialogClose"
+      @closed="resetForm"
     >
       <el-form ref="form" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="关联高校" prop="universityId">
@@ -75,9 +75,7 @@
               :label="uni.name"
               :value="uni.id"
             />
-            <div v-if="searchNoData" class="no-data-tip">
-              {{ searchNoDataText }}
-            </div>
+            <div v-if="searchNoData" class="no-data-tip">{{ searchNoDataText }}</div>
           </el-select>
         </el-form-item>
 
@@ -118,6 +116,7 @@ import {
 import { searchUniversities } from '@/api/university';
 import { mapGetters } from 'vuex';
 import dayjs from 'dayjs';
+import cloneDeep from 'lodash/cloneDeep';
 import InteractionDetailDialog from '@/components/InteractionDetailDialog';
 
 export default {
@@ -139,18 +138,19 @@ export default {
       createDialogVisible: false,
       detailDialogVisible: false,
       form: this.getInitialForm(),
-      rules: {
-        universityId: [{ required: true, message: '请选择关联高校', trigger: 'change' }],
-        title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
-        content: [{ required: true, message: '请输入内容', trigger: 'blur' }]
-      },
+      rules: this.getRules(),
       currentInteraction: null,
       submitLoading: false,
       universities: [],
       universityLoading: false,
       searchNoData: false,
       searchNoDataText: '未找到匹配高校',
-      searchErrorTimeout: 5000
+      searchErrorTimeout: 5000,
+      statusMapping: {
+        pending: { label: '待回复', type: '' },
+        replied: { label: '已回复', type: 'success' },
+        closed: { label: '已关闭', type: 'info' }
+      }
     };
   },
 
@@ -178,6 +178,22 @@ export default {
       };
     },
 
+    getRules() {
+      return {
+        universityId: [{ required: true, message: '请选择关联高校', trigger: 'change' }],
+        title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
+        content: [{ required: true, message: '请输入内容', trigger: 'blur' }]
+      };
+    },
+
+    checkUserLoggedIn() {
+      if (!this.userId) {
+        this.$message.error('用户未登录');
+        return false;
+      }
+      return true;
+    },
+
     async fetchWithTimeout(promise) {
       const timeout = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('请求超时')), this.searchErrorTimeout);
@@ -186,7 +202,7 @@ export default {
     },
 
     async fetchData() {
-      if (!this.userId) return;
+      if (!this.checkUserLoggedIn()) return;
 
       this.loading = true;
       try {
@@ -204,7 +220,7 @@ export default {
     async searchUniversity(query) {
       try {
         this.universityLoading = true;
-        const { data } = await this.fetchWithTimeout(searchUniversities(query, 10));
+        const { data } = await searchUniversities(query, 10);
         this.universities = data;
         this.searchNoData = data.length === 0;
         this.searchNoDataText = this.searchNoData
@@ -212,56 +228,49 @@ export default {
           : '';
       } catch (error) {
         console.error('搜索失败:', error);
-        this.$message.error('搜索失败: ' + (error.response?.data?.message || '请求异常'));
+        this.$message.error('搜索失败');
       } finally {
         this.universityLoading = false;
       }
     },
 
     async handleSelectFocus() {
+      // 用户点击时触发搜索，显示完整列表
       if (this.universities.length === 0) {
-        await this.searchUniversity('');
+        this.searchUniversity('');
       }
     },
 
+    resetForm() {
+      this.$refs.form.resetFields();
+      this.form = cloneDeep(this.getInitialForm());
+      this.universities = [];
+      this.searchNoData = false;
+    },
+
     async submitForm() {
+      if (!this.checkUserLoggedIn()) return;
+
       try {
         await this.$refs.form.validate();
-        if (!this.userId) {
-          this.$message.error('用户未登录');
-          return;
-        }
-
-        if (!this.form.userId) {
-          this.form.userId = this.userId;
-        }
-
         this.submitLoading = true;
         await this.fetchWithTimeout(createInteraction(this.form));
         this.$message.success('提交成功');
         this.createDialogVisible = false;
         this.fetchData();
       } catch (error) {
-        console.error('创建失败:', error);
-        const errorMsg = error.response?.data?.message || '提交失败';
-        this.$message.error(errorMsg);
+        console.error('提交失败:', error);
+        this.$message.error('提交失败');
       } finally {
         this.submitLoading = false;
       }
     },
 
-    handleDialogClose() {
-      this.$refs.form.resetFields();
-      this.form = this.getInitialForm();
-      this.universities = [];
-      this.searchNoData = false;
-    },
-
     async showDetail(row) {
       try {
+        this.detailDialogVisible = true;
         const { data } = await this.fetchWithTimeout(getInteractionDetail(row.id));
         this.currentInteraction = data;
-        this.detailDialogVisible = true;
       } catch (error) {
         console.error('获取详情失败:', error);
         this.$message.error('获取详情失败');
@@ -269,21 +278,12 @@ export default {
     },
 
     async handleAddReply({ content }) {
-      if (!this.userId) {
-        this.$message.error('用户未登录');
-        return;
-      }
+      if (!this.checkUserLoggedIn()) return;
 
       try {
-        await this.fetchWithTimeout(replyInteraction(this.currentInteraction.id, {
-          content,
-          userId: this.userId
-        }));
+        await this.fetchWithTimeout(replyInteraction(this.currentInteraction.id, { content, userId: this.userId }));
         this.$message.success('回复成功');
-        const { data } = await this.fetchWithTimeout(
-          getInteractionDetail(this.currentInteraction.id)
-        );
-        this.currentInteraction = data;
+        this.showDetail(this.currentInteraction);
         this.fetchData();
       } catch (error) {
         console.error('回复失败:', error);
@@ -292,10 +292,7 @@ export default {
     },
 
     handleCreate() {
-      if (!this.userId) {
-        this.$message.error('用户未登录');
-        return;
-      }
+      if (!this.checkUserLoggedIn()) return;
       this.createDialogVisible = true;
     },
 
@@ -309,22 +306,8 @@ export default {
       this.fetchData();
     },
 
-    getStatusType(status) {
-      const typeMap = {
-        pending: '',
-        replied: 'success',
-        closed: 'info'
-      };
-      return typeMap[status];
-    },
-
-    getStatusLabel(status) {
-      const labelMap = {
-        pending: '待回复',
-        replied: '已回复',
-        closed: '已关闭'
-      };
-      return labelMap[status];
+    getStatus(status, key) {
+      return this.statusMapping[status]?.[key] || '';
     },
 
     formatDateTime(time) {
