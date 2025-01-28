@@ -44,6 +44,7 @@ export function closeInteraction(id) {
   })
 }
 
+// 重新开启互动
 export function reopenInteraction(id) {
   return request({
     url: `/api/interactions/${id}/reopen`,
@@ -59,6 +60,15 @@ export function deleteInteraction(id) {
   })
 }
 
+// 删除回复
+export function deleteReply(id) {
+  return request({
+    url: `/api/interactions/replies/${id}`,
+    method: 'delete'
+  })
+}
+
+// 获取统计数据
 export function getInteractionStats(params) {
   return request({
     url: '/api/interactions/stats',

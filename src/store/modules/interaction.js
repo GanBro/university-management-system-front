@@ -7,6 +7,7 @@ import {
   closeInteraction,
   reopenInteraction,
   deleteInteraction,
+  deleteReply,
   getInteractionStats
 } from '@/api/interaction'
 
@@ -108,6 +109,22 @@ const actions = {
     return data
   },
 
+  // 删除回复
+  async deleteReply({ dispatch }, { replyId, interactionId }) {
+    try {
+      await deleteReply(replyId)
+      // 删除后立即重新获取互动详情
+      await dispatch('getDetail', interactionId)
+      // 同时更新列表数据
+      await dispatch('getList')
+      return true
+    } catch (error) {
+      console.error('Failed to delete reply:', error)
+      throw error
+    }
+  },
+
+  // 获取统计数据
   async getStats({ commit }, params) {
     try {
       const response = await getInteractionStats(params)

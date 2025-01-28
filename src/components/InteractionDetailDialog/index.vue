@@ -94,9 +94,18 @@
                   >普通回复</el-tag>
                 </template>
               </div>
-              <span class="reply-time">
-                {{ formatTime(reply.createdAt) }}
-              </span>
+              <div class="reply-actions">
+                <span class="reply-time">
+                  {{ formatTime(reply.createdAt) }}
+                </span>
+                <!-- 新增：删除回复按钮 -->
+                <el-button
+                  v-if="isAdmin || isMyReply(reply)"
+                  type="danger"
+                  size="mini"
+                  @click="handleDeleteReply(reply)"
+                >删除</el-button>
+              </div>
             </div>
             <div class="reply-content">
               {{ reply.content }}
@@ -219,6 +228,9 @@ export default {
       return this.currentInteraction?.userId &&
         String(reply.userId) === String(this.currentInteraction.userId)
     },
+    isMyReply(reply) {
+      return String(reply.userId) === String(this.userId)
+    },
     formatTime(time) {
       if (!time) return '-'
       return dayjs(time).format('YYYY-MM-DD HH:mm')
@@ -239,12 +251,37 @@ export default {
       }
       return labelMap[status] || '未知状态'
     },
+    async handleDeleteReply(reply) {
+      try {
+        await this.$confirm('确认删除此回复？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+
+        // 修改这里的参数传递方式
+        await this.$store.dispatch('interaction/deleteReply', {
+          replyId: reply.id,
+          interactionId: this.currentInteraction.id
+        })
+
+        this.$message.success('删除成功')
+
+        // 重新获取详情
+        await this.$store.dispatch('interaction/getDetail', this.currentInteraction.id)
+
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('删除回复失败:', error)
+          this.$message.error('删除失败')
+        }
+      }
+    },
     async handleReply() {
       const vuexState = this.$store.state.user
       if (!vuexState.userId) {
         try {
           await this.$store.dispatch('user/getInfo')
-          console.log('重新获取用户信息后:', this.$store.state.user)
         } catch (err) {
           console.error('获取用户信息失败:', err)
         }
@@ -404,9 +441,15 @@ export default {
             }
           }
 
-          .reply-time {
-            color: #909399;
-            font-size: 13px;
+          .reply-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            .reply-time {
+              color: #909399;
+              font-size: 13px;
+            }
           }
         }
 
