@@ -23,9 +23,14 @@
             {{ formatDateTime(row.createdAt) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" align="center">
+        <el-table-column label="操作" width="180" align="center">
           <template slot-scope="{ row }">
             <el-button type="text" @click="showDetail(row)">查看详情</el-button>
+            <el-button
+              type="text"
+              class="delete-button"
+              @click.stop="handleDelete(row)"
+            >删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -112,12 +117,12 @@ import {
   getInteractionDetail,
   createInteraction,
   replyInteraction
-} from '@/api/interaction';
-import { searchUniversities } from '@/api/university';
-import { mapGetters } from 'vuex';
-import dayjs from 'dayjs';
-import cloneDeep from 'lodash/cloneDeep';
-import InteractionDetailDialog from '@/components/InteractionDetailDialog';
+} from '@/api/interaction'
+import { searchUniversities } from '@/api/university'
+import { mapGetters } from 'vuex'
+import dayjs from 'dayjs'
+import cloneDeep from 'lodash/cloneDeep'
+import InteractionDetailDialog from '@/components/InteractionDetailDialog'
 
 export default {
   name: 'InteractionList',
@@ -151,7 +156,7 @@ export default {
         replied: { label: '已回复', type: 'success' },
         closed: { label: '已关闭', type: 'info' }
       }
-    };
+    }
   },
 
   computed: {
@@ -160,14 +165,33 @@ export default {
 
   created() {
     if (!this.userId) {
-      this.$message.error('用户未登录');
-      return;
+      this.$message.error('用户未登录')
+      return
     }
-    this.listQuery.userId = this.userId;
-    this.fetchData();
+    this.listQuery.userId = this.userId
+    this.fetchData()
   },
 
   methods: {
+    async handleDelete(row) {
+      try {
+        await this.$confirm('确认删除该互动？删除后无法恢复', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        })
+
+        await this.$store.dispatch('interaction/deleteInteraction', row.id)
+        this.$message.success('删除成功')
+        this.fetchData()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('删除互动失败:', error)
+          this.$message.error('删除失败')
+        }
+      }
+    },
+
     getInitialForm() {
       return {
         universityId: null,
@@ -175,7 +199,7 @@ export default {
         content: '',
         isPublic: true,
         userId: this.$store.getters.userId
-      };
+      }
     },
 
     getRules() {
@@ -183,113 +207,107 @@ export default {
         universityId: [{ required: true, message: '请选择关联高校', trigger: 'change' }],
         title: [{ required: true, message: '请输入标题', trigger: 'blur' }],
         content: [{ required: true, message: '请输入内容', trigger: 'blur' }]
-      };
+      }
     },
 
     checkUserLoggedIn() {
       if (!this.userId) {
-        this.$message.error('用户未登录');
-        return false;
+        this.$message.error('用户未登录')
+        return false
       }
-      return true;
+      return true
     },
 
     async fetchWithTimeout(promise) {
       const timeout = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('请求超时')), this.searchErrorTimeout);
-      });
-      return Promise.race([promise, timeout]);
+        setTimeout(() => reject(new Error('请求超时')), this.searchErrorTimeout)
+      })
+      return Promise.race([promise, timeout])
     },
 
     async fetchData() {
-      if (!this.checkUserLoggedIn()) return;
+      if (!this.checkUserLoggedIn()) return
 
-      this.loading = true;
+      this.loading = true
       try {
-        const { data } = await this.fetchWithTimeout(getInteractionList(this.listQuery));
-        this.interactionList = data.records;
-        this.total = data.total;
+        const { data } = await this.fetchWithTimeout(getInteractionList(this.listQuery))
+        this.interactionList = data.records
+        this.total = data.total
       } catch (error) {
-        console.error('获取互动列表失败:', error);
-        this.$message.error('获取列表失败');
+        console.error('获取互动列表失败:', error)
+        this.$message.error('获取列表失败')
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
     async searchUniversity(query) {
       try {
-        this.universityLoading = true;
-        const { data } = await searchUniversities(query, 10);
-        this.universities = data;
-        this.searchNoData = data.length === 0;
+        this.universityLoading = true
+        const { data } = await searchUniversities(query, 10)
+        this.universities = data
+        this.searchNoData = data.length === 0
         this.searchNoDataText = this.searchNoData
           ? query ? `未找到"${query}"相关高校` : '暂无高校数据'
-          : '';
+          : ''
       } catch (error) {
-        console.error('搜索失败:', error);
-        this.$message.error('搜索失败');
+        console.error('搜索失败:', error)
+        this.$message.error('搜索失败')
       } finally {
-        this.universityLoading = false;
+        this.universityLoading = false
       }
     },
 
     async handleSelectFocus() {
-      // 用户点击时触发搜索，显示完整列表
       if (this.universities.length === 0) {
-        this.searchUniversity('');
+        this.searchUniversity('')
       }
     },
 
     resetForm() {
-      this.$refs.form.resetFields();
-      this.form = cloneDeep(this.getInitialForm());
-      this.universities = [];
-      this.searchNoData = false;
+      this.$refs.form.resetFields()
+      this.form = cloneDeep(this.getInitialForm())
+      this.universities = []
+      this.searchNoData = false
     },
 
     async submitForm() {
-      if (!this.checkUserLoggedIn()) return;
+      if (!this.checkUserLoggedIn()) return
 
       try {
-        await this.$refs.form.validate();
-        this.submitLoading = true;
-        await this.fetchWithTimeout(createInteraction(this.form));
-        this.$message.success('提交成功');
-        this.createDialogVisible = false;
-        this.fetchData();
+        await this.$refs.form.validate()
+        this.submitLoading = true
+        await this.fetchWithTimeout(createInteraction(this.form))
+        this.$message.success('提交成功')
+        this.createDialogVisible = false
+        this.fetchData()
       } catch (error) {
-        console.error('提交失败:', error);
-        this.$message.error('提交失败');
+        console.error('提交失败:', error)
+        this.$message.error('提交失败')
       } finally {
-        this.submitLoading = false;
+        this.submitLoading = false
       }
     },
 
     async showDetail(row) {
       try {
-        this.detailDialogVisible = true;
-        const { data } = await this.fetchWithTimeout(getInteractionDetail(row.id));
-        this.currentInteraction = data;
+        this.detailDialogVisible = true
+        const { data } = await this.fetchWithTimeout(getInteractionDetail(row.id))
+        this.currentInteraction = data
       } catch (error) {
-        console.error('获取详情失败:', error);
-        this.$message.error('获取详情失败');
+        console.error('获取详情失败:', error)
+        this.$message.error('获取详情失败')
       }
     },
 
-    async handleAddReply(replyData) {
-      try {
-        await this.$store.dispatch('interaction/replyInteraction', {
-          id: this.currentInteraction.id,
-          data: {
-            content: replyData.content,
-            isOfficial: replyData.isOfficial,
-            userId: parseInt(replyData.userId) // 确保转换为整数
-          }
-        })
+    async handleAddReply({ content }) {
+      if (!this.checkUserLoggedIn()) return
 
+      try {
+        await this.fetchWithTimeout(replyInteraction(this.currentInteraction.id, { content, userId: this.userId }))
         this.$message.success('回复成功')
-        await this.showDetail(this.currentInteraction)
+        this.showDetail(this.currentInteraction)
+        this.fetchData()
       } catch (error) {
         console.error('回复失败:', error)
         this.$message.error('回复失败')
@@ -297,29 +315,29 @@ export default {
     },
 
     handleCreate() {
-      if (!this.checkUserLoggedIn()) return;
-      this.createDialogVisible = true;
+      if (!this.checkUserLoggedIn()) return
+      this.createDialogVisible = true
     },
 
     handleSizeChange(val) {
-      this.listQuery.limit = val;
-      this.fetchData();
+      this.listQuery.limit = val
+      this.fetchData()
     },
 
     handleCurrentChange(val) {
-      this.listQuery.page = val;
-      this.fetchData();
+      this.listQuery.page = val
+      this.fetchData()
     },
 
     getStatus(status, key) {
-      return this.statusMapping[status]?.[key] || '';
+      return this.statusMapping[status]?.[key] || ''
     },
 
     formatDateTime(time) {
-      return time ? dayjs(time).format('YYYY-MM-DD HH:mm:ss') : '-';
+      return time ? dayjs(time).format('YYYY-MM-DD HH:mm:ss') : '-'
     }
   }
-};
+}
 </script>
 
 <style lang="scss" scoped>
@@ -338,6 +356,15 @@ export default {
     .pagination-container {
       margin-top: 20px;
       text-align: right;
+    }
+  }
+
+  .delete-button {
+    color: #F56C6C;
+    margin-left: 15px;
+
+    &:hover {
+      color: #f89898;
     }
   }
 }

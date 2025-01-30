@@ -369,7 +369,7 @@ export default {
       this.$router.push({
         path: `/user/consultation/${question.id}`,
         query: {
-          universityId: this.universityId // 使用 query 传递大学 ID
+          universityId: this.universityId
         }
       }).catch(err => {
         console.error('路由跳转失败:', err)
