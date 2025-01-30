@@ -196,9 +196,22 @@ export default {
       handler(val) {
         this.dialogVisible = val
       }
+    },
+    currentInteraction: {
+      immediate: true,
+      deep: true,
+      handler(val) {
+        if (val) {
+          this.replyContent = ''
+          this.submitLoading = false
+        }
+      }
     }
   },
   computed: {
+    isReplyEmpty() {
+      return !this.currentInteraction?.replies?.length
+    },
     ...mapState({
       currentUser: state => state.user.name,
       userId: state => state.user.userId
@@ -251,6 +264,7 @@ export default {
       }
       return labelMap[status] || '未知状态'
     },
+
     async handleDeleteReply(reply) {
       try {
         await this.$confirm('确认删除此回复？', '提示', {
@@ -259,40 +273,40 @@ export default {
           type: 'warning'
         })
 
-        // 修改这里的参数传递方式
+        // 立即在本地更新数据
+        const updatedReplies = this.currentInteraction.replies.filter(r => r.id !== reply.id)
+        this.currentInteraction.replies = updatedReplies
+
+        // 如果删除后没有回复了，将状态改为待回复
+        if (updatedReplies.length === 0) {
+          this.currentInteraction.status = 'pending'
+        }
+
+        // 同步到后端
         await this.$store.dispatch('interaction/deleteReply', {
           replyId: reply.id,
           interactionId: this.currentInteraction.id
         })
 
         this.$message.success('删除成功')
-
-        // 重新获取详情
-        await this.$store.dispatch('interaction/getDetail', this.currentInteraction.id)
-
       } catch (error) {
+        // 如果后端删除失败，恢复原来的数据状态
         if (error !== 'cancel') {
+          await this.$store.dispatch('interaction/getDetail', this.currentInteraction.id)
           console.error('删除回复失败:', error)
           this.$message.error('删除失败')
         }
       }
     },
     async handleReply() {
-      const vuexState = this.$store.state.user
-      if (!vuexState.userId) {
-        try {
-          await this.$store.dispatch('user/getInfo')
-        } catch (err) {
-          console.error('获取用户信息失败:', err)
-        }
-      }
-
+      // 先检查用户登录状态
       if (!this.$store.state.user.userId) {
         this.$message.warning('请先登录')
         this.$router.push('/login')
         return
       }
 
+      // 检查回复内容
       if (!this.replyContent.trim()) {
         this.$message.warning('请输入回复内容')
         return
@@ -300,11 +314,19 @@ export default {
 
       this.submitLoading = true
       try {
-        await this.$emit('reply', {
+        const replyData = {
           content: this.replyContent.trim(),
           isOfficial: this.isAdmin,
-          userId: this.$store.state.user.userId
-        })
+          userId: this.$store.state.user.userId,
+          interactionId: this.currentInteraction.id // 确保这个值存在且为数字类型
+        }
+
+        // 确保所有必需的数字类型参数都有效
+        if (!replyData.interactionId || !replyData.userId) {
+          throw new Error('缺少必要参数')
+        }
+
+        await this.$emit('reply', replyData)
         this.replyContent = ''
       } catch (error) {
         console.error('回复失败:', error)

@@ -277,17 +277,22 @@ export default {
       }
     },
 
-    async handleAddReply({ content }) {
-      if (!this.checkUserLoggedIn()) return;
-
+    async handleAddReply(replyData) {
       try {
-        await this.fetchWithTimeout(replyInteraction(this.currentInteraction.id, { content, userId: this.userId }));
-        this.$message.success('回复成功');
-        this.showDetail(this.currentInteraction);
-        this.fetchData();
+        await this.$store.dispatch('interaction/replyInteraction', {
+          id: this.currentInteraction.id,
+          data: {
+            content: replyData.content,
+            isOfficial: replyData.isOfficial,
+            userId: parseInt(replyData.userId) // 确保转换为整数
+          }
+        })
+
+        this.$message.success('回复成功')
+        await this.showDetail(this.currentInteraction)
       } catch (error) {
-        console.error('回复失败:', error);
-        this.$message.error('回复失败');
+        console.error('回复失败:', error)
+        this.$message.error('回复失败')
       }
     },
 

@@ -110,14 +110,10 @@ const actions = {
   },
 
   // 删除回复
-  async deleteReply({ dispatch }, { replyId, interactionId }) {
+  async deleteReply({ commit }, { replyId, interactionId }) {
     try {
-      await deleteReply(replyId)
-      // 删除后立即重新获取互动详情
-      await dispatch('getDetail', interactionId)
-      // 同时更新列表数据
-      await dispatch('getList')
-      return true
+      const response = await deleteReply(replyId)
+      return response
     } catch (error) {
       console.error('Failed to delete reply:', error)
       throw error
