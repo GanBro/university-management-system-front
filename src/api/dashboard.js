@@ -23,7 +23,15 @@ export function getGrowthTrend() {
   })
 }
 
+export function getActivityStats() {
+  return request({
+    url: '/api/dashboard/activity-stats',
+    method: 'get'
+  })
+}
+
 export default {
   getStats,
-  getGrowthTrend
+  getGrowthTrend,
+  getActivityStats
 }

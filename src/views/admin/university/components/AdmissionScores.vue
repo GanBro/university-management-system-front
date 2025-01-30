@@ -1,3 +1,4 @@
+<!--src/views/admin/university/components/AdmissionScores.vue-->
 <template>
   <div class="admission-scores">
     <!-- 总体统计卡片 -->
