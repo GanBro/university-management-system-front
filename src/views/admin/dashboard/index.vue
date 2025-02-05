@@ -1,80 +1,32 @@
 <!--src/views/admin/dashboard/index.vue-->
+<!--todo 周月季年没反应-->
 <template>
   <div class="dashboard-container" v-loading="loading">
     <!-- 统计卡片区域 -->
     <el-row :gutter="20" class="dashboard-cards">
-      <el-col :span="6">
+      <el-col :span="6" v-for="card in statCards" :key="card.title">
         <el-card shadow="hover" class="data-card">
           <div class="card-header">
-            <span class="card-title">总高校数量</span>
-            <el-tooltip content="系统中所有高校的总数" placement="top">
+            <span class="card-title">{{ card.title }}</span>
+            <el-tooltip :content="card.tooltip" placement="top">
               <i class="el-icon-info"></i>
             </el-tooltip>
           </div>
           <div class="card-body">
-            <div class="card-value">{{ stats.totalUniversityCount }}</div>
-            <div class="card-trend" v-if="stats.recentUniversityCount">
-              <span :class="getTrendClass(stats.recentUniversityCount)">
-                <i :class="getTrendIcon(stats.recentUniversityCount)"></i>
-                {{ formatTrend(stats.recentUniversityCount) }}
+            <div class="card-value">{{ card.value }}</div>
+            <div v-if="card.trend" class="card-trend">
+              <span :class="getTrendClass(card.trend)">
+                <i :class="getTrendIcon(card.trend)"></i>
+                {{ formatTrend(card.trend) }}
               </span>
-              <span class="trend-label">较上月</span>
+              <span class="trend-label">{{ card.trendLabel }}</span>
             </div>
-          </div>
-        </el-card>
-      </el-col>
-
-      <el-col :span="6">
-        <el-card shadow="hover" class="data-card">
-          <div class="card-header">
-            <span class="card-title">活跃用户</span>
-            <el-tooltip content="过去7天的活跃用户数量" placement="top">
-              <i class="el-icon-info"></i>
-            </el-tooltip>
-          </div>
-          <div class="card-body">
-            <div class="card-value">{{ stats.activeUserCount }}</div>
-            <div class="card-trend">
-              <span :class="getTrendClass(stats.monthlyActiveUserCount - stats.activeUserCount)">
-                <i :class="getTrendIcon(stats.monthlyActiveUserCount - stats.activeUserCount)"></i>
-                {{ formatTrend(stats.monthlyActiveUserCount - stats.activeUserCount) }}
-              </span>
-              <span class="trend-label">较上周</span>
+            <div v-if="card.subValue" class="sub-value">
+              <span :class="card.subValueType">{{ card.subValue }}</span>
             </div>
-          </div>
-        </el-card>
-      </el-col>
-
-      <el-col :span="6">
-        <el-card shadow="hover" class="data-card">
-          <div class="card-header">
-            <span class="card-title">互动总数</span>
-            <el-tooltip content="用户互动咨询的总数量" placement="top">
-              <i class="el-icon-info"></i>
-            </el-tooltip>
-          </div>
-          <div class="card-body">
-            <div class="card-value">{{ stats.totalInteractionCount }}</div>
-            <div class="sub-value">
-              <span class="pending">待处理: {{ stats.pendingInteractionCount }}</span>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-
-      <el-col :span="6">
-        <el-card shadow="hover" class="data-card">
-          <div class="card-header">
-            <span class="card-title">平均响应时间</span>
-            <el-tooltip content="互动响应的平均处理时间" placement="top">
-              <i class="el-icon-info"></i>
-            </el-tooltip>
-          </div>
-          <div class="card-body">
-            <div class="card-value">{{ formatDuration(stats.avgResponseTime) }}</div>
-            <div class="card-metric">
+            <div v-if="card.metric" class="card-metric">
               <el-progress
-                :percentage="stats.responseRate"
+                :percentage="card.metric"
                 :color="getProgressColor"
                 :format="percentageFormat"
               ></el-progress>
@@ -91,9 +43,17 @@
           <div class="map-header">
             <span>高校分布地图</span>
             <div class="map-controls">
-              <el-radio-group v-model="mapViewType" size="small" @change="handleMapViewChange">
-                <el-radio-button label="distribution">分布视图</el-radio-button>
-                <el-radio-button label="heat">热力视图</el-radio-button>
+              <el-button
+                size="small"
+                type="text"
+                @click="toggleProvinceLabels"
+                class="label-toggle"
+              >
+                <i :class="showProvinceLabels ? 'el-icon-view' : 'el-icon-hide'"></i>
+                {{ showProvinceLabels ? '隐藏省份' : '显示省份' }}
+              </el-button>
+              <el-radio-group v-model="mapViewType" size="small">
+                <el-radio-button label="category">分类视图</el-radio-button>
               </el-radio-group>
             </div>
           </div>
@@ -141,36 +101,14 @@
           <div slot="header">用户行为分析</div>
           <div class="behavior-stats">
             <el-row :gutter="20">
-              <el-col :span="8">
+              <el-col :span="8" v-for="(behavior, index) in behaviorStats" :key="index">
                 <div class="behavior-item">
                   <div class="behavior-icon">
-                    <i class="el-icon-chat-dot-square"></i>
+                    <i :class="behavior.icon"></i>
                   </div>
                   <div class="behavior-info">
-                    <div class="behavior-value">{{ stats.userBehaviorStats.consultationCount }}</div>
-                    <div class="behavior-label">咨询数</div>
-                  </div>
-                </div>
-              </el-col>
-              <el-col :span="8">
-                <div class="behavior-item">
-                  <div class="behavior-icon">
-                    <i class="el-icon-message"></i>
-                  </div>
-                  <div class="behavior-info">
-                    <div class="behavior-value">{{ stats.userBehaviorStats.replyCount }}</div>
-                    <div class="behavior-label">回复数</div>
-                  </div>
-                </div>
-              </el-col>
-              <el-col :span="8">
-                <div class="behavior-item">
-                  <div class="behavior-icon">
-                    <i class="el-icon-star-on"></i>
-                  </div>
-                  <div class="behavior-info">
-                    <div class="behavior-value">{{ stats.userBehaviorStats.followCount }}</div>
-                    <div class="behavior-label">关注数</div>
+                    <div class="behavior-value">{{ behavior.value }}</div>
+                    <div class="behavior-label">{{ behavior.label }}</div>
                   </div>
                 </div>
               </el-col>
@@ -181,6 +119,7 @@
     </el-row>
   </div>
 </template>
+
 <script>
 import { mapState, mapActions } from 'vuex'
 import * as echarts from 'echarts'
@@ -192,8 +131,9 @@ export default {
   data() {
     return {
       loading: false,
-      mapViewType: 'distribution',
+      mapViewType: 'category',
       trendTimeRange: 'month',
+      showProvinceLabels: false,
       charts: {
         mapChart: null,
         trendChart: null
@@ -208,6 +148,57 @@ export default {
       'systemStatus'
     ]),
 
+    statCards() {
+      return [
+        {
+          title: '总高校数量',
+          tooltip: '系统中所有高校的总数',
+          value: this.stats.totalUniversityCount,
+          trend: this.stats.recentUniversityCount,
+          trendLabel: '较上月'
+        },
+        {
+          title: '活跃用户',
+          tooltip: '过去7天的活跃用户数量',
+          value: this.stats.activeUserCount,
+          trend: this.stats.monthlyActiveUserCount - this.stats.activeUserCount,
+          trendLabel: '较上周'
+        },
+        {
+          title: '咨询总数',
+          tooltip: '用户发起的咨询总数',
+          value: this.stats.totalInteractionCount,
+          subValue: `待处理: ${this.stats.pendingInteractionCount}`,
+          subValueType: 'pending'
+        },
+        {
+          title: '平均响应时间',
+          tooltip: '互动响应的平均处理时间',
+          value: this.formatDuration(this.stats.avgResponseTime),
+          metric: this.stats.responseRate
+        }
+      ]
+    },
+    behaviorStats() {
+      return [
+        {
+          icon: 'el-icon-chat-dot-square',
+          value: this.stats.totalInteractionCount,  // 直接使用总咨询数
+          label: '咨询总数'
+        },
+        {
+          icon: 'el-icon-message',
+          value: this.stats.userBehaviorStats?.replyCount || 0,
+          label: '回复数'
+        },
+        {
+          icon: 'el-icon-star-on',
+          value: this.stats.userBehaviorStats?.followCount || 0,
+          label: '关注数'
+        }
+      ]
+    },
+
     getProgressColor() {
       return (percentage) => {
         if (percentage < 60) return '#F56C6C'
@@ -219,7 +210,7 @@ export default {
 
   watch: {
     mapViewType: {
-      handler(newVal) {
+      handler() {
         if (this.charts.mapChart) {
           this.$nextTick(() => {
             this.renderMap()
@@ -234,15 +225,22 @@ export default {
     },
     'stats.universityDistribution': {
       handler(newVal) {
-        if (newVal && newVal.length > 0) {
+        if (newVal?.length > 0) {
           this.renderMap()
         }
       }
     },
     'stats.growthTrend': {
       handler(newVal) {
-        if (newVal && newVal.length > 0) {
+        if (newVal?.length > 0) {
           this.renderTrendChart()
+        }
+      }
+    },
+    showProvinceLabels: {
+      handler() {
+        if (this.charts.mapChart) {
+          this.renderMap()
         }
       }
     }
@@ -264,6 +262,10 @@ export default {
       'fetchDataByTimeRange'
     ]),
 
+    toggleProvinceLabels() {
+      this.showProvinceLabels = !this.showProvinceLabels
+    },
+
     async loadDashboardData() {
       try {
         this.loading = true
@@ -280,28 +282,21 @@ export default {
     },
 
     initCharts() {
-      const mapDom = document.getElementById('university-map')
-      if (mapDom) {
-        this.charts.mapChart = echarts.init(mapDom)
-      }
-
-      const trendDom = document.getElementById('growth-trend-chart')
-      if (trendDom) {
-        this.charts.trendChart = echarts.init(trendDom)
-      }
+      this.charts.mapChart = echarts.init(document.getElementById('university-map'))
+      this.charts.trendChart = echarts.init(document.getElementById('growth-trend-chart'))
 
       window.addEventListener('resize', this.handleResize)
     },
 
     handleResize() {
       Object.values(this.charts).forEach(chart => {
-        chart && chart.resize()
+        chart?.resize()
       })
     },
 
     disposeCharts() {
       Object.values(this.charts).forEach(chart => {
-        chart && chart.dispose()
+        chart?.dispose()
       })
     },
 
@@ -310,72 +305,77 @@ export default {
       this.renderTrendChart()
     },
 
-    handleMapViewChange(viewType) {
-      this.mapViewType = viewType
-    },
-
     renderMap() {
-      if (!this.charts.mapChart || !this.stats.universityDistribution) return
+      if (!this.charts.mapChart || !this.stats.universityDistribution?.length) return
 
       echarts.registerMap('china', chinaJson)
 
-      const option = {
-        title: {
-          text: '高校地理分布',
-          left: 'center'
-        },
-        tooltip: {
-          trigger: 'item',
-          formatter: params => {
-            return `${params.name}<br/>高校数量：${params.value || 0}所`
-          }
-        },
-        visualMap: {
-          min: 0,
-          max: Math.max(...this.stats.universityDistribution.map(item => item.count)),
-          left: 'left',
-          top: 'bottom',
-          text: ['高', '低'],
-          calculable: true,
-          inRange: {
-            color: this.mapViewType === 'heat'
-              ? ['#feeb61', '#f7854e', '#f43d25']
-              : ['#e0f3f8', '#045a8d']
-          }
-        },
-        // todo: 解决点击周月季年后显示异常问题
-        series: [{
-          name: '高校分布',
-          type: 'map',
-          mapType: 'china',
-          roam: true,
-          emphasis: {
-            label: { show: true }
+      const getMapOption = () => {
+        const baseOption = {
+          tooltip: {
+            trigger: 'item',
+            formatter: ({ name, value }) => {
+              const count = Array.isArray(value) ? value[2] : value
+              return `${name}<br/>高校数量：${count || 0}所`
+            }
           },
-          data: this.stats.universityDistribution.map(item => ({
-            name: item.province,
-            value: item.count
-          })),
-          itemStyle: this.mapViewType === 'heat' ? {
-            areaColor: '#031525',
-            borderColor: '#3B5077'
-          } : {},
-          emphasis: {
+          geo: {
+            map: 'china',
+            roam: true,
+            label: {
+              show: this.showProvinceLabels,
+              color: '#333'
+            },
             itemStyle: {
-              areaColor: this.mapViewType === 'heat' ? '#2B91B7' : undefined
+              areaColor: '#e9ecef',
+              borderColor: '#999'
+            },
+            emphasis: {
+              label: {
+                show: true
+              },
+              itemStyle: {
+                areaColor: '#b8c6db'
+              }
             }
           }
-        }]
+        }
+
+        const max = Math.max(...this.stats.universityDistribution.map(item => item.count))
+        return {
+          ...baseOption,
+          visualMap: {
+            min: 0,
+            max,
+            left: 'left',
+            top: 'bottom',
+            text: ['高', '低'],
+            calculable: true,
+            inRange: {
+              color: ['#ffcdd2', '#b71c1c']
+            }
+          },
+          series: [{
+            name: '高校分布',
+            type: 'map',
+            geoIndex: 0,
+            data: this.stats.universityDistribution.map(item => ({
+              name: item.province,
+              value: item.count
+            }))
+          }]
+        }
       }
 
-      this.charts.mapChart.setOption(option, {
+      this.charts.mapChart.setOption(getMapOption(), {
+        notMerge: true,
         transition: ['color', 'itemStyle'],
         duration: 1000
       })
     },
 
     renderTrendChart() {
-      if (!this.charts.trendChart || !this.stats.growthTrend) return
+      if (!this.charts.trendChart || !this.stats.growthTrend?.length) return
 
       const option = {
         tooltip: {
@@ -400,20 +400,18 @@ export default {
             padding: [0, 30, 0, 0]
           }
         },
-        series: [
-          {
-            name: '高校数量',
-            type: 'line',
-            smooth: true,
-            data: this.stats.growthTrend.map(item => item.university_count),
-            areaStyle: {
-              opacity: 0.3
-            },
-            itemStyle: {
-              color: '#409EFF'
-            }
+        series: [{
+          name: '高校数量',
+          type: 'line',
+          smooth: true,
+          data: this.stats.growthTrend.map(item => item.university_count),
+          areaStyle: {
+            opacity: 0.3
+          },
+          itemStyle: {
+            color: '#409EFF'
           }
-        ]
+        }]
       }
 
       this.charts.trendChart.setOption(option)
@@ -466,6 +464,14 @@ export default {
     margin-bottom: 20px;
 
     .data-card {
+      height: 100%;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+      }
+
       .card-header {
         display: flex;
         justify-content: space-between;
@@ -480,6 +486,11 @@ export default {
         .el-icon-info {
           color: #909399;
           cursor: help;
+          transition: color 0.3s ease;
+
+          &:hover {
+            color: #409EFF;
+          }
         }
       }
 
@@ -493,6 +504,8 @@ export default {
 
         .card-trend {
           font-size: 13px;
+          display: flex;
+          align-items: center;
 
           .trend-up {
             color: #67C23A;
@@ -515,14 +528,16 @@ export default {
         .sub-value {
           font-size: 13px;
           color: #909399;
+          margin-top: 8px;
 
           .pending {
             color: #E6A23C;
+            font-weight: 500;
           }
         }
 
         .card-metric {
-          margin-top: 10px;
+          margin-top: 15px;
         }
       }
     }
@@ -533,6 +548,28 @@ export default {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #EBEEF5;
+
+    .map-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .label-toggle {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+
+        i {
+          margin-right: 4px;
+        }
+      }
+
+      .el-radio-group {
+        margin-left: 15px;
+      }
+    }
   }
 
   .trend-section {
@@ -540,14 +577,22 @@ export default {
 
     .rank-card {
       .rank-list {
+        padding: 0 15px;
+
         .rank-item {
           display: flex;
           align-items: center;
-          padding: 10px 0;
+          padding: 12px 0;
           border-bottom: 1px solid #EBEEF5;
+          transition: all 0.3s ease;
 
           &:last-child {
             border-bottom: none;
+          }
+
+          &:hover {
+            background-color: #f5f7fa;
+            padding-left: 8px;
           }
 
           .rank-number {
@@ -556,23 +601,38 @@ export default {
             line-height: 24px;
             text-align: center;
             border-radius: 50%;
-            margin-right: 10px;
+            margin-right: 12px;
             font-size: 12px;
             color: #909399;
+            font-weight: bold;
 
-            &.rank-1 { background: #F56C6C; color: white; }
-            &.rank-2 { background: #E6A23C; color: white; }
-            &.rank-3 { background: #67C23A; color: white; }
+            &.rank-1 {
+              background: #F56C6C;
+              color: white;
+              box-shadow: 0 2px 4px rgba(245,108,108,0.4);
+            }
+            &.rank-2 {
+              background: #E6A23C;
+              color: white;
+              box-shadow: 0 2px 4px rgba(230,162,60,0.4);
+            }
+            &.rank-3 {
+              background: #67C23A;
+              color: white;
+              box-shadow: 0 2px 4px rgba(103,194,58,0.4);
+            }
           }
 
           .user-name {
             flex: 1;
             color: #606266;
+            font-size: 14px;
           }
 
           .user-score {
             color: #409EFF;
             font-weight: bold;
+            font-size: 14px;
           }
         }
       }
@@ -580,10 +640,19 @@ export default {
   }
 
   .behavior-stats {
+    padding: 10px;
+
     .behavior-item {
       display: flex;
       align-items: center;
       padding: 20px;
+      transition: all 0.3s ease;
+      border-radius: 8px;
+
+      &:hover {
+        background-color: #f5f7fa;
+        transform: translateY(-2px);
+      }
 
       .behavior-icon {
         width: 48px;
@@ -594,10 +663,16 @@ export default {
         align-items: center;
         justify-content: center;
         margin-right: 15px;
+        transition: all 0.3s ease;
 
         i {
           font-size: 24px;
           color: #409EFF;
+        }
+
+        &:hover {
+          background: rgba(64, 158, 255, 0.2);
+          transform: scale(1.05);
         }
       }
 

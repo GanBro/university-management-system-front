@@ -1,37 +1,44 @@
 // store/modules/dashboard.js
-import { getStats, getGrowthTrend, getActivityStats } from '@/api/dashboard'
+import { getStats, getGrowthTrend } from '@/api/dashboard'
 
 const getDefaultState = () => {
   return {
     stats: {
       // 基础统计数据
-      totalUniversityCount: 0,
-      recentUniversityCount: 0,
-      activeUserCount: 0,
-      monthlyActiveUserCount: 0,
-      // 新增：互动统计
-      totalInteractionCount: 0,
-      pendingInteractionCount: 0,
-      avgResponseTime: 0,
-      responseRate: 0,
+      totalUniversityCount: 0,         // 高校总数
+      recentUniversityCount: 0,        // 最近新增高校数
+      activeUserCount: 0,              // 活跃用户数
+      monthlyActiveUserCount: 0,       // 月度活跃用户数
+
+      // 咨询相关统计
+      totalInteractionCount: 0,        // 咨询总数
+      pendingInteractionCount: 0,      // 待处理咨询数
+      avgResponseTime: 0,              // 平均响应时间
+      responseRate: 0,                 // 响应率
+
       // 地理分布数据
-      universityDistribution: [],
+      universityDistribution: [],      // 高校地理分布
+
       // 增长趋势数据
-      growthTrend: [],
-      // 新增：活跃度统计
-      dailyActiveUsers: [],
-      weeklyActiveUsers: [],
-      monthlyActiveUsers: [],
-      // 新增：用户行为分析
+      growthTrend: [],                // 高校增长趋势
+
+      // 活跃度统计
+      dailyActiveUsers: [],           // 日活跃用户
+      weeklyActiveUsers: [],          // 周活跃用户
+      monthlyActiveUsers: [],         // 月活跃用户
+
+      // 用户行为统计
       userBehaviorStats: {
-        consultationCount: 0,
-        replyCount: 0,
-        followCount: 0
+        consultationCount: 0,         // 咨询数（与totalInteractionCount一致）
+        replyCount: 0,               // 回复数
+        followCount: 0               // 关注数
       }
     },
-    // 新增：活跃用户排行
+
+    // 活跃用户排行
     activeUserRanking: [],
-    // 新增：系统状态
+
+    // 系统状态
     systemStatus: {
       lastUpdateTime: null,
       dataFreshness: null
@@ -45,21 +52,26 @@ const mutations = {
   RESET_STATE: (state) => {
     Object.assign(state, getDefaultState())
   },
+
   SET_STATS: (state, stats) => {
     state.stats = {
       ...state.stats,
       ...stats
     }
   },
+
   SET_ACTIVE_USER_RANKING: (state, ranking) => {
     state.activeUserRanking = ranking
   },
+
   SET_SYSTEM_STATUS: (state, status) => {
     state.systemStatus = status
   },
+
   UPDATE_GROWTH_TREND: (state, trend) => {
     state.stats.growthTrend = trend
   },
+
   UPDATE_USER_BEHAVIOR: (state, behavior) => {
     state.stats.userBehaviorStats = {
       ...state.stats.userBehaviorStats,
@@ -80,18 +92,18 @@ const actions = {
   // 获取仪表盘所有数据
   async fetchDashboardData({ dispatch }) {
     try {
-      await Promise.all([
+      const results = await Promise.all([
         dispatch('fetchStats'),
-        dispatch('fetchGrowthTrend'),
-        dispatch('fetchActivityStats')
+        dispatch('fetchGrowthTrend')
       ])
+      return results
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error)
-      throw error
+      return []
     }
   },
 
-  // 获取基础统计数据
+  // 获取统计数据
   async fetchStats({ commit }) {
     try {
       const response = await getStats()
@@ -111,6 +123,20 @@ const actions = {
       }
 
       commit('SET_STATS', formattedStats)
+
+      // 更新用户行为统计，确保咨询数与总咨询数保持一致
+      if (statsData.userBehaviorStats) {
+        const behaviorStats = {
+          ...statsData.userBehaviorStats,
+          consultationCount: statsData.totalInteractionCount || 0
+        }
+        commit('UPDATE_USER_BEHAVIOR', behaviorStats)
+      }
+
+      // 更新活跃用户排行
+      if (statsData.activeUserRanking) {
+        commit('SET_ACTIVE_USER_RANKING', statsData.activeUserRanking)
+      }
 
       // 更新系统状态
       commit('SET_SYSTEM_STATUS', {
@@ -137,38 +163,13 @@ const actions = {
     }
   },
 
-  // 获取活跃度统计数据
-  async fetchActivityStats({ commit }) {
-    try {
-      const response = await getActivityStats()
-      const activityData = response.data
-
-      // 更新用户行为统计
-      if (activityData.behaviorStats) {
-        commit('UPDATE_USER_BEHAVIOR', activityData.behaviorStats)
-      }
-
-      // 更新活跃用户排行
-      if (activityData.userRanking) {
-        commit('SET_ACTIVE_USER_RANKING', activityData.userRanking)
-      }
-
-      return activityData
-    } catch (error) {
-      console.error('Failed to fetch activity stats:', error)
-      throw error
-    }
-  },
-
   // 按时间范围获取数据
   async fetchDataByTimeRange({ dispatch }, timeRange) {
     try {
-      const requests = [
+      const results = await Promise.all([
         dispatch('fetchStats', { timeRange }),
-        dispatch('fetchGrowthTrend', { timeRange }),
-        dispatch('fetchActivityStats', { timeRange })
-      ]
-      const results = await Promise.all(requests)
+        dispatch('fetchGrowthTrend', { timeRange })
+      ])
       return results
     } catch (error) {
       console.error('Failed to fetch data by time range:', error)
