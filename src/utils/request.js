@@ -29,20 +29,42 @@ service.interceptors.response.use(
   response => {
     // 如果是文件下载，直接返回响应
     if (response.config.responseType === 'blob') {
-      // 检查响应状态码
-      if (response.status === 200) {
+      // 检查响应头的content-type，确保是文件类型
+      const contentType = response.headers['content-type']
+      if (response.status === 200 && contentType && contentType.includes('application')) {
         return response
       } else {
-        Message({
-          message: '文件导出失败',
-          type: 'error',
-          duration: 5 * 1000
+        // 如果响应的不是文件，尝试解析错误信息
+        return response.data.text().then(text => {
+          let errorMsg = '文件导出失败'
+          try {
+            const error = JSON.parse(text)
+            errorMsg = error.message || errorMsg
+          } catch (e) {
+            // JSON解析失败时使用默认错误信息
+          }
+          Message({
+            message: errorMsg,
+            type: 'error',
+            duration: 5 * 1000
+          })
+          return Promise.reject(new Error(errorMsg))
         })
-        return Promise.reject(new Error('文件导出失败'))
       }
     }
 
     const res = response.data
+
+    // 增加对res是否存在的检查
+    if (!res) {
+      const errorMsg = '响应数据格式错误'
+      Message({
+        message: errorMsg,
+        type: 'error',
+        duration: 5 * 1000
+      })
+      return Promise.reject(new Error(errorMsg))
+    }
 
     if (res.code !== 200) {
       Message({
@@ -50,28 +72,38 @@ service.interceptors.response.use(
         type: 'error',
         duration: 5 * 1000
       })
+      
+      // 处理token过期的情况
+      if (res.code === 401 || res.code === 403) {
+        // 可以在这里调用登出方法
+        store.dispatch('user/logout').then(() => {
+          location.reload()
+        })
+      }
+      
       return Promise.reject(new Error(res.message || 'Error'))
     } else {
       return res
     }
   },
   error => {
+    // 处理网络错误、超时等情况
+    let errorMsg = error.message || '请求失败'
+    
+    if (error.code === 'ECONNABORTED' && error.message.indexOf('timeout') !== -1) {
+      errorMsg = '请求超时'
+    }
+    
     // 处理文件下载失败的情况
     if (error.config && error.config.responseType === 'blob') {
-      // 如果是文件下载请求失败
-      Message({
-        message: '文件导出失败：' + error.message,
-        type: 'error',
-        duration: 5 * 1000
-      })
-    } else {
-      // 其他请求失败的情况
-      Message({
-        message: error.message,
-        type: 'error',
-        duration: 5 * 1000
-      })
+      errorMsg = '文件导出失败：' + errorMsg
     }
+
+    Message({
+      message: errorMsg,
+      type: 'error',
+      duration: 5 * 1000
+    })
     return Promise.reject(error)
   }
 )
