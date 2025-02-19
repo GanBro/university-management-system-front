@@ -68,12 +68,61 @@
         <el-card shadow="hover">
           <div slot="header" class="chart-header">
             <span>增长趋势</span>
-            <el-radio-group v-model="trendTimeRange" size="small">
-              <el-radio-button label="week">周</el-radio-button>
-              <el-radio-button label="month">月</el-radio-button>
-              <el-radio-button label="quarter">季</el-radio-button>
-              <el-radio-button label="year">年</el-radio-button>
-            </el-radio-group>
+            <el-date-picker
+              v-model="dateRange"
+              type="monthrange"
+              range-separator="至"
+              start-placeholder="开始月份"
+              end-placeholder="结束月份"
+              size="small"
+              value-format="yyyy-MM"
+              :picker-options="{
+                shortcuts: [
+                  {
+                    text: '最近三个月',
+                    onClick(picker) {
+                      const end = new Date();
+                      const start = new Date();
+                      start.setMonth(start.getMonth() - 2);
+                      picker.$emit('pick', [start, end]);
+                    }
+                  },
+                  {
+                    text: '最近半年',
+                    onClick(picker) {
+                      const end = new Date();
+                      const start = new Date();
+                      start.setMonth(start.getMonth() - 5);
+                      picker.$emit('pick', [start, end]);
+                    }
+                  },
+                  {
+                    text: '最近一年',
+                    onClick(picker) {
+                      const end = new Date();
+                      const start = new Date();
+                      start.setMonth(start.getMonth() - 11);
+                      picker.$emit('pick', [start, end]);
+                    }
+                  }
+                ],
+                disabledDate(time) {
+                  return time.getTime() > Date.now();
+                },
+                firstDayOfWeek: 1,
+                onPick: ({ maxDate, minDate }) => {
+                  const startDate = minDate;
+                  if (startDate && !maxDate) {
+                    this.$nextTick(() => {
+                      // 防止自动联动
+                      this.dateRange = [startDate, null];
+                    });
+                  }
+                }
+              }"
+              :clearable="true"
+              @change="handleDateRangeChange"
+            ></el-date-picker>
           </div>
           <div id="growth-trend-chart" style="height: 350px"></div>
         </el-card>
@@ -132,7 +181,7 @@ export default {
     return {
       loading: false,
       mapViewType: 'category',
-      trendTimeRange: 'month',
+      dateRange: [],
       showProvinceLabels: false,
       charts: {
         mapChart: null,
@@ -218,9 +267,11 @@ export default {
         }
       }
     },
-    trendTimeRange: {
-      handler(newVal) {
-        this.fetchDataByTimeRange(newVal)
+    dateRange: {
+      handler(newRange) {
+        if (newRange && newRange.length === 2) {
+          this.handleDateRangeChange(newRange)
+        }
       }
     },
     'stats.universityDistribution': {
@@ -259,7 +310,7 @@ export default {
   methods: {
     ...mapActions('dashboard', [
       'fetchDashboardData',
-      'fetchDataByTimeRange'
+      'fetchDataByDateRange'
     ]),
 
     toggleProvinceLabels() {
@@ -377,10 +428,22 @@ export default {
     renderTrendChart() {
       if (!this.charts.trendChart || !this.stats.growthTrend?.length) return
 
+      // 过滤选定日期范围内的数据
+      let trendData = this.stats.growthTrend
+      if (this.dateRange && this.dateRange.length === 2) {
+        const [startDate, endDate] = this.dateRange
+        trendData = this.stats.growthTrend.filter(item => {
+          return item.date >= startDate && item.date <= endDate
+        })
+      }
+
       const option = {
         tooltip: {
           trigger: 'axis',
-          formatter: '{b}: {c}所高校'
+          formatter: function(params) {
+            const data = params[0]
+            return `${data.name}<br/>高校数量：${data.value}所`
+          }
         },
         grid: {
           left: '3%',
@@ -391,7 +454,7 @@ export default {
         xAxis: {
           type: 'category',
           boundaryGap: false,
-          data: this.stats.growthTrend.map(item => item.year)
+          data: trendData.map(item => item.date)
         },
         yAxis: {
           type: 'value',
@@ -404,7 +467,7 @@ export default {
           name: '高校数量',
           type: 'line',
           smooth: true,
-          data: this.stats.growthTrend.map(item => item.university_count),
+          data: trendData.map(item => item.value),
           areaStyle: {
             opacity: 0.3
           },
@@ -451,6 +514,48 @@ export default {
 
     percentageFormat(percentage) {
       return `${percentage}%`
+    },
+
+    handleDateRangeChange(range) {
+      if (!range || range.length !== 2) return
+      
+      this.loading = true
+      const [startDate, endDate] = range
+      
+      this.fetchDataByDateRange({ startDate, endDate })
+        .then(() => {
+          this.$nextTick(() => {
+            this.renderCharts()
+          })
+        })
+        .catch(error => {
+          console.error('Failed to fetch data by date range:', error)
+          this.$message.error('获取数据失败，请稍后重试')
+        })
+        .finally(() => {
+          this.loading = false
+        })
+    },
+
+    fetchDataByDateRange() {
+      if (!this.dateRange || this.dateRange.length !== 2) return
+      
+      const [startDate, endDate] = this.dateRange
+      this.loading = true
+      
+      return this.$store.dispatch('dashboard/fetchDataByDateRange', { startDate, endDate })
+        .then(() => {
+          this.$nextTick(() => {
+            this.renderCharts()
+          })
+        })
+        .catch(error => {
+          console.error('Failed to fetch data by date range:', error)
+          this.$message.error('获取数据失败，请稍后重试')
+        })
+        .finally(() => {
+          this.loading = false
+        })
     }
   }
 }

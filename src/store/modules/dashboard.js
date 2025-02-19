@@ -175,6 +175,20 @@ const actions = {
       console.error('Failed to fetch data by time range:', error)
       throw error
     }
+  },
+
+  // 按日期区间获取数据
+  async fetchDataByDateRange({ dispatch }, { startDate, endDate } = {}) {
+    try {
+      const results = await Promise.all([
+        dispatch('fetchStats', { startDate, endDate }),
+        dispatch('fetchGrowthTrend', { startDate, endDate })
+      ])
+      return results
+    } catch (error) {
+      console.error('Failed to fetch data by date range:', error)
+      throw error
+    }
   }
 }
 
