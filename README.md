@@ -1,99 +1,136 @@
-# vue-admin-template
+# 高校管理系统前端
 
-English | [简体中文](./README-zh.md)
+## 项目介绍
+本项目是高校管理系统的前端部分，基于 Vue.js 开发，提供了现代化的用户界面和丰富的数据可视化功能。
 
-> A minimal vue admin template with Element UI & axios & iconfont & permission control & lint
+## 技术栈
+- Vue.js 2.x
+- Element UI
+- ECharts
+- Vuex
+- Vue Router
+- Axios
 
-**Live demo:** http://panjiachen.github.io/vue-admin-template
+## 系统要求
+- Node.js >= 12.x
+- npm >= 6.x
 
+## 安装说明
 
-**The current version is `v4.0+` build on `vue-cli`. If you want to use the old version , you can switch branch to [tag/3.11.0](https://github.com/PanJiaChen/vue-admin-template/tree/tag/3.11.0), it does not rely on `vue-cli`**
-
-<p align="center">
-  <b>SPONSORED BY</b>
-</p>
-<p align="center">
-   <a href="https://finclip.com?from=vue_element" title="FinClip" target="_blank">
-      <img height="200px" src="https://gitee.com/panjiachen/gitee-cdn/raw/master/vue%E8%B5%9E%E5%8A%A9.png" title="FinClip">
-   </a>
-</p>
-
-## Build Setup
-
+1. 克隆项目
 ```bash
-# clone the project
-git clone https://github.com/PanJiaChen/vue-admin-template.git
+git clone [项目地址]
+cd university-management-system-front
+```
 
-# enter the project directory
-cd vue-admin-template
-
-# install dependency
+2. 安装依赖
+```bash
 npm install
+```
 
-# develop
+3. 配置环境变量
+复制 `.env.example` 文件为 `.env.development`，并根据实际情况修改配置：
+```bash
+VUE_APP_BASE_API='http://localhost:8080'  # 后端接口地址
+```
+
+4. 启动开发服务器
+```bash
 npm run dev
 ```
 
-This will automatically open http://localhost:9528
-
-## Build
-
+5. 构建生产环境
 ```bash
-# build for test environment
-npm run build:stage
+npm run build
+```
 
-# build for production environment
+## 项目结构
+```
+src/
+├── api/                # API 接口
+├── assets/            # 静态资源
+├── components/        # 公共组件
+├── icons/             # 图标
+├── layout/           # 布局组件
+├── router/           # 路由配置
+├── store/            # Vuex 状态管理
+├── styles/           # 全局样式
+├── utils/            # 工具函数
+└── views/            # 页面组件
+```
+
+## 功能模块
+1. 仪表盘
+   - 数据统计概览
+   - 高校分布地图
+   - 增长趋势图表
+   - 用户活跃度分析
+
+2. 高校管理
+   - 高校信息管理
+   - 高校分类管理
+   - 批量导入导出
+
+3. 用户管理
+   - 用户信息管理
+   - 角色权限管理
+   - 用户行为分析
+
+4. 互动管理
+   - 咨询管理
+   - 回复管理
+   - 关注管理
+
+## 开发指南
+
+### 新增页面
+1. 在 `views` 目录下创建页面组件
+2. 在 `router` 中添加路由配置
+3. 在 `api` 目录下添加相关接口
+4. 如需要，在 `store` 中添加状态管理
+
+### 开发规范
+1. 组件命名采用大驼峰命名法
+2. API 接口统一管理，按模块划分
+3. 使用 ESLint 进行代码规范检查
+4. 提交代码前进行 lint 检查
+
+### 构建部署
+1. 测试环境部署
+```bash
+npm run build:stage
+```
+
+2. 生产环境部署
+```bash
 npm run build:prod
 ```
 
-## Advanced
+## 常见问题
 
-```bash
-# preview the release environment effect
-npm run preview
+1. 安装依赖失败
+   - 检查 Node.js 版本
+   - 清除 npm 缓存：`npm cache clean --force`
+   - 使用淘宝镜像：`npm config set registry https://registry.npmmirror.com`
 
-# preview the release environment effect + static resource analysis
-npm run preview -- --report
+2. 开发环境启动失败
+   - 检查端口是否被占用
+   - 检查环境变量配置
+   - 检查后端服务是否正常运行
 
-# code format check
-npm run lint
+3. 接口调用失败
+   - 检查网络连接
+   - 检查接口地址配置
+   - 检查跨域配置
 
-# code format check and auto fix
-npm run lint -- --fix
-```
+## 更新日志
+- v1.0.0
+  - 初始版本发布
+  - 实现基础功能模块
+  - 完成数据可视化展示
 
-Refer to [Documentation](https://panjiachen.github.io/vue-element-admin-site/guide/essentials/deploy.html) for more information
+## 维护者
+[你的名字]
 
-## Demo
-
-![demo](https://github.com/PanJiaChen/PanJiaChen.github.io/blob/master/images/demo.gif)
-
-## Extra
-
-If you want router permission && generate menu by user roles , you can use this branch [permission-control](https://github.com/PanJiaChen/vue-admin-template/tree/permission-control)
-
-For `typescript` version, you can use [vue-typescript-admin-template](https://github.com/Armour/vue-typescript-admin-template) (Credits: [@Armour](https://github.com/Armour))
-
-## Related Project
-
-- [vue-element-admin](https://github.com/PanJiaChen/vue-element-admin)
-
-- [electron-vue-admin](https://github.com/PanJiaChen/electron-vue-admin)
-
-- [vue-typescript-admin-template](https://github.com/Armour/vue-typescript-admin-template)
-
-- [awesome-project](https://github.com/PanJiaChen/vue-element-admin/issues/2312)
-
-## Browsers support
-
-Modern browsers and Internet Explorer 10+.
-
-| [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/edge/edge_48x48.png" alt="IE / Edge" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>IE / Edge | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/firefox/firefox_48x48.png" alt="Firefox" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Firefox | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/chrome/chrome_48x48.png" alt="Chrome" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Chrome | [<img src="https://raw.githubusercontent.com/alrra/browser-logos/master/src/safari/safari_48x48.png" alt="Safari" width="24px" height="24px" />](http://godban.github.io/browsers-support-badges/)</br>Safari |
-| --------- | --------- | --------- | --------- |
-| IE10, IE11, Edge| last 2 versions| last 2 versions| last 2 versions
-
-## License
-
-[MIT](https://github.com/PanJiaChen/vue-admin-template/blob/master/LICENSE) license.
-
-Copyright (c) 2017-present PanJiaChen
+## 许可证
+MIT
