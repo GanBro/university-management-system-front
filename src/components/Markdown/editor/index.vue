@@ -34,6 +34,8 @@ export default {
   data() {
     return {
       editor: null,
+      currentContent: '',
+      isDestroying: false,
       editorOptions: {
         el: null,
         height: this.height,
@@ -42,7 +44,7 @@ export default {
         placeholder: this.placeholder,
         language: 'zh-CN',
         autofocus: false,
-        initialValue: '',
+        initialValue: this.value || '',
         toolbarItems: [
           ['heading', 'bold', 'italic', 'strike'],
           ['hr', 'quote'],
@@ -52,7 +54,16 @@ export default {
           ['scrollSync']
         ],
         hooks: {
-          addImageBlobHook: this.handleImageUpload
+          addImageBlobHook: async (blob, callback) => {
+            try {
+              const url = await this.handleImageUpload(blob)
+              if (url) {
+                callback(url, blob.name)
+              }
+            } catch (error) {
+              console.error('图片处理失败:', error)
+            }
+          }
         },
         events: {
           focus: () => {
@@ -66,56 +77,149 @@ export default {
     }
   },
   watch: {
-    value(newVal) {
-      if (newVal !== this.editor.getMarkdown()) {
-        this.editor.setMarkdown(newVal)
-      }
+    value: {
+      handler(newVal) {
+        if (!this.isDestroying && newVal !== this.currentContent) {
+          this.updateContent(newVal)
+        }
+      },
+      immediate: true
     },
     height(newVal) {
-      this.editor.setHeight(newVal)
+      if (this.editor && !this.isDestroying) {
+        this.editor.setHeight(newVal)
+      }
     }
   },
   mounted() {
     this.initEditor()
   },
   beforeDestroy() {
-    if (this.editor) {
-      this.editor.destroy()
-    }
+    this.isDestroying = true
+    this.destroyEditor()
   },
   methods: {
     initEditor() {
-      this.editorOptions.el = document.getElementById(this.id)
-      this.editor = new Editor(this.editorOptions)
+      this.destroyEditor()
+      
+      this.$nextTick(() => {
+        try {
+          const el = document.getElementById(this.id)
+          if (!el) {
+            console.error('找不到编辑器容器元素')
+            return
+          }
 
-      // 设置初始内容
-      if (this.value) {
-        this.editor.setMarkdown(this.value)
-      } else {
-        this.editor.setMarkdown('') // 确保设置一个空字符串作为初始内容
-      }
-
-      // 监听内容变化
-      this.editor.on('change', () => {
-        const content = this.editor.getMarkdown()
-        this.$emit('input', content)
-        this.$emit('change', content)
+          this.editorOptions.el = el
+          this.editor = new Editor(this.editorOptions)
+          
+          if (!this.isDestroying) {
+            this.updateContent(this.value)
+            
+            this.editor.on('change', () => {
+              if (!this.isDestroying) {
+                const content = this.editor.getMarkdown()
+                this.currentContent = content
+                this.$emit('input', content)
+                this.$emit('change', content)
+              }
+            })
+          }
+        } catch (error) {
+          console.error('初始化编辑器失败:', error)
+        }
       })
+    },
+    updateContent(content) {
+      if (this.editor && !this.isDestroying) {
+        try {
+          const newContent = content || ''
+          this.currentContent = newContent
+          this.editor.setMarkdown(newContent)
+        } catch (error) {
+          console.error('更新内容失败:', error)
+        }
+      }
+    },
+    destroyEditor() {
+      if (this.editor) {
+        try {
+          this.editor.off('change')
+          
+          this.editor.setMarkdown('')
+          
+          this.editor.destroy()
+          this.editor = null
+          this.currentContent = ''
+          
+          const el = document.getElementById(this.id)
+          if (el) {
+            el.innerHTML = ''
+          }
+        } catch (error) {
+          console.error('销毁编辑器时出错:', error)
+        }
+      }
     },
     async handleImageUpload(file) {
       try {
+        const isImage = file.type.startsWith('image/')
+        if (!isImage) {
+          this.$message.error('只能上传图片文件')
+          return false
+        }
+
+        const isLt5M = file.size / 1024 / 1024 < 5
+        if (!isLt5M) {
+          this.$message.error('图片大小不能超过 5MB!')
+          return false
+        }
+
         const formData = new FormData()
         formData.append('file', file)
 
+        this.$message({
+          message: '正在上传图片...',
+          type: 'info',
+          duration: 2000
+        })
+
         const response = await uploadFile(formData)
-        if (response.code === 200) {
-          return response.data
+        console.log('图片上传响应:', response)
+        
+        if (response.code === 200 && response.data) {
+          let imageUrl = response.data.trim()
+          
+          imageUrl = imageUrl.replace(/^\/+/, '')
+          
+          const baseUrl = process.env.VUE_APP_BASE_API.replace(/\/+$/, '')
+          
+          const fullUrl = `${baseUrl}/${imageUrl}`
+          
+          console.log('最终图片URL:', fullUrl)
+          
+          const img = new Image()
+          img.src = fullUrl
+          
+          try {
+            await new Promise((resolve, reject) => {
+              img.onload = resolve
+              img.onerror = reject
+              setTimeout(() => reject(new Error('图片加载超时')), 3000)
+            })
+            
+            this.$message.success('图片上传成功')
+            return fullUrl
+          } catch (error) {
+            console.error('图片验证失败:', error)
+            throw new Error('图片链接无法访问，请检查网络连接')
+          }
         } else {
           throw new Error(response.message || '上传失败')
         }
       } catch (error) {
         console.error('图片上传失败:', error)
-        this.$message.error('图片上传失败：' + error.message)
+        this.$message.error('图片上传失败：' + (error.message || '未知错误'))
         return false
       }
     }
