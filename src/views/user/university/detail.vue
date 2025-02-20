@@ -119,6 +119,62 @@
             </el-row>
           </el-tab-pane>
 
+          <!-- 新闻资讯标签页 -->
+          <el-tab-pane label="新闻资讯" name="news">
+            <div class="news-container">
+              <!-- 新闻类型筛选 -->
+              <el-tabs v-model="newsType" @tab-click="handleNewsTypeChange" class="news-type-tabs">
+                <el-tab-pane label="全部" name="all"></el-tab-pane>
+                <el-tab-pane label="新闻动态" name="news"></el-tab-pane>
+                <el-tab-pane label="通知公告" name="notice"></el-tab-pane>
+                <el-tab-pane label="政策文件" name="policy"></el-tab-pane>
+                <el-tab-pane label="常见问题" name="faq"></el-tab-pane>
+                <el-tab-pane label="招生咨询" name="consult"></el-tab-pane>
+              </el-tabs>
+
+              <!-- 新闻列表 -->
+              <div class="news-list" v-loading="newsLoading">
+                <el-card v-for="news in newsList" :key="news.id" class="news-item" shadow="hover" @click.native="handleNewsClick(news)">
+                  <div class="news-header">
+                    <h3 class="news-title">{{ news.title }}</h3>
+                    <span class="news-date">{{ formatDate(news.publishTime) }}</span>
+                  </div>
+                  <div class="news-content" v-html="news.content"></div>
+                  <div class="news-footer">
+                    <div class="news-info">
+                      <span class="news-author">作者：{{ news.author }}</span>
+                      <span class="news-views">浏览：{{ news.viewCount }}</span>
+                      <span v-if="news.university" class="news-university">
+                        来源：{{ news.university.name }}
+                      </span>
+                    </div>
+                    <div class="news-type">
+                      <el-tag :type="getNewsTypeTag(news.type)" size="small">
+                        {{ getNewsTypeText(news.type) }}
+                      </el-tag>
+                    </div>
+                  </div>
+                </el-card>
+                <div v-if="!newsLoading && newsList.length === 0" class="empty-news">
+                  暂无相关信息
+                </div>
+              </div>
+
+              <!-- 分页 -->
+              <div class="pagination-container">
+                <el-pagination
+                  @size-change="handleSizeChange"
+                  @current-change="handleCurrentChange"
+                  :current-page="currentPage"
+                  :page-sizes="[10, 20, 30, 50]"
+                  :page-size="pageSize"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  :total="total">
+                </el-pagination>
+              </div>
+            </div>
+          </el-tab-pane>
+
           <el-tab-pane label="学校简介" name="introduction">
             <div v-if="universityData.introduction">
               <markdown-renderer :content="universityData.introduction" />
@@ -223,6 +279,8 @@ import MajorSatisfactionCard from '../components/MajorSatisfactionCard'
 import RecommendationCountCard from '../components/RecommendationCountCard'
 import RecommendationIndexCard from '../components/RecommendationIndexCard'
 import ConsultationCard from '../components/ConsultationCard'
+import { getNewsList } from '@/api/news'
+import dayjs from 'dayjs'
 
 export default {
   name: 'UniversityDetail',
@@ -239,7 +297,14 @@ export default {
   data() {
     return {
       loading: false,
-      activeTab: 'home'
+      newsLoading: false,
+      activeTab: 'home',
+      // 新闻相关数据
+      newsType: 'all',
+      newsList: [],
+      currentPage: 1,
+      pageSize: 10,
+      total: 0
     }
   },
 
@@ -387,6 +452,122 @@ export default {
         console.error('提交咨询失败:', error)
         this.$message.error('提交咨询失败，请重试')
       }
+    },
+
+    // 新闻相关方法
+    handleNewsTypeChange(tab) {
+      console.log('切换新闻类型:', tab.name)
+      this.currentPage = 1
+      this.fetchNewsList()
+    },
+
+    async fetchNewsList() {
+      try {
+        this.newsLoading = true
+        const params = {
+          universityId: parseInt(this.$route.params.id),
+          page: this.currentPage,
+          size: this.pageSize
+        }
+        
+        // 当类型不是 'all' 时才添加 type 参数
+        if (this.newsType !== 'all') {
+          params.type = this.newsType
+        }
+
+        console.log('请求参数:', params)
+        const { data } = await getNewsList(params)
+        console.log('返回数据:', data)
+        
+        if (data && data.records) {
+          this.newsList = data.records
+          this.total = data.total || 0
+          
+          this.newsList.forEach(news => {
+            console.log('新闻ID:', news.id, '类型:', news.type, '标题:', news.title)
+          })
+        } else {
+          this.newsList = []
+          this.total = 0
+        }
+      } catch (error) {
+        console.error('获取新闻列表失败:', error)
+        this.$message.error('获取新闻列表失败')
+        this.newsList = []
+        this.total = 0
+      } finally {
+        this.newsLoading = false
+      }
+    },
+
+    handleNewsClick(news) {
+      this.incrementViewCount(news.id)
+      this.$router.push(`/user/news/${news.id}`)
+    },
+
+    async incrementViewCount(newsId) {
+      try {
+        await increaseViewCount(newsId)
+      } catch (error) {
+        console.error('增加浏览量失败:', error)
+      }
+    },
+
+    handleSizeChange(val) {
+      this.pageSize = val
+      this.fetchNewsList()
+    },
+
+    handleCurrentChange(val) {
+      this.currentPage = val
+      this.fetchNewsList()
+    },
+
+    formatDate(date) {
+      return dayjs(date).format('YYYY-MM-DD HH:mm')
+    },
+
+    getNewsTypeTag(type) {
+      const typeMap = {
+        news: '',
+        notice: 'warning',
+        policy: 'success',
+        faq: 'info',
+        consult: 'danger'
+      }
+      return typeMap[type] || ''
+    },
+
+    getNewsTypeText(type) {
+      const typeMap = {
+        news: '新闻动态',
+        notice: '通知公告',
+        policy: '政策文件',
+        faq: '常见问题',
+        consult: '招生咨询'
+      }
+      return typeMap[type] || type
+    }
+  },
+
+  watch: {
+    '$route.params.id': {
+      handler(newVal) {
+        if (newVal && this.activeTab === 'news') {
+          this.fetchNewsList()
+        }
+      },
+      immediate: true
+    },
+    activeTab: {
+      handler(newVal) {
+        if (newVal === 'news') {
+          this.newsType = 'all'
+          this.currentPage = 1
+          this.fetchNewsList()
+        }
+      },
+      immediate: true
     }
   }
 }
@@ -558,6 +739,112 @@ export default {
           }
         }
       }
+    }
+  }
+
+  .news-container {
+    padding: 20px;
+
+    .news-type-tabs {
+      margin-bottom: 20px;
+      
+      ::v-deep .el-tabs__nav-wrap {
+        padding: 0;
+      }
+
+      ::v-deep .el-tabs__nav {
+        background-color: #f5f7fa;
+        border-radius: 4px;
+        padding: 4px;
+      }
+
+      ::v-deep .el-tabs__item {
+        height: 36px;
+        line-height: 36px;
+        padding: 0 20px;
+        font-size: 14px;
+        border-radius: 4px;
+        transition: all 0.3s;
+
+        &.is-active {
+          background-color: #409EFF;
+          color: #fff;
+        }
+
+        &:hover {
+          color: #409EFF;
+        }
+
+        &.is-active:hover {
+          color: #fff;
+        }
+      }
+
+      ::v-deep .el-tabs__active-bar {
+        display: none;
+      }
+    }
+
+    .news-list {
+      .news-item {
+        margin-bottom: 20px;
+
+        .news-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 10px;
+
+          .news-title {
+            margin: 0;
+            font-size: 18px;
+            color: #303133;
+          }
+
+          .news-date {
+            color: #909399;
+            font-size: 14px;
+          }
+        }
+
+        .news-content {
+          color: #606266;
+          margin-bottom: 10px;
+          line-height: 1.6;
+        }
+
+        .news-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          color: #909399;
+          font-size: 14px;
+
+          .news-info {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+          }
+
+          .news-type {
+            .el-tag {
+              border-radius: 12px;
+            }
+          }
+        }
+      }
+    }
+
+    .empty-news {
+      text-align: center;
+      padding: 40px 0;
+      color: #909399;
+      font-size: 14px;
+    }
+
+    .pagination-container {
+      text-align: center;
+      margin-top: 20px;
     }
   }
 }

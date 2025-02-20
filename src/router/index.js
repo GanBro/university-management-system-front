@@ -72,6 +72,12 @@ export const constantRoutes = [
         component: () => import('@/views/user/interactions/index'),
         meta: { title: '我的互动' }
       },
+      {
+        path: 'news/:id',
+        name: 'UserNewsDetail',
+        component: () => import('@/views/user/news/detail'),
+        meta: { title: '新闻详情' }
+      },
       // 高校详情相关路由
       {
         path: 'university/:id',
@@ -224,6 +230,13 @@ export const constantRoutes = [
         name: 'NewsEdit',
         component: () => import('@/views/admin/news/form'),
         meta: { title: '编辑信息' },
+        hidden: true
+      },
+      {
+        path: 'detail/:id',
+        name: 'NewsDetail',
+        component: () => import('@/views/admin/news/detail'),
+        meta: { title: '信息详情' },
         hidden: true
       }
     ]

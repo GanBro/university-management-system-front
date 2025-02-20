@@ -41,7 +41,12 @@
       <el-table-column label="ID" prop="id" align="center" width="80" />
       <el-table-column label="标题" min-width="150px">
         <template slot-scope="{row}">
-          <span class="link-type" @click="handleUpdate(row)">{{ row.title }}</span>
+          <span class="link-type" @click="handleDetail(row)">{{ row.title }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="关联学校" min-width="150px">
+        <template slot-scope="{row}">
+          <span>{{ row.university ? row.university.name : '-' }}</span>
         </template>
       </el-table-column>
       <el-table-column label="类型" width="110px" align="center">
@@ -108,6 +113,16 @@
         <el-form-item label="标题" prop="title">
           <el-input v-model="temp.title" />
         </el-form-item>
+        <el-form-item label="关联学校" prop="universityId">
+          <el-select v-model="temp.universityId" placeholder="请选择关联学校" clearable style="width: 100%">
+            <el-option
+              v-for="item in universities"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="类型" prop="type">
           <el-select v-model="temp.type" class="filter-item">
             <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" />
@@ -130,6 +145,7 @@
 
 <script>
 import { getNewsList, createNews, updateNews, deleteNews, publishNews } from '@/api/news'
+import { getUniversityList } from '@/api/university'
 import waves from '@/directive/waves'
 import Pagination from '@/components/Pagination/index.vue'
 import MarkdownEditor from '@/components/Markdown/editor/index.vue'
@@ -204,8 +220,10 @@ export default {
         content: '',
         type: 'news',
         status: 0,
-        author: ''
+        author: '',
+        universityId: undefined
       },
+      universities: [],
       dialogFormVisible: false,
       dialogStatus: '',
       textMap: {
@@ -216,12 +234,14 @@ export default {
         title: [{ required: true, message: '标题不能为空', trigger: 'blur' }],
         type: [{ required: true, message: '请选择类型', trigger: 'change' }],
         content: [{ required: true, message: '内容不能为空', trigger: 'blur' }],
-        author: [{ required: true, message: '作者不能为空', trigger: 'blur' }]
+        author: [{ required: true, message: '作者不能为空', trigger: 'blur' }],
+        universityId: [{ required: true, message: '请选择关联学校', trigger: 'change' }]
       }
     }
   },
   created() {
     this.getList()
+    this.getUniversities()
   },
   methods: {
     async getList() {
@@ -245,7 +265,8 @@ export default {
         content: '',
         type: 'news',
         status: 0,
-        author: ''
+        author: '',
+        universityId: undefined
       }
     },
     handleCreate() {
@@ -336,6 +357,18 @@ export default {
       } catch (error) {
         console.error('发布失败:', error)
       }
+    },
+    async getUniversities() {
+      try {
+        const { data } = await getUniversityList({ limit: 1000 })
+        this.universities = data.records || []
+      } catch (error) {
+        console.error('获取学校列表失败:', error)
+        this.$message.error('获取学校列表失败')
+      }
+    },
+    handleDetail(row) {
+      this.$router.push(`/news/detail/${row.id}`)
     }
   }
 }
