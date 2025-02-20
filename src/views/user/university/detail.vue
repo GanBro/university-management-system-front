@@ -462,17 +462,22 @@ export default {
     },
 
     async fetchNewsList() {
+      if (!this.$route.params.id) {
+        this.$message.error('缺少必要的学校ID参数')
+        return
+      }
+
       try {
         this.newsLoading = true
         const params = {
-          universityId: parseInt(this.$route.params.id),
           page: this.currentPage,
-          size: this.pageSize
+          limit: this.pageSize,
+          universityId: parseInt(this.$route.params.id),
+          'params[status]': 1  // 修改参数传递方式
         }
         
-        // 当类型不是 'all' 时才添加 type 参数
         if (this.newsType !== 'all') {
-          params.type = this.newsType
+          params['params[type]'] = this.newsType  // 修改参数传递方式
         }
 
         console.log('请求参数:', params)
@@ -482,17 +487,13 @@ export default {
         if (data && data.records) {
           this.newsList = data.records
           this.total = data.total || 0
-          
-          this.newsList.forEach(news => {
-            console.log('新闻ID:', news.id, '类型:', news.type, '标题:', news.title)
-          })
         } else {
           this.newsList = []
           this.total = 0
         }
       } catch (error) {
         console.error('获取新闻列表失败:', error)
-        this.$message.error('获取新闻列表失败')
+        this.$message.error(error.response?.data?.message || '获取新闻列表失败')
         this.newsList = []
         this.total = 0
       } finally {

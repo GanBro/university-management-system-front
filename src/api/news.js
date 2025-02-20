@@ -6,7 +6,14 @@ export function getNewsList(params) {
   return request({
     url: '/news/list',
     method: 'get',
-    params
+    params,
+    paramsSerializer: params => {
+      const searchParams = new URLSearchParams()
+      Object.keys(params).forEach(key => {
+        searchParams.append(key, params[key])
+      })
+      return searchParams.toString()
+    }
   })
 }
 
