@@ -123,40 +123,60 @@
           <el-tab-pane label="新闻资讯" name="news">
             <div class="news-container">
               <!-- 新闻类型筛选 -->
-              <el-tabs v-model="newsType" @tab-click="handleNewsTypeChange" class="news-type-tabs">
-                <el-tab-pane label="全部" name="all"></el-tab-pane>
-                <el-tab-pane label="新闻动态" name="news"></el-tab-pane>
-                <el-tab-pane label="通知公告" name="notice"></el-tab-pane>
-                <el-tab-pane label="政策文件" name="policy"></el-tab-pane>
-                <el-tab-pane label="常见问题" name="faq"></el-tab-pane>
-                <el-tab-pane label="招生咨询" name="consult"></el-tab-pane>
-              </el-tabs>
+              <div class="news-filter">
+                <el-radio-group v-model="newsType" size="medium" @change="handleNewsTypeChange">
+                  <el-radio-button label="all">全部</el-radio-button>
+                  <el-radio-button label="news">新闻动态</el-radio-button>
+                  <el-radio-button label="notice">通知公告</el-radio-button>
+                  <el-radio-button label="policy">政策文件</el-radio-button>
+                  <el-radio-button label="faq">常见问题</el-radio-button>
+                  <el-radio-button label="consult">招生咨询</el-radio-button>
+                </el-radio-group>
+              </div>
 
               <!-- 新闻列表 -->
               <div class="news-list" v-loading="newsLoading">
-                <el-card v-for="news in newsList" :key="news.id" class="news-item" shadow="hover" @click.native="handleNewsClick(news)">
-                  <div class="news-header">
-                    <h3 class="news-title">{{ news.title }}</h3>
-                    <span class="news-date">{{ formatDate(news.publishTime) }}</span>
-                  </div>
-                  <div class="news-content" v-html="news.content"></div>
-                  <div class="news-footer">
-                    <div class="news-info">
-                      <span class="news-author">作者：{{ news.author }}</span>
-                      <span class="news-views">浏览：{{ news.viewCount }}</span>
-                      <span v-if="news.university" class="news-university">
-                        来源：{{ news.university.name }}
-                      </span>
+                <div v-for="news in newsList" 
+                     :key="news.id" 
+                     class="news-item"
+                     @click="handleNewsClick(news)">
+                  <div class="news-item-content">
+                    <!-- 左侧日期 -->
+                    <div class="news-date">
+                      <div class="date-day">{{ formatDateDay(news.publishTime) }}</div>
+                      <div class="date-year">{{ formatDateYear(news.publishTime) }}</div>
                     </div>
-                    <div class="news-type">
-                      <el-tag :type="getNewsTypeTag(news.type)" size="small">
-                        {{ getNewsTypeText(news.type) }}
-                      </el-tag>
+                    <!-- 右侧内容 -->
+                    <div class="news-main">
+                      <div class="news-header">
+                        <h3 class="news-title">{{ news.title }}</h3>
+                        <el-tag :type="getNewsTypeTag(news.type)" size="small" class="news-tag" effect="plain">
+                          {{ getNewsTypeText(news.type) }}
+                        </el-tag>
+                      </div>
+                      <div class="news-brief" v-html="news.content.substring(0, 150) + '...'"></div>
+                      <div class="news-meta">
+                        <span class="meta-item">
+                          <i class="el-icon-user"></i>
+                          {{ news.author }}
+                        </span>
+                        <span class="meta-divider">|</span>
+                        <span class="meta-item">
+                          <i class="el-icon-view"></i>
+                          {{ news.viewCount }} 次浏览
+                        </span>
+                        <span class="meta-divider">|</span>
+                        <span v-if="news.university" class="meta-item">
+                          <i class="el-icon-school"></i>
+                          {{ news.university.name }}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </el-card>
+                </div>
                 <div v-if="!newsLoading && newsList.length === 0" class="empty-news">
-                  暂无相关信息
+                  <i class="el-icon-document"></i>
+                  <p>暂无相关信息</p>
                 </div>
               </div>
 
@@ -169,7 +189,8 @@
                   :page-sizes="[10, 20, 30, 50]"
                   :page-size="pageSize"
                   layout="total, sizes, prev, pager, next, jumper"
-                  :total="total">
+                  :total="total"
+                  background>
                 </el-pagination>
               </div>
             </div>
@@ -548,6 +569,14 @@ export default {
         consult: '招生咨询'
       }
       return typeMap[type] || type
+    },
+
+    formatDateDay(date) {
+      return dayjs(date).format('DD')
+    },
+
+    formatDateYear(date) {
+      return dayjs(date).format('YYYY')
     }
   },
 
@@ -744,92 +773,154 @@ export default {
   }
 
   .news-container {
-    padding: 20px;
+    padding: 0;
 
-    .news-type-tabs {
-      margin-bottom: 20px;
+    .news-filter {
+      margin-bottom: 24px;
+      text-align: center;
       
-      ::v-deep .el-tabs__nav-wrap {
-        padding: 0;
-      }
-
-      ::v-deep .el-tabs__nav {
-        background-color: #f5f7fa;
-        border-radius: 4px;
-        padding: 4px;
-      }
-
-      ::v-deep .el-tabs__item {
-        height: 36px;
-        line-height: 36px;
-        padding: 0 20px;
-        font-size: 14px;
-        border-radius: 4px;
-        transition: all 0.3s;
-
-        &.is-active {
-          background-color: #409EFF;
-          color: #fff;
+      ::v-deep .el-radio-group {
+        background: #f8fafc;
+        padding: 8px;
+        border-radius: 8px;
+        display: inline-flex;
+        
+        .el-radio-button {
+          &:not(:last-child) {
+            margin-right: 4px;
+          }
+          
+          .el-radio-button__inner {
+            border: none;
+            background: transparent;
+            padding: 8px 20px;
+            height: 36px;
+            line-height: 20px;
+            font-size: 14px;
+            border-radius: 6px;
+            color: #64748b;
+            transition: all 0.3s ease;
+            
+            &:hover {
+              color: #409EFF;
+              background: rgba(64, 158, 255, 0.1);
+            }
+          }
+          
+          &.is-active .el-radio-button__inner {
+            background: #409EFF;
+            color: white;
+            box-shadow: none;
+          }
         }
-
-        &:hover {
-          color: #409EFF;
-        }
-
-        &.is-active:hover {
-          color: #fff;
-        }
-      }
-
-      ::v-deep .el-tabs__active-bar {
-        display: none;
       }
     }
 
     .news-list {
       .news-item {
-        margin-bottom: 20px;
+        padding: 24px;
+        border-bottom: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        cursor: pointer;
 
-        .news-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 10px;
-
+        &:hover {
+          background: #f8fafc;
+          
           .news-title {
-            margin: 0;
-            font-size: 18px;
-            color: #303133;
+            color: #409EFF;
           }
+        }
+
+        .news-item-content {
+          display: flex;
+          gap: 24px;
 
           .news-date {
-            color: #909399;
-            font-size: 14px;
-          }
-        }
-
-        .news-content {
-          color: #606266;
-          margin-bottom: 10px;
-          line-height: 1.6;
-        }
-
-        .news-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          color: #909399;
-          font-size: 14px;
-
-          .news-info {
-            display: flex;
-            gap: 16px;
-            align-items: center;
+            flex-shrink: 0;
+            width: 80px;
+            text-align: center;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 8px;
+            
+            .date-day {
+              font-size: 24px;
+              font-weight: 600;
+              color: #1f2937;
+              line-height: 1.2;
+            }
+            
+            .date-year {
+              font-size: 13px;
+              color: #64748b;
+              margin-top: 4px;
+            }
           }
 
-          .news-type {
-            .el-tag {
-              border-radius: 12px;
+          .news-main {
+            flex: 1;
+            min-width: 0;
+
+            .news-header {
+              display: flex;
+              align-items: flex-start;
+              justify-content: space-between;
+              gap: 16px;
+              margin-bottom: 12px;
+
+              .news-title {
+                margin: 0;
+                font-size: 18px;
+                font-weight: 500;
+                color: #1f2937;
+                line-height: 1.4;
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                display: -webkit-box;
+                -webkit-line-clamp: 1;
+                -webkit-box-orient: vertical;
+              }
+
+              .news-tag {
+                flex-shrink: 0;
+                font-weight: normal;
+              }
+            }
+
+            .news-brief {
+              color: #64748b;
+              font-size: 14px;
+              line-height: 1.6;
+              margin-bottom: 16px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
+            }
+
+            .news-meta {
+              display: flex;
+              align-items: center;
+              color: #94a3b8;
+              font-size: 13px;
+
+              .meta-item {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+
+                i {
+                  font-size: 14px;
+                }
+              }
+
+              .meta-divider {
+                margin: 0 12px;
+                color: #e2e8f0;
+              }
             }
           }
         }
@@ -838,14 +929,27 @@ export default {
 
     .empty-news {
       text-align: center;
-      padding: 40px 0;
-      color: #909399;
-      font-size: 14px;
+      padding: 64px 0;
+      background: #f8fafc;
+      border-radius: 8px;
+      color: #94a3b8;
+
+      i {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+      }
     }
 
     .pagination-container {
+      margin-top: 32px;
+      padding: 24px 0;
       text-align: center;
-      margin-top: 20px;
+      border-top: 1px solid #e5e7eb;
     }
   }
 }
