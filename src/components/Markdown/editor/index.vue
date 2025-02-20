@@ -41,6 +41,8 @@ export default {
         previewStyle: 'vertical',
         placeholder: this.placeholder,
         language: 'zh-CN',
+        autofocus: false,
+        initialValue: '',
         toolbarItems: [
           ['heading', 'bold', 'italic', 'strike'],
           ['hr', 'quote'],
@@ -51,6 +53,14 @@ export default {
         ],
         hooks: {
           addImageBlobHook: this.handleImageUpload
+        },
+        events: {
+          focus: () => {
+            this.$emit('focus')
+          },
+          blur: () => {
+            this.$emit('blur')
+          }
         }
       }
     }
@@ -81,6 +91,8 @@ export default {
       // 设置初始内容
       if (this.value) {
         this.editor.setMarkdown(this.value)
+      } else {
+        this.editor.setMarkdown('') // 确保设置一个空字符串作为初始内容
       }
 
       // 监听内容变化
@@ -118,10 +130,46 @@ export default {
   :deep(.toastui-editor-defaultUI) {
     border: 1px solid #dcdfe6;
     border-radius: 4px;
+    
+    .toastui-editor-md-container {
+      background-color: #fff;
+      
+      .toastui-editor {
+        background-color: #fff;
+      }
+    }
+    
+    .toastui-editor-toolbar {
+      border-bottom: 1px solid #dcdfe6;
+      background-color: #f5f7fa;
+    }
+    
+    .toastui-editor-main {
+      .toastui-editor-md-preview {
+        padding: 16px;
+      }
+      
+      .toastui-editor-md-splitter {
+        background-color: #dcdfe6;
+      }
+    }
+    
+    .toastui-editor-placeholder::before {
+      color: #909399;
+      font-style: normal;
+    }
   }
   
-  :deep(.toastui-editor-defaultUI-toolbar) {
-    border-bottom: 1px solid #dcdfe6;
+  &:hover {
+    :deep(.toastui-editor-defaultUI) {
+      border-color: #c0c4cc;
+    }
+  }
+  
+  &:focus-within {
+    :deep(.toastui-editor-defaultUI) {
+      border-color: #409EFF;
+    }
   }
 }
 </style>
