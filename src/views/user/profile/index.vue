@@ -1,394 +1,407 @@
 <!-- src/views/user/profile/index.vue -->
 <template>
-  <div class="user-profile">
-    <div class="profile-container">
+  <div class="app-container">
+    <el-row :gutter="20">
       <!-- 左侧个人信息卡片 -->
-      <el-card class="profile-card">
-        <div class="avatar-container">
-          <el-avatar :size="100" :src="userInfo.avatar">
-            <img src="https://cube.elemecdn.com/e/fd/0fc7d20532fdaf769a25683617711png.png"/>
-          </el-avatar>
-          <h3>{{ userInfo.username }}</h3>
-          <p class="role-tag">{{ userInfo.role === 'admin' ? '管理员' : '普通用户' }}</p>
-        </div>
-        <div class="info-list">
-          <div class="info-item">
-            <i class="el-icon-time"></i>
-            <span>注册时间: {{ formatDate(userInfo.createdAt) }}</span>
-          </div>
-          <div class="info-item">
-            <i class="el-icon-date"></i>
-            <span>最后登录: {{ formatDate(userInfo.lastLogin) }}</span>
-          </div>
-        </div>
-      </el-card>
-
-      <!-- 右侧内容区 -->
-      <el-card class="content-card">
-        <el-tabs v-model="activeTab">
-          <!-- 个人资料标签页 -->
-          <el-tab-pane label="个人资料" name="profile">
-            <el-form ref="profileForm" :model="profileForm" :rules="rules" label-width="100px">
-              <el-form-item label="用户名">
-                <el-input v-model="profileForm.username" disabled></el-input>
-              </el-form-item>
-              <el-form-item label="邮箱" prop="email">
-                <el-input v-model="profileForm.email" :disabled="!isEditing"></el-input>
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="handleEdit">
-                  {{ isEditing ? '保存' : '编辑' }}
-                </el-button>
-              </el-form-item>
-            </el-form>
-          </el-tab-pane>
-
-          <!-- 账号安全标签页 -->
-          <el-tab-pane label="账号安全" name="security">
-            <el-alert
-              title="为了保证账号安全，请设置6位以上的密码。"
-              type="info"
-              :closable="false"
-              show-icon>
-            </el-alert>
-            <el-form ref="passwordForm" :model="passwordForm" :rules="passwordRules" label-width="100px" class="password-form">
-              <el-form-item label="当前密码" prop="oldPassword">
-                <el-input type="password" v-model="passwordForm.oldPassword" show-password></el-input>
-              </el-form-item>
-              <el-form-item label="新密码" prop="newPassword">
-                <el-input type="password" v-model="passwordForm.newPassword" show-password></el-input>
-              </el-form-item>
-              <el-form-item label="确认密码" prop="confirmPassword">
-                <el-input type="password" v-model="passwordForm.confirmPassword" show-password></el-input>
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="handlePasswordChange">修改密码</el-button>
-              </el-form-item>
-            </el-form>
-          </el-tab-pane>
-
-          <!-- 消息通知标签页 -->
-          <el-tab-pane label="消息通知" name="notifications">
-            <div class="notification-settings">
-              <el-card class="notification-item">
-                <div class="notification-header">
-                  <i class="el-icon-bell"></i>
-                  <div class="notification-info">
-                    <h4>系统通知</h4>
-                    <p>接收系统更新和重要提醒</p>
-                  </div>
-                  <el-switch v-model="notificationSettings.system"></el-switch>
+      <el-col :span="8">
+        <el-card class="profile-card" shadow="hover">
+          <div class="profile-header">
+            <el-upload
+              class="avatar-uploader"
+              :action="uploadUrl"
+              :headers="headers"
+              :show-file-list="false"
+              :before-upload="beforeAvatarUpload"
+              :on-success="handleAvatarSuccess"
+              :on-error="handleAvatarError"
+            >
+              <div class="avatar-wrapper">
+                <img v-if="userForm.avatar" :src="userForm.avatar.startsWith('http') ? userForm.avatar : baseUrl + userForm.avatar" class="avatar" @error="handleImageError">
+                <i v-else class="el-icon-user-solid avatar-icon"></i>
+                <div class="avatar-mask">
+                  <i class="el-icon-camera camera-icon"></i>
                 </div>
-              </el-card>
-              <el-card class="notification-item">
-                <div class="notification-header">
-                  <i class="el-icon-message"></i>
-                  <div class="notification-info">
-                    <h4>互动消息</h4>
-                    <p>接收回复和评论通知</p>
-                  </div>
-                  <el-switch v-model="notificationSettings.interaction"></el-switch>
-                </div>
-              </el-card>
-            </div>
-          </el-tab-pane>
-
-          <!-- 关注高校标签页 -->
-          <el-tab-pane label="关注高校" name="universities">
-            <div class="university-follow">
-              <!-- 切换按钮 -->
-              <div class="mb-6 flex justify-between items-center">
-                <div class="tabs">
-                  <el-button-group>
-                    <el-button
-                      :type="followTab === 'add' ? 'primary' : ''"
-                      @click="followTab = 'add'"
-                    >
-                      <i class="el-icon-plus"></i> 添加高校
-                    </el-button>
-                    <el-button
-                      :type="followTab === 'followed' ? 'primary' : ''"
-                      @click="followTab = 'followed'"
-                    >
-                      <i class="el-icon-star-on"></i> 已关注
-                    </el-button>
-                  </el-button-group>
+                <div v-if="uploadLoading" class="upload-loading">
+                  <el-loading></el-loading>
                 </div>
               </div>
+            </el-upload>
+            <h2 class="username">{{ userForm.username }}</h2>
+            <p class="role">普通用户</p>
+          </div>
+          <div class="profile-info">
+            <div class="info-item">
+              <i class="el-icon-user"></i>
+              <span>{{ userForm.username }}</span>
+            </div>
+            <div class="info-item">
+              <i class="el-icon-message"></i>
+              <span>{{ userForm.email }}</span>
+            </div>
+            <div class="info-item">
+              <i class="el-icon-time"></i>
+              <span>最后登录：{{ formatTime(userForm.lastLogin) }}</span>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
 
-              <!-- 添加高校面板 -->
-              <div v-if="followTab === 'add'">
-                <el-form :inline="true" class="mb-4">
-                  <el-form-item>
-                    <el-input
-                      v-model="universitySearch.name"
-                      placeholder="请输入院校名称"
-                      prefix-icon="el-icon-search"
-                    ></el-input>
-                  </el-form-item>
-                  <el-form-item>
-                    <el-select v-model="universitySearch.province" placeholder="所在地">
-                      <el-option label="北京" value="北京"></el-option>
-                      <el-option label="上海" value="上海"></el-option>
-                    </el-select>
-                  </el-form-item>
-                  <el-form-item>
-                    <el-select v-model="universitySearch.type" placeholder="隶属">
-                      <el-option label="教育部" value="教育部"></el-option>
-                      <el-option label="省属" value="省属"></el-option>
-                    </el-select>
-                  </el-form-item>
-                </el-form>
-
-                <el-table :data="universities" border>
-                  <el-table-column prop="name" label="院校名称"></el-table-column>
-                  <el-table-column prop="province" label="所在地"></el-table-column>
-                  <el-table-column prop="type" label="隶属"></el-table-column>
-                  <el-table-column label="操作" width="120">
-                    <template slot-scope="scope">
-                      <el-button
-                        type="text"
-                        @click="handleFollow(scope.row)"
-                        :disabled="scope.row.isFollowed"
-                      >
-                        {{ scope.row.isFollowed ? '已关注' : '关注' }}
-                      </el-button>
+      <!-- 右侧设置和通知 -->
+      <el-col :span="16">
+        <el-card shadow="hover">
+          <el-tabs v-model="activeTab">
+            <!-- 基本信息 -->
+            <el-tab-pane label="基本信息" name="basic">
+              <el-form :model="userForm" label-width="100px" class="setting-form">
+                <el-form-item label="用户名">
+                  <el-input v-model="userForm.username" disabled>
+                    <template slot="prepend">
+                      <i class="el-icon-user"></i>
                     </template>
-                  </el-table-column>
-                </el-table>
-              </div>
+                  </el-input>
+                </el-form-item>
+                <el-form-item label="邮箱">
+                  <el-input v-model="userForm.email">
+                    <template slot="prepend">
+                      <i class="el-icon-message"></i>
+                    </template>
+                  </el-input>
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="saveSettings">保存修改</el-button>
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
 
-              <!-- 已关注面板 -->
-              <div v-else>
-                <div v-if="followedUniversities.length === 0" class="empty-state">
-                  <el-empty description="暂无关注的高校"></el-empty>
+            <!-- 通知消息 -->
+            <el-tab-pane label="通知消息" name="notifications">
+              <div class="notification-container">
+                <div class="notification-header">
+                  <el-button type="text" @click="markAllAsRead" v-if="unreadNotifications.length > 0">
+                    全部标为已读
+                  </el-button>
                 </div>
-                <div v-else class="followed-grid">
-                  <el-card v-for="uni in followedUniversities" :key="uni.id" class="mb-4">
-                    <div class="flex justify-between items-center">
-                      <div>
-                        <h4 class="mb-2">{{ uni.name }}</h4>
-                        <p class="text-gray-500">{{ uni.province }} | {{ uni.type }}</p>
-                      </div>
-                      <el-button type="text" @click="handleUnfollow(uni.id)">
-                        <i class="el-icon-close"></i>
-                      </el-button>
+                <el-tabs v-model="notificationTab">
+                  <el-tab-pane label="未读消息" name="unread">
+                    <div v-if="unreadNotifications.length === 0" class="empty-text">
+                      暂无未读消息
                     </div>
-                  </el-card>
-                </div>
+                    <div v-else class="notification-list">
+                      <div
+                        v-for="item in unreadNotifications"
+                        :key="item.id"
+                        class="notification-item"
+                        @click="handleNotificationClick(item)"
+                      >
+                        <div class="notification-title">{{ item.title }}</div>
+                        <div class="notification-time">{{ formatTime(item.created_at) }}</div>
+                      </div>
+                    </div>
+                  </el-tab-pane>
+                  <el-tab-pane label="全部消息" name="all">
+                    <div v-if="allNotifications.length === 0" class="empty-text">
+                      暂无消息
+                    </div>
+                    <div v-else class="notification-list">
+                      <div
+                        v-for="item in allNotifications"
+                        :key="item.id"
+                        class="notification-item"
+                        :class="{ 'is-read': item.status === 'read' }"
+                        @click="handleNotificationClick(item)"
+                      >
+                        <div class="notification-title">{{ item.title }}</div>
+                        <div class="notification-time">{{ formatTime(item.created_at) }}</div>
+                      </div>
+                    </div>
+                  </el-tab-pane>
+                </el-tabs>
               </div>
-            </div>
-          </el-tab-pane>
-        </el-tabs>
-      </el-card>
-    </div>
+            </el-tab-pane>
+
+            <!-- 安全设置 -->
+            <el-tab-pane label="安全设置" name="security">
+              <el-form class="setting-form">
+                <el-form-item label="登录密码" label-width="100px">
+                  <div class="password-item">
+                    <span class="password-text">已设置</span>
+                    <el-button type="text" @click="showChangePassword">修改密码</el-button>
+                  </div>
+                </el-form-item>
+              </el-form>
+            </el-tab-pane>
+          </el-tabs>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 修改密码对话框 -->
+    <el-dialog title="修改密码" :visible.sync="passwordDialogVisible" width="400px">
+      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordForm" label-width="100px">
+        <el-form-item label="原密码" prop="oldPassword">
+          <el-input type="password" v-model="passwordForm.oldPassword" show-password></el-input>
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input type="password" v-model="passwordForm.newPassword" show-password></el-input>
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input type="password" v-model="passwordForm.confirmPassword" show-password></el-input>
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button @click="passwordDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="changePassword">确认</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 通知详情对话框 -->
+    <el-dialog title="通知详情" :visible.sync="notificationDetailVisible" width="500px">
+      <div v-if="currentNotification" class="notification-detail">
+        <h3>{{ currentNotification.title }}</h3>
+        <div class="notification-meta">
+          <span>{{ formatTime(currentNotification.created_at) }}</span>
+        </div>
+        <div class="notification-content">
+          {{ currentNotification.content }}
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
-import { updatePassword, updateProfile, followUniversity, unfollowUniversity, getFollowedUniversities } from '@/api/user'
-import { getUniversityList } from '@/api/university'
-import { validatePassword, validatePasswordMatch } from '@/utils/validate'
+import { getToken } from '@/utils/auth'
+import { updateProfile, updatePassword } from '@/api/user'
+import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/api/notification'
+import request from '@/utils/request'
 
 export default {
   name: 'UserProfile',
   data() {
-    const validateNewPassword = (rule, value, callback) => {
-      if (value === '') {
-        callback(new Error('请输入新密码'))
-      } else {
-        const validation = validatePassword(value)
-        if (!validation.isValid) {
-          callback(new Error(validation.message))
-        } else {
-          if (this.passwordForm.confirmPassword !== '') {
-            this.$refs.passwordForm.validateField('confirmPassword')
-          }
-          callback()
-        }
-      }
-    }
     const validateConfirmPassword = (rule, value, callback) => {
-      if (value === '') {
-        callback(new Error('请再次输入密码'))
-      } else if (!validatePasswordMatch(value, this.passwordForm.newPassword)) {
-        callback(new Error('两次输入密码不一致!'))
+      if (value !== this.passwordForm.newPassword) {
+        callback(new Error('两次输入的密码不一致'))
       } else {
         callback()
       }
     }
-
+    
     return {
-      activeTab: 'profile',
-      isEditing: false,
-      followTab: 'add',
-      universitySearch: {
-        name: '',
-        province: '',
-        type: ''
-      },
-      universities: [],
-      followedUniversities: [],
-      profileForm: {
+      activeTab: 'basic',
+      notificationTab: 'unread',
+      userForm: {
         username: '',
-        email: ''
+        email: '',
+        avatar: '',
+        lastLogin: null
       },
+      passwordDialogVisible: false,
+      notificationDetailVisible: false,
+      currentNotification: null,
       passwordForm: {
         oldPassword: '',
         newPassword: '',
         confirmPassword: ''
       },
-      rules: {
-        email: [
-          { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-          { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
-        ]
-      },
       passwordRules: {
         oldPassword: [
-          { required: true, message: '请输入当前密码', trigger: 'blur' }
+          { required: true, message: '请输入原密码', trigger: 'blur' }
         ],
         newPassword: [
-          { required: true, trigger: 'blur', validator: validateNewPassword }
+          { required: true, message: '请输入新密码', trigger: 'blur' },
+          { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
         ],
         confirmPassword: [
-          { required: true, trigger: 'blur', validator: validateConfirmPassword }
+          { required: true, message: '请确认密码', trigger: 'blur' },
+          { validator: validateConfirmPassword, trigger: 'blur' }
         ]
       },
-      notificationSettings: {
-        system: true,
-        interaction: true
-      }
-    }
-  },
-  computed: {
-    ...mapGetters([
-      'name',
-      'avatar',
-      'role',
-      'userId'
-    ]),
-    userInfo() {
-      return {
-        username: this.name,
-        avatar: this.avatar,
-        role: this.role,
-        userId: this.userId,
-        createdAt: '2024-12-27',
-        lastLogin: new Date()
-      }
-    }
-  },
-  watch: {
-    'universitySearch': {
-      handler: 'loadUniversities',
-      deep: true
+      uploadUrl: process.env.VUE_APP_BASE_API + '/upload/avatar',
+      headers: {
+        token: getToken()
+      },
+      baseUrl: process.env.VUE_APP_BASE_API,
+      uploadLoading: false,
+      allNotifications: [],
+      unreadNotifications: []
     }
   },
   created() {
-    this.initProfileForm()
-    this.loadUniversities()
-    this.loadFollowedUniversities()
+    this.getUserInfo()
+    this.fetchNotifications()
   },
   methods: {
-    formatDate(date) {
-      if (!date) return ''
-      const d = new Date(date)
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    formatTime(time) {
+      if (!time) return '暂无记录'
+      const date = new Date(time)
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
     },
-    initProfileForm() {
-      this.profileForm.username = this.userInfo.username
-      this.profileForm.email = '2551921037@qq.com'
-    },
-    handleEdit() {
-      if (this.isEditing) {
-        this.$refs.profileForm.validate(valid => {
-          if (valid) {
-            updateProfile({
-              userId: this.userInfo.userId,
-              email: this.profileForm.email,
-              avatar: this.profileForm.avatar
-            }).then(response => {
-              this.$message.success('保存成功')
-              this.isEditing = false
-            }).catch(error => {
-              this.$message.error('保存失败: ' + error.message)
-            })
+    
+    async getUserInfo() {
+      try {
+        const response = await request({
+          url: '/getUserByToken',
+          method: 'get',
+          params: { token: getToken() }
+        })
+        
+        if (response.code === 200 && response.data.user) {
+          const user = response.data.user
+          this.userForm = {
+            username: user.username,
+            email: user.email,
+            avatar: user.avatar || '',
+            lastLogin: user.lastLogin
           }
-        })
-      } else {
-        this.isEditing = true
+        }
+      } catch (error) {
+        console.error('获取用户信息失败:', error)
+        this.$message.error('获取用户信息失败')
       }
     },
-    handlePasswordChange() {
-      this.$refs.passwordForm.validate(valid => {
-        if (valid) {
-          updatePassword({
-            userId: this.userInfo.userId,
-            oldPassword: this.passwordForm.oldPassword,
-            newPassword: this.passwordForm.newPassword
-          }).then(response => {
-            this.$message.success('密码修改成功')
-            this.passwordForm = {
-              oldPassword: '',
-              newPassword: '',
-              confirmPassword: ''
-            }
-          }).catch(error => {
-            this.$message.error('密码修改失败: ' + error.message)
+    
+    async fetchNotifications() {
+      try {
+        const userId = this.$store.getters.userId
+        const res = await getUserNotifications(userId)
+        if (res.code === 200) {
+          this.allNotifications = res.data
+          this.unreadNotifications = res.data.filter(item => item.status === 'unread')
+        }
+      } catch (error) {
+        console.error('获取通知失败:', error)
+        this.$message.error('获取通知失败')
+      }
+    },
+    
+    beforeAvatarUpload(file) {
+      const isJPG = file.type === 'image/jpeg'
+      const isPNG = file.type === 'image/png'
+      const isLt2M = file.size / 1024 / 1024 < 2
+
+      if (!isJPG && !isPNG) {
+        this.$message.error('上传头像图片只能是 JPG/PNG 格式!')
+        return false
+      }
+      if (!isLt2M) {
+        this.$message.error('上传头像图片大小不能超过 2MB!')
+        return false
+      }
+      return true
+    },
+    
+    handleImageError() {
+      this.$message.warning('头像加载失败，已使用默认头像')
+      this.userForm.avatar = '' // 使用默认头像
+    },
+    
+    async handleAvatarSuccess(response, file) {
+      try {
+        if (response.code === 200) {
+          const avatarUrl = response.data
+          // 更新用户头像
+          const updateRes = await updateProfile({
+            userId: this.$store.getters.userId,
+            avatar: avatarUrl
           })
+          
+          if (updateRes.code === 200) {
+            this.userForm.avatar = avatarUrl
+            this.$message.success('头像上传成功')
+            // 更新vuex中的用户信息
+            await this.$store.dispatch('user/getInfo')
+          } else {
+            throw new Error(updateRes.message || '更新头像失败')
+          }
+        } else {
+          throw new Error(response.message || '上传失败')
         }
-      })
+      } catch (error) {
+        console.error('上传失败:', error)
+        this.$message.error(error.message || '上传失败，请重试')
+      }
     },
-    // 关注高校相关方法
-    async loadUniversities() {
+    
+    handleAvatarError(error) {
+      console.error('上传失败:', error)
+      this.$message.error(error.message || '上传失败，请重试')
+    },
+    
+    async handleNotificationClick(notification) {
+      this.currentNotification = notification
+      this.notificationDetailVisible = true
+      
+      if (notification.status === 'unread') {
+        try {
+          const userId = this.$store.getters.userId
+          await markNotificationAsRead(notification.id, userId)
+          await this.fetchNotifications()
+        } catch (error) {
+          console.error('标记通知已读失败:', error)
+          this.$message.error('标记已读失败')
+        }
+      }
+    },
+    
+    async markAllAsRead() {
       try {
-        const { data } = await getUniversityList({
-          name: this.universitySearch.name,
-          province: this.universitySearch.province,
-          type: this.universitySearch.type
+        const userId = this.$store.getters.userId
+        await markAllNotificationsAsRead(userId)
+        await this.fetchNotifications()
+        this.$message.success('已全部标记为已读')
+      } catch (error) {
+        console.error('标记全部已读失败:', error)
+        this.$message.error('操作失败，请重试')
+      }
+    },
+    
+    showChangePassword() {
+      this.passwordDialogVisible = true
+      this.passwordForm = {
+        oldPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }
+    },
+    
+    async changePassword() {
+      try {
+        await this.$refs.passwordForm.validate()
+        const res = await updatePassword({
+          userId: this.$store.getters.userId,
+          oldPassword: this.passwordForm.oldPassword,
+          newPassword: this.passwordForm.newPassword
         })
-        this.universities = data.records.map(uni => ({
-          ...uni,
-          isFollowed: this.followedUniversities.some(f => f.id === uni.id)
-        }))
-      } catch (error) {
-        this.$message.error('加载高校列表失败')
-      }
-    },
-
-    async loadFollowedUniversities() {
-      try {
-        const { data } = await getFollowedUniversities(this.userId)
-        this.followedUniversities = data
-      } catch (error) {
-        this.$message.error('加载已关注高校失败')
-      }
-    },
-
-    async handleFollow(university) {
-      try {
-        await followUniversity(this.userId, university.id)
-        university.isFollowed = true
-        this.followedUniversities.push({...university})
-        this.$message.success('关注成功')
-      } catch (error) {
-        this.$message.error('关注失败')
-      }
-    },
-
-    async handleUnfollow(id) {
-      try {
-        await unfollowUniversity(this.userId, id)
-        const university = this.universities.find(u => u.id === id)
-        if (university) {
-          university.isFollowed = false
+        if (res.code === 200) {
+          this.$message.success('密码修改成功,请重新登录')
+          this.passwordDialogVisible = false
+          // 退出登录
+          this.$store.dispatch('user/logout')
+          this.$router.push('/login')
         }
-        this.followedUniversities = this.followedUniversities.filter(u => u.id !== id)
-        this.$message.success('已取消关注')
       } catch (error) {
-        this.$message.error('取消关注失败')
+        console.error('修改密码失败:', error)
+        this.$message.error(error.message || '修改密码失败，请重试')
+      }
+    },
+    
+    async saveSettings() {
+      try {
+        const res = await updateProfile({
+          userId: this.$store.getters.userId,
+          email: this.userForm.email,
+          avatar: this.userForm.avatar
+        })
+        if (res.code === 200) {
+          this.$message.success('设置保存成功')
+          // 更新vuex中的用户信息
+          await this.$store.dispatch('user/getInfo')
+        } else {
+          throw new Error(res.message || '保存失败')
+        }
+      } catch (error) {
+        console.error('保存设置失败:', error)
+        this.$message.error(error.message || '保存失败，请重试')
       }
     }
   }
@@ -396,107 +409,190 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.user-profile {
+.app-container {
   padding: 20px;
-  background-color: #f0f2f5;
-  min-height: calc(100vh - 60px);
-
-  .profile-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 20px;
-
-    @media (max-width: 768px) {
-      grid-template-columns: 1fr;
-    }
-  }
-
+  
   .profile-card {
-    .avatar-container {
+    .profile-header {
       text-align: center;
-      padding: 20px 0;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
 
-      h3 {
-        margin: 10px 0 5px;
-        font-size: 18px;
+      .avatar-wrapper {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto 15px;
+        border-radius: 50%;
+        overflow: hidden;
+        cursor: pointer;
+
+        .avatar {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .avatar-icon {
+          font-size: 60px;
+          color: #909399;
+          line-height: 120px;
+          background: #f5f7fa;
+          width: 100%;
+          height: 100%;
+        }
+
+        .avatar-mask {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.3);
+          display: none;
+          justify-content: center;
+          align-items: center;
+
+          .camera-icon {
+            color: #fff;
+            font-size: 24px;
+          }
+        }
+
+        &:hover .avatar-mask {
+          display: flex;
+        }
+
+        .upload-loading {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(255, 255, 255, 0.8);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
       }
 
-      .role-tag {
+      .username {
+        margin: 10px 0 5px;
+        font-size: 20px;
+        font-weight: 500;
+      }
+
+      .role {
         color: #909399;
         font-size: 14px;
       }
     }
 
-    .info-list {
-      margin-top: 20px;
+    .profile-info {
+      padding: 20px 0;
 
       .info-item {
         display: flex;
         align-items: center;
-        margin-bottom: 10px;
-        color: #606266;
-        font-size: 14px;
-
+        margin-bottom: 15px;
+        
         i {
-          margin-right: 8px;
           font-size: 16px;
+          color: #909399;
+          margin-right: 10px;
+          width: 20px;
+          text-align: center;
+        }
+
+        span {
+          color: #606266;
+          font-size: 14px;
         }
       }
     }
   }
 
-  .content-card {
-    .password-form {
-      max-width: 500px;
-      margin-top: 20px;
-    }
-  }
+  .setting-form {
+    max-width: 600px;
+    margin: 20px auto;
 
-  .notification-settings {
-    .notification-item {
-      margin-bottom: 15px;
+    .password-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
 
-      .notification-header {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-
-        i {
-          font-size: 24px;
-          color: #409EFF;
-        }
-
-        .notification-info {
-          flex: 1;
-
-          h4 {
-            margin: 0 0 5px;
-            font-size: 16px;
-          }
-
-          p {
-            margin: 0;
-            color: #909399;
-            font-size: 13px;
-          }
-        }
+      .password-text {
+        color: #606266;
       }
     }
   }
 
-  .university-follow {
-    .followed-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
+  .notification-container {
+    .notification-header {
+      display: flex;
+      justify-content: flex-end;
+      padding: 10px;
+      border-bottom: 1px solid #eee;
     }
-
-    .empty-state {
-      padding: 40px 0;
+    
+    .notification-list {
+      max-height: 400px;
+      overflow-y: auto;
+      
+      .notification-item {
+        padding: 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #f5f5f5;
+        
+        &:hover {
+          background-color: #f5f7fa;
+        }
+        
+        &.is-read {
+          opacity: 0.7;
+        }
+        
+        .notification-title {
+          font-size: 14px;
+          margin-bottom: 5px;
+        }
+        
+        .notification-time {
+          font-size: 12px;
+          color: #909399;
+        }
+      }
+    }
+    
+    .empty-text {
       text-align: center;
+      padding: 30px;
+      color: #909399;
     }
   }
+}
+
+.notification-detail {
+  h3 {
+    margin: 0 0 15px;
+  }
+  
+  .notification-meta {
+    color: #909399;
+    font-size: 12px;
+    margin-bottom: 15px;
+  }
+  
+  .notification-content {
+    line-height: 1.6;
+  }
+}
+
+::v-deep .el-tabs__nav-wrap::after {
+  height: 1px;
+}
+
+::v-deep .el-input-group__prepend {
+  background-color: #fff;
 }
 </style>
