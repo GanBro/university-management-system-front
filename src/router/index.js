@@ -284,6 +284,22 @@ export const constantRoutes = [
       }
     ]
   },
+  {
+    path: '/settings',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        name: 'Settings',
+        component: () => import('@/views/admin/settings/index'),
+        meta: { 
+          title: '系统设置',
+          icon: 'setting'
+        }
+      }
+    ]
+  },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }
 ]
