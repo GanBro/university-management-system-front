@@ -130,6 +130,93 @@
                 </el-form-item>
               </el-form>
             </el-tab-pane>
+
+            <!-- 关注高校标签页 -->
+            <el-tab-pane label="关注高校" name="universities">
+              <div class="university-follow">
+                <!-- 切换按钮 -->
+                <div class="mb-6 flex justify-between items-center">
+                  <div class="tabs">
+                    <el-button-group>
+                      <el-button
+                        :type="followTab === 'add' ? 'primary' : ''"
+                        @click="followTab = 'add'"
+                      >
+                        <i class="el-icon-plus"></i> 添加高校
+                      </el-button>
+                      <el-button
+                        :type="followTab === 'followed' ? 'primary' : ''"
+                        @click="followTab = 'followed'"
+                      >
+                        <i class="el-icon-star-on"></i> 已关注
+                      </el-button>
+                    </el-button-group>
+                  </div>
+                </div>
+
+                <!-- 添加高校面板 -->
+                <div v-if="followTab === 'add'">
+                  <el-form :inline="true" class="mb-4">
+                    <el-form-item>
+                      <el-input
+                        v-model="universitySearch.name"
+                        placeholder="请输入院校名称"
+                        prefix-icon="el-icon-search"
+                      ></el-input>
+                    </el-form-item>
+                    <el-form-item>
+                      <el-select v-model="universitySearch.province" placeholder="所在地">
+                        <el-option label="北京" value="北京"></el-option>
+                        <el-option label="上海" value="上海"></el-option>
+                      </el-select>
+                    </el-form-item>
+                    <el-form-item>
+                      <el-select v-model="universitySearch.type" placeholder="隶属">
+                        <el-option label="教育部" value="教育部"></el-option>
+                        <el-option label="省属" value="省属"></el-option>
+                      </el-select>
+                    </el-form-item>
+                  </el-form>
+
+                  <el-table :data="universities" border>
+                    <el-table-column prop="name" label="院校名称"></el-table-column>
+                    <el-table-column prop="province" label="所在地"></el-table-column>
+                    <el-table-column prop="type" label="隶属"></el-table-column>
+                    <el-table-column label="操作" width="120">
+                      <template slot-scope="scope">
+                        <el-button
+                          type="text"
+                          @click="handleFollow(scope.row)"
+                          :disabled="scope.row.isFollowed"
+                        >
+                          {{ scope.row.isFollowed ? '已关注' : '关注' }}
+                        </el-button>
+                      </template>
+                    </el-table-column>
+                  </el-table>
+                </div>
+
+                <!-- 已关注面板 -->
+                <div v-else>
+                  <div v-if="followedUniversities.length === 0" class="empty-text">
+                    <el-empty description="暂无关注的高校"></el-empty>
+                  </div>
+                  <div v-else class="followed-grid">
+                    <el-card v-for="uni in followedUniversities" :key="uni.id" class="mb-4">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <h4 class="mb-2">{{ uni.name }}</h4>
+                          <p class="text-gray-500">{{ uni.province }} | {{ uni.type }}</p>
+                        </div>
+                        <el-button type="text" @click="handleUnfollow(uni.id)">
+                          <i class="el-icon-close"></i>
+                        </el-button>
+                      </div>
+                    </el-card>
+                  </div>
+                </div>
+              </div>
+            </el-tab-pane>
           </el-tabs>
         </el-card>
       </el-col>
@@ -173,6 +260,8 @@
 import { getToken } from '@/utils/auth'
 import { updateProfile, updatePassword } from '@/api/user'
 import { getUserNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/api/notification'
+import { followUniversity, unfollowUniversity, getFollowedUniversities } from '@/api/user'
+import { getUniversityList } from '@/api/university'
 import request from '@/utils/request'
 
 export default {
@@ -185,10 +274,11 @@ export default {
         callback()
       }
     }
-    
+
     return {
       activeTab: 'basic',
       notificationTab: 'unread',
+      followTab: 'add',
       userForm: {
         username: '',
         email: '',
@@ -223,12 +313,28 @@ export default {
       baseUrl: process.env.VUE_APP_BASE_API,
       uploadLoading: false,
       allNotifications: [],
-      unreadNotifications: []
+      unreadNotifications: [],
+      // 高校收藏相关
+      universitySearch: {
+        name: '',
+        province: '',
+        type: ''
+      },
+      universities: [],
+      followedUniversities: []
     }
   },
   created() {
     this.getUserInfo()
     this.fetchNotifications()
+    this.loadUniversities()
+    this.loadFollowedUniversities()
+  },
+  watch: {
+    'universitySearch': {
+      handler: 'loadUniversities',
+      deep: true
+    }
   },
   methods: {
     formatTime(time) {
@@ -236,7 +342,7 @@ export default {
       const date = new Date(time)
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
     },
-    
+
     async getUserInfo() {
       try {
         const response = await request({
@@ -244,7 +350,7 @@ export default {
           method: 'get',
           params: { token: getToken() }
         })
-        
+
         if (response.code === 200 && response.data.user) {
           const user = response.data.user
           this.userForm = {
@@ -259,7 +365,7 @@ export default {
         this.$message.error('获取用户信息失败')
       }
     },
-    
+
     async fetchNotifications() {
       try {
         const userId = this.$store.getters.userId
@@ -273,7 +379,7 @@ export default {
         this.$message.error('获取通知失败')
       }
     },
-    
+
     beforeAvatarUpload(file) {
       const isJPG = file.type === 'image/jpeg'
       const isPNG = file.type === 'image/png'
@@ -289,12 +395,12 @@ export default {
       }
       return true
     },
-    
+
     handleImageError() {
       this.$message.warning('头像加载失败，已使用默认头像')
       this.userForm.avatar = '' // 使用默认头像
     },
-    
+
     async handleAvatarSuccess(response, file) {
       try {
         if (response.code === 200) {
@@ -304,7 +410,7 @@ export default {
             userId: this.$store.getters.userId,
             avatar: avatarUrl
           })
-          
+
           if (updateRes.code === 200) {
             this.userForm.avatar = avatarUrl
             this.$message.success('头像上传成功')
@@ -321,16 +427,16 @@ export default {
         this.$message.error(error.message || '上传失败，请重试')
       }
     },
-    
+
     handleAvatarError(error) {
       console.error('上传失败:', error)
       this.$message.error(error.message || '上传失败，请重试')
     },
-    
+
     async handleNotificationClick(notification) {
       this.currentNotification = notification
       this.notificationDetailVisible = true
-      
+
       if (notification.status === 'unread') {
         try {
           const userId = this.$store.getters.userId
@@ -342,7 +448,7 @@ export default {
         }
       }
     },
-    
+
     async markAllAsRead() {
       try {
         const userId = this.$store.getters.userId
@@ -354,7 +460,7 @@ export default {
         this.$message.error('操作失败，请重试')
       }
     },
-    
+
     showChangePassword() {
       this.passwordDialogVisible = true
       this.passwordForm = {
@@ -363,7 +469,7 @@ export default {
         confirmPassword: ''
       }
     },
-    
+
     async changePassword() {
       try {
         await this.$refs.passwordForm.validate()
@@ -384,7 +490,7 @@ export default {
         this.$message.error(error.message || '修改密码失败，请重试')
       }
     },
-    
+
     async saveSettings() {
       try {
         const res = await updateProfile({
@@ -403,6 +509,64 @@ export default {
         console.error('保存设置失败:', error)
         this.$message.error(error.message || '保存失败，请重试')
       }
+    },
+
+    // 高校收藏相关方法
+    async loadUniversities() {
+      try {
+        const { data } = await getUniversityList({
+          name: this.universitySearch.name,
+          province: this.universitySearch.province,
+          type: this.universitySearch.type
+        })
+        this.universities = data.records.map(uni => ({
+          ...uni,
+          isFollowed: this.followedUniversities.some(f => f.id === uni.id)
+        }))
+      } catch (error) {
+        console.error('加载高校列表失败:', error)
+        this.$message.error('加载高校列表失败')
+      }
+    },
+
+    async loadFollowedUniversities() {
+      try {
+        const userId = this.$store.getters.userId
+        const { data } = await getFollowedUniversities(userId)
+        this.followedUniversities = data
+      } catch (error) {
+        console.error('加载已关注高校失败:', error)
+        this.$message.error('加载已关注高校失败')
+      }
+    },
+
+    async handleFollow(university) {
+      try {
+        const userId = this.$store.getters.userId
+        await followUniversity(userId, university.id)
+        university.isFollowed = true
+        this.followedUniversities.push({...university})
+        this.$message.success('关注成功')
+      } catch (error) {
+        console.error('关注失败:', error)
+        this.$message.error('关注失败')
+      }
+    },
+
+    async handleUnfollow(id) {
+      try {
+        const userId = this.$store.getters.userId
+        await unfollowUniversity(userId, id)
+        const university = this.universities.find(u => u.id === id)
+        if (university) {
+          university.isFollowed = false
+        }
+        this.followedUniversities = this.followedUniversities.filter(u => u.id !== id)
+        this.$message.success('已取消关注')
+      } catch (error) {
+        console.error('取消关注失败:', error)
+        this.$message.error('取消关注失败')
+      }
     }
   }
 }
@@ -411,7 +575,7 @@ export default {
 <style lang="scss" scoped>
 .app-container {
   padding: 20px;
-  
+
   .profile-card {
     .profile-header {
       text-align: center;
@@ -495,7 +659,7 @@ export default {
         display: flex;
         align-items: center;
         margin-bottom: 15px;
-        
+
         i {
           font-size: 16px;
           color: #909399;
@@ -534,36 +698,36 @@ export default {
       padding: 10px;
       border-bottom: 1px solid #eee;
     }
-    
+
     .notification-list {
       max-height: 400px;
       overflow-y: auto;
-      
+
       .notification-item {
         padding: 15px;
         cursor: pointer;
         border-bottom: 1px solid #f5f5f5;
-        
+
         &:hover {
           background-color: #f5f7fa;
         }
-        
+
         &.is-read {
           opacity: 0.7;
         }
-        
+
         .notification-title {
           font-size: 14px;
           margin-bottom: 5px;
         }
-        
+
         .notification-time {
           font-size: 12px;
           color: #909399;
         }
       }
     }
-    
+
     .empty-text {
       text-align: center;
       padding: 30px;
@@ -576,15 +740,53 @@ export default {
   h3 {
     margin: 0 0 15px;
   }
-  
+
   .notification-meta {
     color: #909399;
     font-size: 12px;
     margin-bottom: 15px;
   }
-  
+
   .notification-content {
     line-height: 1.6;
+  }
+}
+
+/* 高校收藏相关样式 */
+.university-follow {
+  .mb-4 {
+    margin-bottom: 16px;
+  }
+
+  .mb-6 {
+    margin-bottom: 24px;
+  }
+
+  .flex {
+    display: flex;
+  }
+
+  .justify-between {
+    justify-content: space-between;
+  }
+
+  .items-center {
+    align-items: center;
+  }
+
+  .followed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  .mb-2 {
+    margin-bottom: 8px;
+  }
+
+  .text-gray-500 {
+    color: #909399;
   }
 }
 

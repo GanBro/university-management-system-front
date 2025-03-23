@@ -61,6 +61,24 @@ export const constantRoutes = [
         meta: { title: '首页' }
       },
       {
+        path: 'recommendation',
+        name: 'UserRecommendation',
+        component: () => import('@/views/user/recommendation/index.vue'),
+        meta: { title: '专业推荐' }
+      },
+      {
+        path: 'university-satisfaction',
+        name: 'UserUniversitySatisfactionList',
+        component: () => import('@/views/user/universitySatisfaction/index.vue'),
+        meta: { title: '院校满意度' }
+      },
+      {
+        path: 'major-satisfaction',
+        name: 'UserMajorSatisfactionList',
+        component: () => import('@/views/user/majorSatisfaction/index.vue'),
+        meta: { title: '专业满意度' }
+      },
+      {
         path: 'profile',
         name: 'UserProfile',
         component: () => import('@/views/user/profile/index'),
@@ -101,7 +119,7 @@ export const constantRoutes = [
             path: 'recommendations',
             name: 'UserUniversityRecommendations',
             component: () => import('@/views/user/university/recommendations/index.vue'),
-            meta: { title: '专业推荐' }
+            meta: { title: '专业推荐' } // 与上面那个专业推荐不一样
           }
         ]
       }
@@ -293,7 +311,7 @@ export const constantRoutes = [
         path: '',
         name: 'Settings',
         component: () => import('@/views/admin/settings/index'),
-        meta: { 
+        meta: {
           title: '系统设置',
           icon: 'setting'
         }

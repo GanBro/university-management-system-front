@@ -12,6 +12,9 @@
               router
             >
               <el-menu-item index="/user/home">首页</el-menu-item>
+              <el-menu-item index="/user/recommendation">专业推荐</el-menu-item>
+              <el-menu-item index="/user/university-satisfaction">院校满意度</el-menu-item>
+              <el-menu-item index="/user/major-satisfaction">专业满意度</el-menu-item>
               <el-menu-item index="/user/profile">个人中心</el-menu-item>
               <el-menu-item index="/user/interactions">我的互动</el-menu-item>
             </el-menu>
@@ -25,7 +28,7 @@
       </el-main>
 
       <el-footer>
-        <p>© 2024 全国高等院校信息系统</p>
+        <p>© 2025 全国高等院校信息系统</p>
       </el-footer>
     </el-container>
   </div>
