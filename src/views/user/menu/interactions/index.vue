@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import InteractionList from '../components/InteractionList.vue'
+import InteractionList from '../../components/InteractionList.vue'
 
 export default {
   name: 'UserInteractions',

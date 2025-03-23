@@ -57,43 +57,43 @@ export const constantRoutes = [
       {
         path: 'home',
         name: 'UserHome',
-        component: () => import('@/views/user/home/index'),
+        component: () => import('@/views/user/menu/home/index'),
         meta: { title: '首页' }
       },
       {
         path: 'recommendation',
         name: 'UserRecommendation',
-        component: () => import('@/views/user/recommendation/index.vue'),
+        component: () => import('@/views/user/menu/recommendation/index.vue'),
         meta: { title: '专业推荐' }
       },
       {
         path: 'university-satisfaction',
         name: 'UserUniversitySatisfactionList',
-        component: () => import('@/views/user/universitySatisfaction/index.vue'),
+        component: () => import('@/views/user/menu/universitySatisfaction/index.vue'),
         meta: { title: '院校满意度' }
       },
       {
         path: 'major-satisfaction',
         name: 'UserMajorSatisfactionList',
-        component: () => import('@/views/user/majorSatisfaction/index.vue'),
+        component: () => import('@/views/user/menu/majorSatisfaction/index.vue'),
         meta: { title: '专业满意度' }
       },
       {
         path: 'profile',
         name: 'UserProfile',
-        component: () => import('@/views/user/profile/index'),
+        component: () => import('@/views/user/menu/profile/index'),
         meta: { title: '个人中心' }
       },
       {
         path: 'interactions',
         name: 'UserInteractions',
-        component: () => import('@/views/user/interactions/index'),
+        component: () => import('@/views/user/menu/interactions/index'),
         meta: { title: '我的互动' }
       },
       {
         path: 'news/:id',
         name: 'UserNewsDetail',
-        component: () => import('@/views/user/news/detail'),
+        component: () => import('@/views/user/university/news/detail'),
         meta: { title: '新闻详情' }
       },
       // 高校详情相关路由
