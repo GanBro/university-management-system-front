@@ -51,10 +51,10 @@
 
       <!-- Results table -->
       <div class="results-section">
-        <el-table :data="paginatedData" border style="width: 100%">
-          <el-table-column prop="name" label="院校名称" width="180"></el-table-column>
-          <el-table-column prop="location" label="院校所在地" width="120"></el-table-column>
-          <el-table-column label="综合满意度" width="180">
+        <el-table :data="paginatedData" border style="width: 100%" :fit="true">
+          <el-table-column prop="name" label="院校名称" min-width="180"></el-table-column>
+          <el-table-column prop="location" label="院校所在地" min-width="120"></el-table-column>
+          <el-table-column label="综合满意度" min-width="180">
             <template slot-scope="scope">
               <div class="rating-info">
                 <span class="rating-value orange">{{ scope.row.overallRating }}</span>
@@ -62,7 +62,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="环境满意度" width="180">
+          <el-table-column label="环境满意度" min-width="180">
             <template slot-scope="scope">
               <div class="rating-info">
                 <span class="rating-value orange">{{ scope.row.environmentRating }}</span>
@@ -70,7 +70,7 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="生活满意度" width="180">
+          <el-table-column label="生活满意度" min-width="180">
             <template slot-scope="scope">
               <div class="rating-info">
                 <span class="rating-value orange">{{ scope.row.lifeRating }}</span>
@@ -78,9 +78,9 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="详情" width="120" fixed="right">
+          <el-table-column label="详情" min-width="80" align="center">
             <template slot-scope="scope">
-              <el-link type="success" class="check-link" @click="viewDetail(scope.row)">查看</el-link>
+              <span class="check-link" @click="viewDetail(scope.row)">查看</span>
             </template>
           </el-table-column>
         </el-table>
@@ -495,6 +495,13 @@ export default {
 
       .check-link {
         color: #3ebd93;
+        cursor: pointer;
+        font-size: 14px;
+
+        &:hover {
+          color: #2aa77d;
+          text-decoration: underline;
+        }
       }
 
       .pagination-container {
@@ -521,5 +528,15 @@ export default {
     background-color: #4fcba4;
     border-color: #4fcba4;
   }
+}
+
+/* 删除固定列样式 */
+
+::v-deep .el-table .cell {
+  line-height: 23px;
+}
+
+::v-deep .el-table__row {
+  font-size: 14px;
 }
 </style>
