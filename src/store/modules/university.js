@@ -5,6 +5,7 @@ import {
   updateUniversity,
   deleteUniversity,
   exportUniversityList,
+  exportFollowedUniversities,
   batchDeleteUniversities,
   getUniversitySatisfaction,
   getMajorSatisfaction,
@@ -190,7 +191,20 @@ const actions = {
   // 导出高校列表
   exportList({ commit }, query) {
     return new Promise((resolve, reject) => {
-      exportUniversityList(query)
+      // 确定使用哪个导出API
+      let exportPromise;
+
+      if (query.followedOnly && query.userId) {
+        // 用户关注的高校导出
+        exportPromise = exportFollowedUniversities(query.userId, {
+          fields: query.fields
+        });
+      } else {
+        // 普通高校列表导出
+        exportPromise = exportUniversityList(query);
+      }
+
+      exportPromise
         .then(response => {
           // 创建 blob 并下载
           const blob = new Blob([response.data], {

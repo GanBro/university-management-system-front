@@ -57,11 +57,30 @@ export function exportUniversityList(params) {
   // 将数组参数转换为逗号分隔的字符串
   const exportParams = {
     ...params,
-    fields: Array.isArray(params.fields) ? params.fields.join(',') : params.fields
+    fields: Array.isArray(params.fields) ? params.fields.join(',') : params.fields,
+    ids: Array.isArray(params.ids) ? params.ids.join(',') : params.ids
   }
 
   return request({
     url: '/universities/export',
+    method: 'get',
+    params: exportParams,
+    responseType: 'blob',
+    timeout: 60000
+  })
+}
+
+// 导出关注的高校
+export function exportFollowedUniversities(userId, params) {
+  // 将数组参数转换为逗号分隔的字符串
+  const exportParams = {
+    ...params,
+    fields: Array.isArray(params.fields) ? params.fields.join(',') : params.fields,
+    userId
+  }
+
+  return request({
+    url: '/universities/export/followed',
     method: 'get',
     params: exportParams,
     responseType: 'blob',

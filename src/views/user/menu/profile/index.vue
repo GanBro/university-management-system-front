@@ -152,6 +152,17 @@
                       </el-button>
                     </el-button-group>
                   </div>
+
+                  <!-- Export button -->
+                  <el-button
+                    type="primary"
+                    icon="el-icon-download"
+                    size="small"
+                    @click="handleDownload"
+                    :loading="downloadLoading"
+                  >
+                    导出关注高校
+                  </el-button>
                 </div>
 
                 <!-- 添加高校面板 -->
@@ -253,6 +264,28 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 导出配置对话框 -->
+    <el-dialog
+      title="导出配置"
+      :visible.sync="exportDialogVisible"
+      width="30%"
+    >
+      <el-form :model="exportConfig" label-width="100px">
+        <el-form-item label="选择字段">
+          <el-checkbox-group v-model="exportConfig.fields">
+            <el-checkbox label="name">高校名称</el-checkbox>
+            <el-checkbox label="province">所在地</el-checkbox>
+            <el-checkbox label="type">类型</el-checkbox>
+            <el-checkbox label="level">层次</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="exportDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="handleExportConfirm">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -321,7 +354,13 @@ export default {
         type: ''
       },
       universities: [],
-      followedUniversities: []
+      followedUniversities: [],
+      // 导出相关
+      downloadLoading: false,
+      exportDialogVisible: false,
+      exportConfig: {
+        fields: ['name', 'province', 'type', 'level']
+      }
     }
   },
   created() {
@@ -566,6 +605,44 @@ export default {
       } catch (error) {
         console.error('取消关注失败:', error)
         this.$message.error('取消关注失败')
+      }
+    },
+
+    // 导出功能相关方法
+    handleDownload() {
+      this.exportDialogVisible = true;
+    },
+
+    async handleExportConfirm() {
+      try {
+        this.exportDialogVisible = false;
+        this.downloadLoading = true;
+
+        // Get the current user ID
+        const userId = this.$store.getters.userId;
+
+        // Prepare export query with selected fields
+        const exportQuery = {
+          userId: userId, // Pass userId explicitly
+          fields: this.exportConfig.fields,
+          followedOnly: true
+        };
+
+        // Use the store action for export
+        await this.$store.dispatch('university/exportList', exportQuery);
+
+        this.$message({
+          type: 'success',
+          message: '导出成功'
+        });
+      } catch (error) {
+        this.$message({
+          message: `导出失败: ${error.message || '未知错误'}`,
+          type: 'error',
+          duration: 5 * 1000
+        });
+      } finally {
+        this.downloadLoading = false;
       }
     }
   }
