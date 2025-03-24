@@ -71,7 +71,7 @@
           </div>
         </div>
         <div class="hot-label">
-          <span>最受欢迎专业</span>
+          <span>最新投票的专业</span>
         </div>
       </div>
 
@@ -592,24 +592,17 @@ export default {
 
       .hot-label {
         position: absolute;
-        top: -12px;
-        right: -50px;
+        top: -6px; /* 调整顶部位置，向下移动 */
+        right: -58px; /* 调整右侧位置，向右移动 */
         background-color: #ff9900;
         color: white;
-        padding: 30px 40px 5px 40px;
-        font-size: 14px;
+        padding: 35px 50px 8px 50px; /* 增加顶部内边距，将文字向下移动 */
+        font-size: 12px; /* 减小文字大小 */
         transform: rotate(45deg);
         box-shadow: 0 2px 8px rgba(255, 153, 0, 0.3);
-
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
-        }
+        text-align: center; /* 确保文本居中 */
+        white-space: nowrap; /* 防止文本换行 */
+        transform-origin: center; /* 确保旋转以中心为基点 */
       }
     }
 
