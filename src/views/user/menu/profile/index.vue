@@ -355,6 +355,7 @@ export default {
       },
       universities: [],
       followedUniversities: [],
+      followedUniversitiesLoaded: false, // 新增：标记已关注高校是否已加载
       // 导出相关
       downloadLoading: false,
       exportDialogVisible: false,
@@ -366,12 +367,24 @@ export default {
   created() {
     this.getUserInfo()
     this.fetchNotifications()
-    this.loadUniversities()
-    this.loadFollowedUniversities()
+    // 先加载已关注高校，再加载所有高校
+    this.loadFollowedUniversities().then(() => {
+      this.loadUniversities()
+    })
   },
   watch: {
     'universitySearch': {
-      handler: 'loadUniversities',
+      handler() {
+        // 确保已加载关注高校数据后再加载大学列表
+        if (this.followedUniversitiesLoaded) {
+          this.loadUniversities()
+        } else {
+          // 如果关注高校还未加载，先加载再更新列表
+          this.loadFollowedUniversities().then(() => {
+            this.loadUniversities()
+          })
+        }
+      },
       deep: true
     }
   },
@@ -550,7 +563,7 @@ export default {
       }
     },
 
-    // 高校收藏相关方法
+    // 高校收藏相关方法 - 改进版
     async loadUniversities() {
       try {
         const { data } = await getUniversityList({
@@ -558,9 +571,14 @@ export default {
           province: this.universitySearch.province,
           type: this.universitySearch.type
         })
+
+        // 创建已关注高校ID的Set，用于高效查找
+        const followedIds = new Set(this.followedUniversities.map(uni => uni.id))
+
+        // 使用Set高效更新isFollowed状态
         this.universities = data.records.map(uni => ({
           ...uni,
-          isFollowed: this.followedUniversities.some(f => f.id === uni.id)
+          isFollowed: followedIds.has(uni.id)
         }))
       } catch (error) {
         console.error('加载高校列表失败:', error)
@@ -573,18 +591,38 @@ export default {
         const userId = this.$store.getters.userId
         const { data } = await getFollowedUniversities(userId)
         this.followedUniversities = data
+        this.followedUniversitiesLoaded = true // 设置标记为已加载
+        return data // 返回数据以支持Promise链
       } catch (error) {
         console.error('加载已关注高校失败:', error)
         this.$message.error('加载已关注高校失败')
+        return [] // 出错时返回空数组
       }
+    },
+
+    // 同步大学关注状态
+    syncUniversityFollowState() {
+      // 创建已关注高校ID的Set
+      const followedIds = new Set(this.followedUniversities.map(uni => uni.id))
+
+      // 更新所有大学的isFollowed属性
+      this.universities = this.universities.map(uni => ({
+        ...uni,
+        isFollowed: followedIds.has(uni.id)
+      }))
     },
 
     async handleFollow(university) {
       try {
         const userId = this.$store.getters.userId
         await followUniversity(userId, university.id)
+
+        // 更新列表中的大学
         university.isFollowed = true
+
+        // 添加到已关注列表
         this.followedUniversities.push({...university})
+
         this.$message.success('关注成功')
       } catch (error) {
         console.error('关注失败:', error)
@@ -596,11 +634,16 @@ export default {
       try {
         const userId = this.$store.getters.userId
         await unfollowUniversity(userId, id)
+
+        // 更新列表中的大学状态
         const university = this.universities.find(u => u.id === id)
         if (university) {
           university.isFollowed = false
         }
+
+        // 从已关注列表中移除
         this.followedUniversities = this.followedUniversities.filter(u => u.id !== id)
+
         this.$message.success('已取消关注')
       } catch (error) {
         console.error('取消关注失败:', error)
@@ -618,17 +661,17 @@ export default {
         this.exportDialogVisible = false;
         this.downloadLoading = true;
 
-        // Get the current user ID
+        // 获取当前用户ID
         const userId = this.$store.getters.userId;
 
-        // Prepare export query with selected fields
+        // 准备导出查询参数
         const exportQuery = {
-          userId: userId, // Pass userId explicitly
+          userId: userId, // 明确传递userId
           fields: this.exportConfig.fields,
           followedOnly: true
         };
 
-        // Use the store action for export
+        // 使用store action导出
         await this.$store.dispatch('university/exportList', exportQuery);
 
         this.$message({
