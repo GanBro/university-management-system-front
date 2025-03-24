@@ -11,12 +11,11 @@
           <i class="el-icon-caret-bottom" />
         </div>
         <el-dropdown-menu slot="dropdown" class="user-dropdown">
-          <router-link to="/settings">
-            <el-dropdown-item>
-              <i class="el-icon-setting"></i>
-              设置
-            </el-dropdown-item>
-          </router-link>
+          <!-- 使用点击事件代替router-link -->
+          <el-dropdown-item @click.native="goToSettings">
+            <i class="el-icon-setting"></i>
+            设置
+          </el-dropdown-item>
           <el-dropdown-item divided @click.native="logout">
             <span style="display:block;">
               <i class="el-icon-switch-button"></i>
@@ -43,12 +42,36 @@ export default {
   computed: {
     ...mapGetters([
       'sidebar',
-      'avatar'
+      'avatar',
+      'role'
     ])
   },
   methods: {
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
+    },
+    goToSettings() {
+      console.log('尝试导航到设置页面, 当前角色:', this.role);
+
+      // 检查该路由是否应该对当前角色可见
+      const settingsRoute = this.$router.options.routes.find(
+        route => route.path === '/settings'
+      );
+
+      console.log('设置路由配置:', settingsRoute);
+
+      if (settingsRoute && settingsRoute.meta && settingsRoute.meta.roles) {
+        console.log('设置路由可访问角色:', settingsRoute.meta.roles);
+        console.log('当前用户角色是否有权限:', settingsRoute.meta.roles.includes(this.role));
+      }
+
+      // 使用try-catch代替Promise.catch
+      try {
+        // 直接导航到设置页面
+        this.$router.push('/settings');
+      } catch (err) {
+        console.error('导航到设置页面出错:', err);
+      }
     },
     async logout() {
       await this.$store.dispatch('user/logout')

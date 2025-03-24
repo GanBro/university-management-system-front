@@ -9,60 +9,8 @@ import getPageTitle from '@/utils/get-page-title'
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
 const whiteList = ['/login', '/register'] // no redirect whitelist
-//
-// router.beforeEach(async(to, from, next) => {
-//   console.log('Navigation:', {
-//     from: from.fullPath,
-//     to: to.fullPath,
-//     params: to.params,
-//     role: store.state.user?.role
-//   })
-//   NProgress.start()
-//   document.title = getPageTitle(to.meta.title)
-//   const hasToken = getToken()
-//
-//   if (hasToken) {
-//     if (to.path === '/login') {
-//       next({ path: '/' })
-//       NProgress.done()
-//     } else {
-//       try {
-//         // 获取用户信息并打印完整的返回数据
-//         const userInfo = await store.dispatch('user/getInfo')
-//         const { role } = userInfo
-//
-//         // 根据角色进行路由
-//         if (role === 'admin') {
-//           if (to.path.startsWith('/user')) {
-//             next('/')
-//           } else {
-//             next()
-//           }
-//         } else {
-//           if (!to.path.startsWith('/user')) {
-//             next('/user/home')
-//           } else {
-//             next()
-//           }
-//         }
-//       } catch (error) {
-//         // 错误处理
-//         await store.dispatch('user/resetToken')
-//         next(`/login?redirect=${to.path}`)
-//       } finally {
-//         NProgress.done()
-//       }
-//     }
-//   } else {
-//     if (whiteList.indexOf(to.path) !== -1) {
-//       next()
-//     } else {
-//       next(`/login?redirect=${to.path}`)
-//       NProgress.done()
-//     }
-//   }
-// })
-router.beforeEach(async (to, from, next) => {
+
+router.beforeEach(async(to, from, next) => {
   NProgress.start()
   document.title = getPageTitle(to.meta.title)
   const hasToken = getToken()
@@ -76,7 +24,7 @@ router.beforeEach(async (to, from, next) => {
         const userInfo = await store.dispatch('user/getInfo')
         const { role } = userInfo
 
-        // 修改路由判断逻辑
+        // 修改路由判断逻辑，增加对高校管理员角色的处理
         if (role === 'user') {
           if (to.path.startsWith('/user')) {
             next()
@@ -84,12 +32,25 @@ router.beforeEach(async (to, from, next) => {
             next('/user/home')
           }
         } else if (role === 'admin') {
-          if (!to.path.startsWith('/user')) {
+          if (!to.path.startsWith('/user') && !to.path.startsWith('/university-admin')) {
             next()
           } else {
             next('/')
           }
+        } else if (role === 'university_admin') {
+          // 特殊处理设置页面
+          if (to.path === '/settings') {
+            console.log('高校管理员访问设置页面，允许通过');
+            next()
+          } else if (to.path.startsWith('/university-admin')) {
+            console.log('高校管理员访问高校管理路由，允许通过');
+            next()
+          } else {
+            console.log('高校管理员访问其他路由，重定向到高校管理首页');
+            next('/university-admin/dashboard')
+          }
         } else {
+          // 未知角色
           next('/user/home')
         }
       } catch (error) {

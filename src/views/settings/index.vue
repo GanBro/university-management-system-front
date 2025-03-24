@@ -72,7 +72,7 @@ export default {
         callback()
       }
     }
-    
+
     return {
       uploadUrl: process.env.VUE_APP_BASE_API + '/user/avatar',
       headers: {
@@ -118,7 +118,7 @@ export default {
         console.error('获取用户信息失败:', error)
       }
     },
-    
+
     beforeAvatarUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
       const isLt2M = file.size / 1024 / 1024 < 2
@@ -131,7 +131,7 @@ export default {
       }
       return isJPG && isLt2M
     },
-    
+
     handleAvatarSuccess(res) {
       if (res.code === 200) {
         this.userForm.avatar = res.data
@@ -140,7 +140,7 @@ export default {
         this.$message.error(res.msg || '头像上传失败')
       }
     },
-    
+
     showChangePassword() {
       this.passwordDialogVisible = true
       this.passwordForm = {
@@ -149,7 +149,7 @@ export default {
         confirmPassword: ''
       }
     },
-    
+
     async changePassword() {
       try {
         await this.$refs.passwordForm.validate()
@@ -168,7 +168,7 @@ export default {
         console.error('修改密码失败:', error)
       }
     },
-    
+
     async saveSettings() {
       try {
         const res = await this.$http.put('/user/update', this.userForm)
@@ -189,10 +189,10 @@ export default {
 .settings-card {
   max-width: 800px;
   margin: 0 auto;
-  
+
   .section {
     margin-bottom: 30px;
-    
+
     h3 {
       margin-bottom: 20px;
       padding-bottom: 10px;
@@ -200,7 +200,7 @@ export default {
       font-weight: 500;
     }
   }
-  
+
   .avatar-uploader {
     border: 1px dashed #d9d9d9;
     border-radius: 6px;
@@ -209,13 +209,13 @@ export default {
     height: 178px;
     line-height: 178px;
     text-align: center;
-    
+
     .avatar {
       width: 178px;
       height: 178px;
       display: block;
     }
-    
+
     .avatar-uploader-icon {
       font-size: 28px;
       color: #8c939d;
@@ -225,10 +225,10 @@ export default {
       text-align: center;
     }
   }
-  
+
   .actions {
     text-align: center;
     margin-top: 20px;
   }
 }
-</style> 
+</style>

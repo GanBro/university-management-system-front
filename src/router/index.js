@@ -130,11 +130,12 @@ export const constantRoutes = [
     path: '/',
     component: Layout,
     redirect: '/dashboard',
+    meta: { roles: ['admin'] }, // 添加父路由的角色限制
     children: [{
       path: 'dashboard',
       name: 'Dashboard',
       component: () => import('@/views/admin/dashboard/index'),
-      meta: { title: '首页', icon: 'dashboard' }
+      meta: { title: '首页', icon: 'dashboard', roles: ['admin'] }
     }]
   },
   {
@@ -144,40 +145,41 @@ export const constantRoutes = [
     name: 'University',
     meta: {
       title: '高校管理',
-      icon: 'university'
+      icon: 'university',
+      roles: ['admin']
     },
     children: [
       {
         path: 'list',
         name: 'UniversityList',
         component: () => import('@/views/admin/university/list.vue'),
-        meta: { title: '高校列表' }
+        meta: { title: '高校列表', roles: ['admin'] }
       },
       {
         path: 'create',
         name: 'UniversityCreate',
         component: () => import('@/views/admin/university/form.vue'),
-        meta: { title: '添加高校' }
+        meta: { title: '添加高校', roles: ['admin'] }
       },
       {
         path: 'edit/:id',
         name: 'UniversityEdit',
         component: () => import('@/views/admin/university/form.vue'),
-        meta: { title: '编辑高校' },
+        meta: { title: '编辑高校', roles: ['admin'] },
         hidden: true
       },
       {
         path: 'detail/:id',
         name: 'AdminUniversityDetail',
         component: () => import('@/views/admin/university/detail.vue'),
-        meta: { title: '高校详情' },
+        meta: { title: '高校详情', roles: ['admin'] },
         hidden: true,
         children: [
           {
             path: 'satisfaction',
             name: 'AdminUniversitySatisfaction',
             component: () => import('@/views/admin/university/satisfaction/index.vue'),
-            meta: { title: '满意度管理' }
+            meta: { title: '满意度管理', roles: ['admin'] }
           }
         ]
       }
@@ -190,33 +192,34 @@ export const constantRoutes = [
     name: 'System',
     meta: {
       title: '用户管理',
-      icon: 'user'
+      icon: 'user',
+      roles: ['admin']
     },
     children: [
       {
         path: 'user/list',
         name: 'UserList',
         component: () => import('@/views/admin/user/list'),
-        meta: { title: '用户列表' }
+        meta: { title: '用户列表', roles: ['admin'] }
       },
       {
         path: 'user/create',
         name: 'UserCreate',
         component: () => import('@/views/admin/user/form'),
-        meta: { title: '添加用户' }
+        meta: { title: '添加用户', roles: ['admin'] }
       },
       {
         path: 'user/edit/:id',
         name: 'UserEdit',
         component: () => import('@/views/admin/user/form'),
-        meta: { title: '编辑用户' },
+        meta: { title: '编辑用户', roles: ['admin'] },
         hidden: true
       },
       {
         path: 'user/detail/:id',
         name: 'UserDetail',
         component: () => import('@/views/admin/user/detail'),
-        meta: { title: '用户详情' },
+        meta: { title: '用户详情', roles: ['admin'] },
         hidden: true
       }
     ]
@@ -228,33 +231,34 @@ export const constantRoutes = [
     name: 'News',
     meta: {
       title: '信息发布',
-      icon: 'news'
+      icon: 'news',
+      roles: ['admin']
     },
     children: [
       {
         path: 'list',
         name: 'NewsList',
         component: () => import('@/views/admin/news/list'),
-        meta: { title: '信息列表' }
+        meta: { title: '信息列表', roles: ['admin'] }
       },
       {
         path: 'create',
         name: 'NewsCreate',
         component: () => import('@/views/admin/news/form'),
-        meta: { title: '发布信息' }
+        meta: { title: '发布信息', roles: ['admin'] }
       },
       {
         path: 'edit/:id',
         name: 'NewsEdit',
         component: () => import('@/views/admin/news/form'),
-        meta: { title: '编辑信息' },
+        meta: { title: '编辑信息', roles: ['admin'] },
         hidden: true
       },
       {
         path: 'detail/:id',
         name: 'NewsDetail',
         component: () => import('@/views/admin/news/detail'),
-        meta: { title: '信息详情' },
+        meta: { title: '信息详情', roles: ['admin'] },
         hidden: true
       }
     ]
@@ -264,25 +268,29 @@ export const constantRoutes = [
     component: Layout,
     redirect: '/notification/list',
     name: 'Notification',
-    meta: { title: '通知管理', icon: 'notification' },
+    meta: {
+      title: '通知管理',
+      icon: 'notification',
+      roles: ['admin']
+    },
     children: [
       {
         path: 'list',
         name: 'NotificationList',
         component: () => import('@/views/admin/notification/list'),
-        meta: { title: '通知列表' }
+        meta: { title: '通知列表', roles: ['admin'] }
       },
       {
         path: 'create',
         name: 'NotificationCreate',
         component: () => import('@/views/admin/notification/form'),
-        meta: { title: '发布通知' }
+        meta: { title: '发布通知', roles: ['admin'] }
       },
       {
         path: 'edit/:id',
         name: 'NotificationEdit',
         component: () => import('@/views/admin/notification/form'),
-        meta: { title: '编辑通知', noCache: true },
+        meta: { title: '编辑通知', noCache: true, roles: ['admin'] },
         hidden: true
       }
     ]
@@ -292,13 +300,17 @@ export const constantRoutes = [
     component: Layout,
     redirect: '/message/log',
     name: 'Message',
-    meta: { title: '消息管理', icon: 'message' },
+    meta: {
+      title: '消息管理',
+      icon: 'message',
+      roles: ['admin']
+    },
     children: [
       {
         path: 'log',
         name: 'MessageLog',
         component: () => import('@/views/admin/message/log'),
-        meta: { title: '消息记录' }
+        meta: { title: '消息记录', roles: ['admin'] }
       }
     ]
   },
@@ -306,6 +318,7 @@ export const constantRoutes = [
     path: '/settings',
     component: Layout,
     hidden: true,
+    meta: { roles: ['admin', 'university_admin'] }, // 添加高校管理员角色
     children: [
       {
         path: '',
@@ -313,8 +326,29 @@ export const constantRoutes = [
         component: () => import('@/views/admin/settings/index'),
         meta: {
           title: '系统设置',
-          icon: 'setting'
+          icon: 'setting',
+          roles: ['admin', 'university_admin'] // 添加高校管理员角色
         }
+      }
+    ]
+  },
+  // 高校管理员路由
+  {
+    path: '/university-admin',
+    component: Layout,
+    redirect: '/university-admin/dashboard',
+    name: 'UniversityAdmin',
+    meta: {
+      title: '高校管理后台',
+      icon: 'university',
+      roles: ['university_admin']
+    },
+    children: [
+      {
+        path: 'dashboard',
+        name: 'UniversityAdminDashboard',
+        component: () => import('@/views/university-admin/dashboard/index'),
+        meta: { title: '管理首页', icon: 'dashboard', roles: ['university_admin'] }
       }
     ]
   },
