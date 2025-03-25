@@ -296,25 +296,6 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/message',
-    component: Layout,
-    redirect: '/message/log',
-    name: 'Message',
-    meta: {
-      title: '消息管理',
-      icon: 'message',
-      roles: ['admin']
-    },
-    children: [
-      {
-        path: 'log',
-        name: 'MessageLog',
-        component: () => import('@/views/admin/message/log'),
-        meta: { title: '消息记录', roles: ['admin'] }
-      }
-    ]
-  },
-  {
     path: '/settings',
     component: Layout,
     hidden: true,
