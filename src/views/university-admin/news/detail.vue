@@ -1,4 +1,4 @@
-<!--src/views/admin/news/detail.vue-->
+<!--src/views/university-admin/news/detail.vue-->
 <template>
   <div class="app-container">
     <div class="detail-container" v-loading="loading">
@@ -14,10 +14,6 @@
           <el-tag size="small" :type="getNewsTypeTag(newsData.type)">
             {{ getNewsTypeText(newsData.type) }}
           </el-tag>
-          <span class="meta-item">
-            <i class="el-icon-school"></i>
-            {{ newsData.university ? newsData.university.name : '未关联学校' }}
-          </span>
           <span class="meta-item">
             <i class="el-icon-user"></i>
             作者：{{ newsData.author }}
@@ -63,12 +59,11 @@
 </template>
 
 <script>
-import { getNewsDetail, publishNews, deleteNews } from '@/api/news'
 import MarkdownIt from 'markdown-it'
 import dayjs from 'dayjs'
 
 export default {
-  name: 'NewsDetail',
+  name: 'UniversityAdminNewsDetail',
 
   data() {
     return {
@@ -98,8 +93,22 @@ export default {
     async fetchNewsDetail() {
       try {
         this.loading = true
-        const { data } = await getNewsDetail(this.$route.params.id)
-        this.newsData = data
+
+        // 模拟API请求
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        // 模拟数据
+        this.newsData = {
+          id: this.$route.params.id,
+          title: '北京大学2025年本科招生简章发布',
+          type: 'notice',
+          content: '# 北京大学2025年本科招生简章\n\n## 一、招生计划\n\n2025年，北京大学计划招收本科生约4000人，其中包括普通类、特长类、国防生等各类招生计划。\n\n## 二、报名条件\n\n符合2025年高考报名条件，德智体美劳全面发展，综合素质优良的高中毕业生。\n\n## 三、录取政策\n\n1. 按照"分数优先、遵循志愿"的原则录取。\n2. 实行大类招生，入学后按照学校规定进行分流。\n\n## 四、联系方式\n\n招生办公室电话：010-12345678\n招生网站：https://admission.pku.edu.cn',
+          status: 1,
+          author: '招生办',
+          viewCount: 3245,
+          publishTime: '2025-03-24 10:30:00',
+          universityId: 1
+        }
       } catch (error) {
         console.error('获取新闻详情失败:', error)
         this.$message.error('获取新闻详情失败')
@@ -135,11 +144,11 @@ export default {
     },
 
     goBack() {
-      this.$router.push('/news/list')
+      this.$router.push('/university-admin/news/list')
     },
 
     handleEdit() {
-      this.$router.push(`/news/edit/${this.newsData.id}`)
+      this.$router.push(`/university-admin/news/edit/${this.newsData.id}`)
     },
 
     async handlePublish() {
@@ -150,9 +159,12 @@ export default {
           type: 'warning'
         })
 
-        await publishNews(this.newsData.id)
+        // 模拟API请求
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         this.$message.success('发布成功')
-        this.fetchNewsDetail()
+        this.newsData.status = 1
+        this.newsData.publishTime = new Date().toISOString()
       } catch (error) {
         if (error !== 'cancel') {
           console.error('发布失败:', error)
@@ -169,7 +181,9 @@ export default {
           type: 'warning'
         })
 
-        await deleteNews(this.newsData.id)
+        // 模拟API请求
+        await new Promise(resolve => setTimeout(resolve, 500))
+
         this.$message.success('删除成功')
         this.goBack()
       } catch (error) {

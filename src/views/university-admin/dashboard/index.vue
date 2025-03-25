@@ -1,133 +1,158 @@
-<!-- src/views/university-admin/dashboard/index.vue -->
+<!--src/views/university-admin/dashboard/index.vue-->
 <template>
-  <div class="dashboard-container">
-    <el-row :gutter="20">
-      <el-col :span="24">
-        <el-card class="welcome-card">
-          <div class="welcome-header">
-            <div class="welcome-avatar">
-              <img src="https://img1.baidu.com/it/u=2743394743,692629981&fm=253&fmt=auto&app=120&f=JPEG?w=800&h=800" alt="高校logo" class="university-logo">
+  <div class="dashboard-container" v-loading="loading">
+    <!-- 统计卡片区域 -->
+    <el-row :gutter="20" class="dashboard-cards">
+      <el-col :span="6" v-for="card in statCards" :key="card.title">
+        <el-card shadow="hover" class="data-card">
+          <div class="card-header">
+            <span class="card-title">{{ card.title }}</span>
+            <el-tooltip :content="card.tooltip" placement="top">
+              <i class="el-icon-info"></i>
+            </el-tooltip>
+          </div>
+          <div class="card-body">
+            <div class="card-value">{{ card.value }}</div>
+            <div v-if="card.trend" class="card-trend">
+              <span :class="getTrendClass(card.trend)">
+                <i :class="getTrendIcon(card.trend)"></i>
+                {{ formatTrend(card.trend) }}
+              </span>
+              <span class="trend-label">{{ card.trendLabel }}</span>
             </div>
-            <div class="welcome-info">
-              <h2>欢迎使用高校管理系统</h2>
-              <p class="university-name">北京大学管理员</p>
-              <p class="last-login">上次登录：2025-03-24 09:12:27</p>
+            <div v-if="card.subValue" class="sub-value">
+              <span :class="card.subValueType">{{ card.subValue }}</span>
+            </div>
+            <div v-if="card.metric" class="card-metric">
+              <el-progress
+                  :percentage="card.metric"
+                  :color="getProgressColor"
+                  :format="percentageFormat"
+              ></el-progress>
             </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" class="mt20">
-      <el-col :span="24">
-        <el-card>
-          <div slot="header" class="clearfix">
-            <span>高校信息概览</span>
+    <!-- 招生数据趋势图 -->
+    <el-row :gutter="20" class="trend-section">
+      <el-col :span="16">
+        <el-card shadow="hover">
+          <div slot="header" class="chart-header">
+            <span>招生分数线趋势</span>
+            <el-select v-model="selectedProvince" placeholder="选择省份" size="small">
+              <el-option
+                  v-for="item in provinceOptions"
+                  :key="item"
+                  :label="item"
+                  :value="item"
+              ></el-option>
+            </el-select>
           </div>
-          <el-row :gutter="20" class="data-overview">
-            <el-col :span="8">
-              <div class="data-item">
-                <div class="data-icon">
-                  <i class="el-icon-user"></i>
-                </div>
-                <div class="data-info">
-                  <div class="data-title">在校学生</div>
-                  <div class="data-value">38,000</div>
-                </div>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="data-item">
-                <div class="data-icon">
-                  <i class="el-icon-s-custom"></i>
-                </div>
-                <div class="data-info">
-                  <div class="data-title">教职工</div>
-                  <div class="data-value">3,800</div>
-                </div>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="data-item">
-                <div class="data-icon">
-                  <i class="el-icon-office-building"></i>
-                </div>
-                <div class="data-info">
-                  <div class="data-title">校园面积</div>
-                  <div class="data-value">3,800,000 m²</div>
-                </div>
-              </div>
-            </el-col>
-          </el-row>
+          <div id="admission-trend-chart" style="height: 350px"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card shadow="hover" class="rank-card">
+          <div slot="header">
+            <span>待处理咨询排行</span>
+          </div>
+          <div class="rank-list">
+            <div v-for="(item, index) in pendingInteractions" :key="index" class="rank-item">
+              <span class="rank-number" :class="getRankClass(index)">{{ index + 1 }}</span>
+              <el-tooltip :content="item.title" placement="top">
+                <span class="interaction-title">{{ item.title }}</span>
+              </el-tooltip>
+              <span class="time-ago">{{ item.timeAgo }}</span>
+            </div>
+            <div v-if="pendingInteractions.length === 0" class="empty-rank">
+              <i class="el-icon-chat-dot-round"></i>
+              <span>暂无待处理咨询</span>
+            </div>
+          </div>
+          <div class="view-more">
+            <router-link to="/university-admin/interaction">查看更多</router-link>
+          </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" class="mt20">
-      <el-col :span="12">
-        <el-card>
-          <div slot="header" class="clearfix">
-            <span>互动消息</span>
-            <el-button style="float: right; padding: 3px 0" type="text">查看更多</el-button>
+    <!-- 用户行为分析 -->
+    <el-row>
+      <el-col :span="24">
+        <el-card shadow="hover">
+          <div slot="header">数据分析</div>
+          <div class="analysis-tabs">
+            <el-tabs v-model="activeTab">
+              <el-tab-pane label="专业满意度" name="satisfaction">
+                <div id="satisfaction-chart" style="height: 400px"></div>
+              </el-tab-pane>
+              <el-tab-pane label="报考趋势" name="application">
+                <div id="application-chart" style="height: 400px"></div>
+              </el-tab-pane>
+              <el-tab-pane label="访问统计" name="visits">
+                <div id="visits-chart" style="height: 400px"></div>
+              </el-tab-pane>
+            </el-tabs>
           </div>
-          <div class="interaction-list">
-            <div v-for="(item, index) in interactionList" :key="index" class="interaction-item">
-              <div class="interaction-title">{{ item.title }}</div>
-              <div class="interaction-status" :class="{'status-pending': item.status === 'pending', 'status-replied': item.status === 'replied'}">
-                {{ statusText[item.status] }}
-              </div>
-            </div>
-            <div v-if="interactionList.length === 0" class="empty-data">
-              暂无互动消息
-            </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 最新动态 -->
+    <el-row :gutter="20" class="activity-section">
+      <el-col :span="12">
+        <el-card shadow="hover">
+          <div slot="header">
+            <span>最新咨询</span>
+            <router-link to="/university-admin/interaction" class="header-link">
+              查看全部
+            </router-link>
+          </div>
+          <div class="timeline">
+            <el-timeline>
+              <el-timeline-item
+                  v-for="(activity, index) in recentInteractions"
+                  :key="index"
+                  :type="getTimelineItemType(activity.status)"
+                  :timestamp="activity.time"
+              >
+                <div class="timeline-content">
+                  <div class="timeline-title">{{ activity.title }}</div>
+                  <div class="timeline-desc">{{ activity.content }}</div>
+                  <div class="timeline-footer">
+                    <span class="timeline-user">{{ activity.user }}</span>
+                    <el-tag size="mini" :type="getStatusType(activity.status)">
+                      {{ getStatusLabel(activity.status) }}
+                    </el-tag>
+                  </div>
+                </div>
+              </el-timeline-item>
+            </el-timeline>
           </div>
         </el-card>
       </el-col>
       <el-col :span="12">
-        <el-card>
-          <div slot="header" class="clearfix">
-            <span>最新公告</span>
-            <el-button style="float: right; padding: 3px 0" type="text">查看更多</el-button>
+        <el-card shadow="hover">
+          <div slot="header">
+            <span>最新新闻</span>
+            <router-link to="/university-admin/news/list" class="header-link">
+              查看全部
+            </router-link>
           </div>
           <div class="news-list">
-            <div v-for="(item, index) in newsList" :key="index" class="news-item">
-              <div class="news-title">{{ item.title }}</div>
-              <div class="news-date">{{ item.date }}</div>
-            </div>
-            <div v-if="newsList.length === 0" class="empty-data">
-              暂无公告信息
+            <div v-for="(news, index) in recentNews" :key="index" class="news-item">
+              <div class="news-item-title">{{ news.title }}</div>
+              <div class="news-item-meta">
+                <span class="publish-time">{{ news.publishTime }}</span>
+                <span class="view-count">
+                  <i class="el-icon-view"></i>
+                  {{ news.viewCount }}
+                </span>
+              </div>
             </div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="20" class="mt20">
-      <el-col :span="24">
-        <el-card>
-          <div slot="header" class="clearfix">
-            <span>快捷功能</span>
-          </div>
-          <el-row :gutter="20" class="feature-cards">
-            <el-col :span="8">
-              <div class="feature-card">
-                <i class="el-icon-edit"></i>
-                <span>编辑高校信息</span>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="feature-card">
-                <i class="el-icon-chat-line-square"></i>
-                <span>回复互动消息</span>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="feature-card">
-                <i class="el-icon-document"></i>
-                <span>发布招生信息</span>
-              </div>
-            </el-col>
-          </el-row>
         </el-card>
       </el-col>
     </el-row>
@@ -135,34 +160,414 @@
 </template>
 
 <script>
+import * as echarts from 'echarts'
+
 export default {
   name: 'UniversityAdminDashboard',
+
   data() {
     return {
-      interactionList: [
-        { title: '关于2026年招生政策的咨询', status: 'pending' },
-        { title: '请问贵校的计算机专业有哪些研究方向？', status: 'replied' },
-        { title: '国际学生申请条件问题', status: 'pending' },
-        { title: '关于转专业政策的问题', status: 'replied' }
-      ],
-      newsList: [
-        { title: '2025年秋季学期教学工作安排通知', date: '2025-03-20' },
-        { title: '关于开展2025年度优秀学生评选的通知', date: '2025-03-18' },
-        { title: '2025年硕士研究生招生简章发布', date: '2025-03-15' },
-        { title: '关于开展校园开放日活动的通知', date: '2025-03-10' }
-      ],
-      statusText: {
-        'pending': '待回复',
-        'replied': '已回复',
-        'closed': '已关闭'
+      loading: false,
+      selectedProvince: '江苏省', // 默认省份
+      activeTab: 'satisfaction',
+      charts: {
+        admissionTrendChart: null,
+        satisfactionChart: null,
+        applicationChart: null,
+        visitsChart: null
+      },
+      // 模拟数据
+      universityId: 1, // 假设当前是北京大学的管理员
+      universityName: '北京大学'
+    }
+  },
+
+  computed: {
+    // 统计卡片数据
+    statCards() {
+      return [
+        {
+          title: '访问量',
+          tooltip: '学校主页的访问量',
+          value: '12,846',
+          trend: 15.4,
+          trendLabel: '较上月'
+        },
+        {
+          title: '互动咨询',
+          tooltip: '用户发起的互动咨询总数',
+          value: '54',
+          subValue: `待处理: 12`,
+          subValueType: 'pending'
+        },
+        {
+          title: '招生计划',
+          tooltip: '今年招生计划完成情况',
+          value: '2,580',
+          metric: 98.5
+        },
+        {
+          title: '平均满意度',
+          tooltip: '用户对学校的平均满意度评分',
+          value: '4.6分',
+          trend: 0.2,
+          trendLabel: '较上月'
+        }
+      ]
+    },
+
+    // 省份选项
+    provinceOptions() {
+      return ['北京市', '江苏省', '浙江省', '山东省']
+    },
+
+    // 待处理咨询
+    pendingInteractions() {
+      return [
+        { title: '请问贵校计算机专业的就业方向有哪些？', timeAgo: '2小时前' },
+        { title: '今年的招生计划是多少？', timeAgo: '5小时前' },
+        { title: '有没有转专业的机会？', timeAgo: '1天前' },
+        { title: '学校宿舍条件如何？', timeAgo: '2天前' },
+        { title: '请问奖学金的申请条件是什么？', timeAgo: '2天前' }
+      ]
+    },
+
+    // 最近互动
+    recentInteractions() {
+      return [
+        {
+          title: '关于奖学金的问题',
+          content: '请问贵校特等奖学金的具体申请条件是什么？',
+          user: '考生小王',
+          status: 'pending',
+          time: '2025-03-25 14:30'
+        },
+        {
+          title: '专业调剂政策',
+          content: '如果高考分数不够第一志愿专业，是否有调剂机会？',
+          user: '考生家长',
+          status: 'replied',
+          time: '2025-03-24 09:15'
+        },
+        {
+          title: '关于住宿问题',
+          content: '请问宿舍是几人间？有独立卫浴吗？',
+          user: '未来大学生',
+          status: 'closed',
+          time: '2025-03-23 16:42'
+        }
+      ]
+    },
+
+    // 最近发布的新闻
+    recentNews() {
+      return [
+        {
+          title: '北京大学2025年本科招生简章发布',
+          publishTime: '2025-03-24',
+          viewCount: 3245
+        },
+        {
+          title: '我校学子在全国大学生创新创业大赛中获特等奖',
+          publishTime: '2025-03-22',
+          viewCount: 1856
+        },
+        {
+          title: '关于2025年高考咨询会安排的通知',
+          publishTime: '2025-03-20',
+          viewCount: 2765
+        },
+        {
+          title: '校长在开学典礼上的重要讲话',
+          publishTime: '2025-03-15',
+          viewCount: 1987
+        }
+      ]
+    },
+
+    // 进度条颜色
+    getProgressColor() {
+      return (percentage) => {
+        if (percentage < 60) return '#F56C6C'
+        if (percentage < 80) return '#E6A23C'
+        return '#67C23A'
       }
     }
   },
-  created() {
-    // 这里可以调用API获取数据，目前使用静态数据
+
+  mounted() {
+    this.initCharts()
+    this.renderCharts()
   },
+
+  beforeDestroy() {
+    this.disposeCharts()
+    window.removeEventListener('resize', this.handleResize)
+  },
+
   methods: {
-    // 此处暂不实现方法
+    initCharts() {
+      this.charts.admissionTrendChart = echarts.init(document.getElementById('admission-trend-chart'))
+      this.charts.satisfactionChart = echarts.init(document.getElementById('satisfaction-chart'))
+      this.charts.applicationChart = echarts.init(document.getElementById('application-chart'))
+      this.charts.visitsChart = echarts.init(document.getElementById('visits-chart'))
+
+      window.addEventListener('resize', this.handleResize)
+    },
+
+    handleResize() {
+      Object.values(this.charts).forEach(chart => {
+        chart?.resize()
+      })
+    },
+
+    disposeCharts() {
+      Object.values(this.charts).forEach(chart => {
+        chart?.dispose()
+      })
+    },
+
+    renderCharts() {
+      this.renderAdmissionTrendChart()
+      this.renderSatisfactionChart()
+      this.renderApplicationChart()
+      this.renderVisitsChart()
+    },
+
+    renderAdmissionTrendChart() {
+      // 招生分数线趋势图
+      const option = {
+        tooltip: {
+          trigger: 'axis'
+        },
+        legend: {
+          data: ['最低分数线', '平均分数']
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          boundaryGap: false,
+          data: ['2020', '2021', '2022', '2023', '2024', '2025']
+        },
+        yAxis: {
+          type: 'value',
+          name: '分数',
+          min: 500
+        },
+        series: [
+          {
+            name: '最低分数线',
+            type: 'line',
+            data: [645, 655, 665, 680, 690, 695],
+            smooth: true,
+            lineStyle: {
+              width: 3
+            }
+          },
+          {
+            name: '平均分数',
+            type: 'line',
+            data: [670, 678, 685, 695, 705, 710],
+            smooth: true,
+            lineStyle: {
+              width: 3
+            }
+          }
+        ]
+      }
+
+      this.charts.admissionTrendChart.setOption(option)
+    },
+
+    renderSatisfactionChart() {
+      // 专业满意度图表
+      const option = {
+        tooltip: {
+          trigger: 'item',
+          formatter: '{b}: {c} ({d}%)'
+        },
+        legend: {
+          orient: 'vertical',
+          left: 'left',
+          data: ['5分', '4分', '3分', '2分', '1分']
+        },
+        series: [
+          {
+            name: '满意度分布',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+              borderRadius: 10,
+              borderColor: '#fff',
+              borderWidth: 2
+            },
+            label: {
+              show: false,
+              position: 'center'
+            },
+            emphasis: {
+              label: {
+                show: true,
+                fontSize: 20,
+                fontWeight: 'bold'
+              }
+            },
+            labelLine: {
+              show: false
+            },
+            data: [
+              { value: 45, name: '5分' },
+              { value: 35, name: '4分' },
+              { value: 15, name: '3分' },
+              { value: 4, name: '2分' },
+              { value: 1, name: '1分' }
+            ]
+          }
+        ]
+      }
+
+      this.charts.satisfactionChart.setOption(option)
+    },
+
+    renderApplicationChart() {
+      // 报考趋势图表
+      const option = {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'shadow'
+          }
+        },
+        legend: {
+          data: ['报考人数', '录取人数']
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: ['2020', '2021', '2022', '2023', '2024']
+        },
+        yAxis: {
+          type: 'value'
+        },
+        series: [
+          {
+            name: '报考人数',
+            type: 'bar',
+            data: [15000, 16200, 17500, 18800, 20000]
+          },
+          {
+            name: '录取人数',
+            type: 'bar',
+            data: [2300, 2350, 2400, 2480, 2580]
+          }
+        ]
+      }
+
+      this.charts.applicationChart.setOption(option)
+    },
+
+    renderVisitsChart() {
+      // 访问统计图表
+      const option = {
+        tooltip: {
+          trigger: 'axis'
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          boundaryGap: false,
+          data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+        },
+        yAxis: {
+          type: 'value'
+        },
+        series: [
+          {
+            name: '访问量',
+            type: 'line',
+            stack: '总量',
+            areaStyle: {},
+            emphasis: {
+              focus: 'series'
+            },
+            data: [820, 932, 901, 934, 1290, 1330, 1320]
+          }
+        ]
+      }
+
+      this.charts.visitsChart.setOption(option)
+    },
+
+    formatTrend(value) {
+      if (!value) return '0%'
+      return value > 0 ? `+${value}%` : `${value}%`
+    },
+
+    getTrendClass(value) {
+      return {
+        'trend-up': value > 0,
+        'trend-down': value < 0,
+        'trend-flat': value === 0
+      }
+    },
+
+    getTrendIcon(value) {
+      if (value > 0) return 'el-icon-top'
+      if (value < 0) return 'el-icon-bottom'
+      return 'el-icon-minus'
+    },
+
+    getRankClass(index) {
+      const classes = ['rank-1', 'rank-2', 'rank-3']
+      return index < 3 ? classes[index] : ''
+    },
+
+    percentageFormat(percentage) {
+      return `${percentage}%`
+    },
+
+    getTimelineItemType(status) {
+      const types = {
+        pending: 'warning',
+        replied: 'success',
+        closed: 'info'
+      }
+      return types[status] || 'primary'
+    },
+
+    getStatusType(status) {
+      const typeMap = {
+        pending: 'warning',
+        replied: 'success',
+        closed: 'info'
+      }
+      return typeMap[status] || ''
+    },
+
+    getStatusLabel(status) {
+      const labelMap = {
+        pending: '待回复',
+        replied: '已回复',
+        closed: '已关闭'
+      }
+      return labelMap[status] || '未知状态'
+    }
   }
 }
 </script>
@@ -170,158 +575,253 @@ export default {
 <style lang="scss" scoped>
 .dashboard-container {
   padding: 20px;
-}
 
-.mt20 {
-  margin-top: 20px;
-}
+  .dashboard-cards {
+    margin-bottom: 20px;
 
-.welcome-card {
-  .welcome-header {
-    display: flex;
-    align-items: center;
+    .data-card {
+      height: 100%;
+      transition: all 0.3s ease;
 
-    .welcome-avatar {
-      margin-right: 20px;
-
-      .university-logo {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 1px solid #eee;
-      }
-    }
-
-    .welcome-info {
-      h2 {
-        margin: 0 0 10px 0;
-        font-size: 24px;
-        color: #303133;
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
       }
 
-      .university-name {
-        font-size: 18px;
-        color: #409EFF;
-        margin: 0 0 5px 0;
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+
+        .card-title {
+          font-size: 14px;
+          color: #606266;
+        }
+
+        .el-icon-info {
+          color: #909399;
+          cursor: help;
+        }
       }
 
-      .last-login {
-        font-size: 14px;
-        color: #909399;
-        margin: 0;
+      .card-body {
+        .card-value {
+          font-size: 24px;
+          font-weight: bold;
+          color: #303133;
+          margin-bottom: 10px;
+        }
+
+        .card-trend {
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+
+          .trend-up {
+            color: #67C23A;
+          }
+
+          .trend-down {
+            color: #F56C6C;
+          }
+
+          .trend-flat {
+            color: #909399;
+          }
+
+          .trend-label {
+            margin-left: 5px;
+            color: #909399;
+          }
+        }
+
+        .sub-value {
+          font-size: 13px;
+          color: #909399;
+          margin-top: 8px;
+
+          .pending {
+            color: #E6A23C;
+            font-weight: 500;
+          }
+        }
+
+        .card-metric {
+          margin-top: 15px;
+        }
       }
     }
   }
-}
 
-.data-overview {
-  .data-item {
-    display: flex;
-    align-items: center;
-    background-color: #f5f7fa;
-    border-radius: 4px;
-    padding: 15px;
-    height: 100px;
+  .trend-section {
+    margin-bottom: 20px;
 
-    .data-icon {
-      width: 60px;
-      height: 60px;
-      background-color: #409EFF;
-      border-radius: 50%;
+    .chart-header {
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      margin-right: 15px;
-
-      i {
-        font-size: 30px;
-        color: #fff;
-      }
+      padding-bottom: 10px;
     }
 
-    .data-info {
-      flex: 1;
+    .rank-card {
+      .rank-list {
+        padding: 0 10px;
 
-      .data-title {
-        font-size: 14px;
-        color: #606266;
-        margin-bottom: 5px;
+        .rank-item {
+          display: flex;
+          align-items: center;
+          padding: 10px 0;
+          border-bottom: 1px solid #EBEEF5;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          .rank-number {
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-size: 12px;
+            background: #f0f2f5;
+            color: #606266;
+
+            &.rank-1 {
+              background: #F56C6C;
+              color: white;
+            }
+            &.rank-2 {
+              background: #E6A23C;
+              color: white;
+            }
+            &.rank-3 {
+              background: #67C23A;
+              color: white;
+            }
+          }
+
+          .interaction-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: #606266;
+          }
+
+          .time-ago {
+            margin-left: 10px;
+            font-size: 12px;
+            color: #909399;
+          }
+        }
+
+        .empty-rank {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 30px 0;
+          color: #909399;
+
+          i {
+            font-size: 24px;
+            margin-bottom: 10px;
+          }
+        }
       }
 
-      .data-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: #303133;
+      .view-more {
+        text-align: center;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid #EBEEF5;
+
+        a {
+          color: #409EFF;
+          text-decoration: none;
+        }
       }
     }
   }
-}
 
-.interaction-list, .news-list {
-  .interaction-item, .news-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid #EBEEF5;
+  .activity-section {
+    margin-top: 20px;
 
-    &:last-child {
-      border-bottom: none;
-    }
-
-    .interaction-title, .news-title {
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .interaction-status, .news-date {
-      margin-left: 15px;
-      font-size: 14px;
-    }
-
-    .status-pending {
-      color: #E6A23C;
-    }
-
-    .status-replied {
-      color: #67C23A;
-    }
-  }
-}
-
-.feature-cards {
-  .feature-card {
-    height: 120px;
-    background-color: #f5f7fa;
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.3s;
-
-    &:hover {
-      background-color: #ecf5ff;
+    .header-link {
+      float: right;
       color: #409EFF;
+      font-size: 13px;
+      text-decoration: none;
     }
 
-    i {
-      font-size: 36px;
-      margin-bottom: 10px;
+    .timeline {
+      padding: 10px;
+
+      .timeline-content {
+        padding: 0 10px;
+
+        .timeline-title {
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+
+        .timeline-desc {
+          color: #606266;
+          margin-bottom: 8px;
+        }
+
+        .timeline-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 12px;
+
+          .timeline-user {
+            color: #909399;
+          }
+        }
+      }
     }
 
-    span {
-      font-size: 16px;
+    .news-list {
+      padding: 10px;
+
+      .news-item {
+        padding: 15px 0;
+        border-bottom: 1px solid #EBEEF5;
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .news-item-title {
+          font-weight: 500;
+          margin-bottom: 8px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .news-item-meta {
+          display: flex;
+          justify-content: space-between;
+          color: #909399;
+          font-size: 12px;
+
+          .view-count {
+            display: flex;
+            align-items: center;
+
+            i {
+              margin-right: 5px;
+            }
+          }
+        }
+      }
     }
   }
-}
-
-.empty-data {
-  text-align: center;
-  color: #909399;
-  padding: 20px 0;
 }
 </style>

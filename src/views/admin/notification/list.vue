@@ -1,3 +1,4 @@
+<!--src/views/admin/notification/list.vue-->
 <template>
   <div class="app-container">
     <el-card>
