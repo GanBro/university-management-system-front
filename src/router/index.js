@@ -315,87 +315,109 @@ export const constantRoutes = [
   },
   // 高校管理员路由
   {
-    path: '/university-admin',
+    path: '/university-admin/dashboard',
     component: Layout,
-    redirect: '/university-admin/dashboard',
-    name: 'UniversityAdmin',
+    meta: { roles: ['university_admin'] },
+    children: [{
+      path: '',
+      name: 'UniversityAdminDashboard',
+      component: () => import('@/views/university-admin/dashboard/index'),
+      meta: { title: '管理首页', icon: 'dashboard', roles: ['university_admin'] }
+    }]
+  },
+  {
+    path: '/university-admin/profile',
+    component: Layout,
+    meta: { roles: ['university_admin'] },
+    children: [{
+      path: '',
+      name: 'UniversityAdminProfile',
+      component: () => import('@/views/university-admin/profile/index'),
+      meta: { title: '学校信息管理', icon: 'school', roles: ['university_admin'] }
+    }]
+  },
+  {
+    path: '/university-admin/admission',
+    component: Layout,
+    meta: { roles: ['university_admin'] },
+    children: [{
+      path: '',
+      name: 'UniversityAdminAdmission',
+      component: () => import('@/views/university-admin/admission/index'),
+      meta: { title: '招生数据管理', icon: 'chart', roles: ['university_admin'] }
+    }]
+  },
+  {
+    path: '/university-admin/interaction',
+    component: Layout,
+    meta: { roles: ['university_admin'] },
+    children: [{
+      path: '',
+      name: 'UniversityAdminInteraction',
+      component: () => import('@/views/university-admin/interaction/index'),
+      meta: { title: '互动咨询管理', icon: 'message', roles: ['university_admin'] }
+    }]
+  },
+  {
+    path: '/university-admin/news',
+    component: Layout,
+    redirect: '/university-admin/news/list',
+    name: 'CampusNews',
     meta: {
-      title: '高校管理后台',
-      icon: 'university',
+      title: '校园新闻管理',
+      icon: 'news',
       roles: ['university_admin']
     },
     children: [
       {
-        path: 'dashboard',
-        name: 'UniversityAdminDashboard',
-        component: () => import('@/views/university-admin/dashboard/index'),
-        meta: { title: '管理首页', icon: 'dashboard', roles: ['university_admin'] }
+        path: 'list',
+        name: 'UniversityAdminNewsList',
+        component: () => import('@/views/university-admin/news/list'),
+        meta: { title: '新闻列表', roles: ['university_admin'] }
       },
       {
-        path: 'profile',
-        name: 'UniversityAdminProfile',
-        component: () => import('@/views/university-admin/profile/index'),
-        meta: { title: '学校信息管理', icon: 'school', roles: ['university_admin'] }
+        path: 'create',
+        name: 'UniversityAdminNewsCreate',
+        component: () => import('@/views/university-admin/news/form'),
+        meta: { title: '发布新闻', roles: ['university_admin'] }
       },
       {
-        path: 'admission',
-        name: 'UniversityAdminAdmission',
-        component: () => import('@/views/university-admin/admission/index'),
-        meta: { title: '招生数据管理', icon: 'chart', roles: ['university_admin'] }
+        path: 'edit/:id',
+        name: 'UniversityAdminNewsEdit',
+        component: () => import('@/views/university-admin/news/form'),
+        meta: { title: '编辑新闻', roles: ['university_admin'] },
+        hidden: true
       },
       {
-        path: 'interaction',
-        name: 'UniversityAdminInteraction',
-        component: () => import('@/views/university-admin/interaction/index'),
-        meta: { title: '互动咨询管理', icon: 'message', roles: ['university_admin'] }
-      },
-      {
-        path: 'news',
-        name: 'UniversityAdminNews',
-        component: () => import('@/views/university-admin/news/index'),
-        meta: { title: '校园新闻管理', icon: 'news', roles: ['university_admin'] },
-        children: [
-          {
-            path: 'list',
-            name: 'UniversityAdminNewsList',
-            component: () => import('@/views/university-admin/news/list'),
-            meta: { title: '新闻列表', roles: ['university_admin'] }
-          },
-          {
-            path: 'create',
-            name: 'UniversityAdminNewsCreate',
-            component: () => import('@/views/university-admin/news/form'),
-            meta: { title: '发布新闻', roles: ['university_admin'] }
-          },
-          {
-            path: 'edit/:id',
-            name: 'UniversityAdminNewsEdit',
-            component: () => import('@/views/university-admin/news/form'),
-            meta: { title: '编辑新闻', roles: ['university_admin'] },
-            hidden: true
-          },
-          {
-            path: 'detail/:id',
-            name: 'UniversityAdminNewsDetail',
-            component: () => import('@/views/university-admin/news/detail'),
-            meta: { title: '新闻详情', roles: ['university_admin'] },
-            hidden: true
-          }
-        ]
-      },
-      {
-        path: 'satisfaction',
-        name: 'UniversityAdminSatisfaction',
-        component: () => import('@/views/university-admin/satisfaction/index'),
-        meta: { title: '满意度管理', icon: 'star', roles: ['university_admin'] }
-      },
-      {
-        path: 'recommendation',
-        name: 'UniversityAdminRecommendation',
-        component: () => import('@/views/university-admin/recommendation/index'),
-        meta: { title: '专业推荐管理', icon: 'el-icon-s-opportunity', roles: ['university_admin'] }
+        path: 'detail/:id',
+        name: 'UniversityAdminNewsDetail',
+        component: () => import('@/views/university-admin/news/detail'),
+        meta: { title: '新闻详情', roles: ['university_admin'] },
+        hidden: true
       }
     ]
+  },
+  {
+    path: '/university-admin/satisfaction',
+    component: Layout,
+    meta: { roles: ['university_admin'] },
+    children: [{
+      path: '',
+      name: 'UniversityAdminSatisfaction',
+      component: () => import('@/views/university-admin/satisfaction/index'),
+      meta: { title: '满意度管理', icon: 'star', roles: ['university_admin'] }
+    }]
+  },
+  {
+    path: '/university-admin/recommendation',
+    component: Layout,
+    meta: { roles: ['university_admin'] },
+    children: [{
+      path: '',
+      name: 'UniversityAdminRecommendation',
+      component: () => import('@/views/university-admin/recommendation/index'),
+      meta: { title: '专业推荐管理', icon: 'el-icon-s-opportunity', roles: ['university_admin'] }
+    }]
   },
   // 404 page must be placed at the end !!!
   { path: '*', redirect: '/404', hidden: true }

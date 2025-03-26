@@ -74,20 +74,27 @@
           <span>{{ row.publishTime | formatDate }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="250" class-name="small-padding fixed-width">
+      <el-table-column label="操作" align="center" width="180" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
-          <el-button type="primary" size="mini" @click="handleUpdate(row)">
-            编辑
-          </el-button>
-          <el-button v-if="row.status===0" size="mini" type="success" @click="handlePublish(row)">
-            发布
-          </el-button>
-          <el-button size="mini" type="info" @click="handleView(row)">
-            查看
-          </el-button>
-          <el-button size="mini" type="danger" @click="handleDelete(row)">
-            删除
-          </el-button>
+          <div class="operation-buttons">
+            <!-- 只保留编辑按钮直接显示 -->
+            <el-button type="primary" size="mini" @click="handleUpdate(row)">编辑</el-button>
+
+            <!-- 使用下拉菜单整合其他所有按钮 -->
+            <el-dropdown trigger="click" @command="handleCommand($event, row)">
+              <el-button size="mini" type="info">
+                更多 <i class="el-icon-arrow-down el-icon--right"></i>
+              </el-button>
+              <el-dropdown-menu slot="dropdown">
+                <!-- 发布按钮移到下拉菜单中，只在草稿状态显示 -->
+                <el-dropdown-item v-if="row.status === 0" command="publish">发布</el-dropdown-item>
+                <el-dropdown-item command="view">查看</el-dropdown-item>
+                <el-dropdown-item command="delete" divided>
+                  <span style="color: #F56C6C;">删除</span>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -249,6 +256,18 @@ export default {
       this.$router.push(`/university-admin/news/detail/${row.id}`)
     },
 
+    // 新增处理下拉菜单命令的方法
+    // 处理下拉菜单命令
+    handleCommand(command, row) {
+      if (command === 'view') {
+        this.handleView(row);
+      } else if (command === 'delete') {
+        this.handleDelete(row);
+      } else if (command === 'publish') {
+        this.handlePublish(row);
+      }
+    },
+
     async handlePublish(row) {
       try {
         await this.$confirm('确认发布该新闻?', '提示', {
@@ -312,5 +331,11 @@ export default {
 .link-type {
   color: #409EFF;
   text-decoration: none;
+}
+/* 新增操作按钮样式 */
+.operation-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 }
 </style>
