@@ -333,7 +333,7 @@ export const constantRoutes = [
       path: '',
       name: 'UniversityAdminProfile',
       component: () => import('@/views/university-admin/profile/index'),
-      meta: { title: '学校信息管理', icon: 'school', roles: ['university_admin'] }
+      meta: { title: '学校信息管理', icon: 'el-icon-school', roles: ['university_admin'] }
     }]
   },
   {
@@ -344,7 +344,7 @@ export const constantRoutes = [
       path: '',
       name: 'UniversityAdminAdmission',
       component: () => import('@/views/university-admin/admission/index'),
-      meta: { title: '招生数据管理', icon: 'chart', roles: ['university_admin'] }
+      meta: { title: '招生数据管理', icon: 'el-icon-s-data', roles: ['university_admin'] }
     }]
   },
   {
@@ -405,7 +405,7 @@ export const constantRoutes = [
       path: '',
       name: 'UniversityAdminSatisfaction',
       component: () => import('@/views/university-admin/satisfaction/index'),
-      meta: { title: '满意度管理', icon: 'star', roles: ['university_admin'] }
+      meta: { title: '满意度管理', icon: 'el-icon-s-opportunity', roles: ['university_admin'] }
     }]
   },
   {
