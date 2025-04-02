@@ -1,3 +1,4 @@
+<!--src/views/user/university/news/detail.vue-->
 <template>
   <div class="news-detail-page">
     <div class="news-detail-container" v-loading="loading">
@@ -82,7 +83,7 @@ import dayjs from 'dayjs'
 
 export default {
   name: 'UserNewsDetail',
-  
+
   data() {
     return {
       loading: true,
@@ -99,7 +100,7 @@ export default {
 
   computed: {
     renderedContent() {
-      return this.newsData.content 
+      return this.newsData.content
         ? this.markdownIt.render(this.newsData.content)
         : ''
     }
@@ -307,7 +308,7 @@ export default {
             padding: 16px;
             border-radius: 8px;
             overflow-x: auto;
-            
+
             code {
               background: none;
               color: #abb2bf;
@@ -424,4 +425,4 @@ export default {
     }
   }
 }
-</style> 
+</style>

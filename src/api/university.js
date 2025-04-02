@@ -156,3 +156,11 @@ export function searchUniversities(keyword, limit) {
     params: { keyword, limit }
   })
 }
+
+// 获取招生数据
+export function getAdmissionData(id) {
+  return request({
+    url: `/universities/${id}/admission-data`,
+    method: 'get'
+  })
+}

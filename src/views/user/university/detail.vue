@@ -8,11 +8,11 @@
           <!-- Logo区域 -->
           <div class="logo-wrapper">
             <img
-                v-if="universityData.logo"
-                :src="getLogoUrl(universityData.logo)"
-                :alt="universityData.name + '的logo'"
-                class="university-logo"
-                @error="handleLogoError"
+              v-if="universityData.logo"
+              :src="getLogoUrl(universityData.logo)"
+              :alt="universityData.name + '的logo'"
+              class="university-logo"
+              @error="handleLogoError"
             >
             <div v-else class="logo-placeholder">
               <span>{{ universityData.name ? universityData.name.substring(0, 2) : 'N/A' }}</span>
@@ -84,39 +84,47 @@
               <el-col :span="16">
                 <!-- 院校满意度 -->
                 <satisfaction-card
-                    :satisfaction-ratings="satisfactionRatings"
-                    @more="handleMoreSatisfaction"
+                  :satisfaction-ratings="satisfactionRatings"
+                  @more="handleMoreSatisfaction"
                 />
 
                 <!-- 专业满意度 -->
                 <major-satisfaction-card
-                    :major-satisfaction="majorSatisfaction"
-                    @more="handleMoreMajorSatisfaction"
+                  :major-satisfaction="majorSatisfaction"
+                  @more="handleMoreMajorSatisfaction"
                 />
 
                 <!-- 专业推荐人数 -->
                 <recommendation-count-card
-                    :recommendation-counts="recommendationCounts"
-                    @more="handleMoreRecommendations"
+                  :recommendation-counts="recommendationCounts"
+                  @more="handleMoreRecommendations"
                 />
 
                 <!-- 专业推荐指数 -->
                 <recommendation-index-card
-                    :recommendation-index="recommendationIndex"
-                    @more="handleMoreRecommendationIndex"
+                  :recommendation-index="recommendationIndex"
+                  @more="handleMoreRecommendationIndex"
                 />
               </el-col>
 
               <!-- 右侧咨询区域 -->
               <el-col :span="8">
                 <consultation-card
-                    :university-id="universityId"
-                    :consultations="consultations"
-                    @questionClick="handleQuestionClick"
-                    @ask="handleAsk"
+                  :university-id="universityId"
+                  :consultations="consultations"
+                  @questionClick="handleQuestionClick"
+                  @ask="handleAsk"
                 />
               </el-col>
             </el-row>
+          </el-tab-pane>
+
+          <!-- 新增：招生数据标签页 -->
+          <el-tab-pane label="招生数据" name="admissionData">
+            <admission-data-card
+              :university-id="universityId"
+              v-loading="loading"
+            />
           </el-tab-pane>
 
           <!-- 新闻资讯标签页 -->
@@ -136,8 +144,8 @@
 
               <!-- 新闻列表 -->
               <div class="news-list" v-loading="newsLoading">
-                <div v-for="news in newsList" 
-                     :key="news.id" 
+                <div v-for="news in newsList"
+                     :key="news.id"
                      class="news-item"
                      @click="handleNewsClick(news)">
                   <div class="news-item-content">
@@ -300,6 +308,7 @@ import MajorSatisfactionCard from '../components/MajorSatisfactionCard'
 import RecommendationCountCard from '../components/RecommendationCountCard'
 import RecommendationIndexCard from '../components/RecommendationIndexCard'
 import ConsultationCard from '../components/ConsultationCard'
+import AdmissionDataCard from '@/components/AdmissionDataCard' // 导入招生数据卡片组件
 import { getNewsList } from '@/api/news'
 import dayjs from 'dayjs'
 
@@ -312,7 +321,8 @@ export default {
     MajorSatisfactionCard,
     RecommendationCountCard,
     RecommendationIndexCard,
-    ConsultationCard
+    ConsultationCard,
+    AdmissionDataCard // 注册招生数据卡片组件
   },
 
   data() {
@@ -335,7 +345,8 @@ export default {
       satisfactionData: state => state.university.satisfactionData || {},
       majorSatisfaction: state => state.university.majorSatisfaction || [],
       recommendations: state => state.university.recommendations || {},
-      consultations: state => state.university.consultations || []
+      consultations: state => state.university.consultations || [],
+      admissionData: state => state.university.admissionData || [] // 添加招生数据状态映射
     }),
 
     universityId() {
@@ -387,7 +398,8 @@ export default {
           this.$store.dispatch('university/getSatisfactionData', this.universityId),
           this.$store.dispatch('university/getMajorSatisfaction', this.universityId),
           this.$store.dispatch('university/getRecommendations', this.universityId),
-          this.$store.dispatch('university/getConsultations', this.universityId)
+          this.$store.dispatch('university/getConsultations', this.universityId),
+          this.$store.dispatch('university/getAdmissionData', this.universityId) // 获取招生数据
         ])
       } catch (error) {
         console.error('获取大学详情失败:', error)
@@ -496,7 +508,7 @@ export default {
           universityId: parseInt(this.$route.params.id),
           'params[status]': 1  // 修改参数传递方式
         }
-        
+
         if (this.newsType !== 'all') {
           params['params[type]'] = this.newsType  // 修改参数传递方式
         }
@@ -504,7 +516,7 @@ export default {
         console.log('请求参数:', params)
         const { data } = await getNewsList(params)
         console.log('返回数据:', data)
-        
+
         if (data && data.records) {
           this.newsList = data.records
           this.total = data.total || 0
@@ -778,18 +790,18 @@ export default {
     .news-filter {
       margin-bottom: 24px;
       text-align: center;
-      
+
       ::v-deep .el-radio-group {
         background: #f8fafc;
         padding: 8px;
         border-radius: 8px;
         display: inline-flex;
-        
+
         .el-radio-button {
           &:not(:last-child) {
             margin-right: 4px;
           }
-          
+
           .el-radio-button__inner {
             border: none;
             background: transparent;
@@ -800,13 +812,13 @@ export default {
             border-radius: 6px;
             color: #64748b;
             transition: all 0.3s ease;
-            
+
             &:hover {
               color: #409EFF;
               background: rgba(64, 158, 255, 0.1);
             }
           }
-          
+
           &.is-active .el-radio-button__inner {
             background: #409EFF;
             color: white;
@@ -825,7 +837,7 @@ export default {
 
         &:hover {
           background: #f8fafc;
-          
+
           .news-title {
             color: #409EFF;
           }
@@ -842,14 +854,14 @@ export default {
             padding: 12px;
             background: #f8fafc;
             border-radius: 8px;
-            
+
             .date-day {
               font-size: 24px;
               font-weight: 600;
               color: #1f2937;
               line-height: 1.2;
             }
-            
+
             .date-year {
               font-size: 13px;
               color: #64748b;

@@ -1,3 +1,4 @@
+// src/store/modules/university.js
 import {
   getUniversityList,
   getUniversityDetail,
@@ -12,7 +13,8 @@ import {
   getMajorRecommendations,
   getConsultations,
   submitConsultation,
-  updateUniversityLogo
+  updateUniversityLogo,
+  getAdmissionData // 新增的API引入
 } from '@/api/university'
 
 const state = {
@@ -38,7 +40,8 @@ const state = {
     counts: [], // 推荐人数列表
     index: [] // 推荐指数列表
   },
-  consultations: [] // 咨询列表
+  consultations: [], // 咨询列表
+  admissionData: [] // 添加招生数据状态
 }
 
 const mutations = {
@@ -70,6 +73,10 @@ const mutations = {
   },
   SET_CONSULTATIONS: (state, data) => {
     state.consultations = data
+  },
+  // 添加设置招生数据的 mutation
+  SET_ADMISSION_DATA: (state, data) => {
+    state.admissionData = data
   }
 }
 
@@ -106,7 +113,8 @@ const actions = {
         dispatch('getSatisfactionData', id),
         dispatch('getMajorSatisfaction', id),
         dispatch('getRecommendations', id),
-        dispatch('getConsultations', id)
+        dispatch('getConsultations', id),
+        dispatch('getAdmissionData', id) // 添加获取招生数据
       ])
 
       return data
@@ -284,6 +292,18 @@ const actions = {
       return response // 添加返回值以便组件处理结果
     } catch (error) {
       console.error('提交咨询失败:', error)
+      throw error
+    }
+  },
+
+  // 获取招生数据
+  async getAdmissionData({ commit }, id) {
+    try {
+      const { data } = await getAdmissionData(id)
+      commit('SET_ADMISSION_DATA', data)
+      return data
+    } catch (error) {
+      console.error('获取招生数据失败:', error)
       throw error
     }
   }
