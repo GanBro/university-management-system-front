@@ -1,3 +1,4 @@
+<!--src/views/user/components/RecommendationCountCard.vue-->
 <template>
   <el-card class="recommendation-count-card mb-4">
     <div class="card-header">

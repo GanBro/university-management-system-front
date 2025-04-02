@@ -1,3 +1,4 @@
+<!--src/views/user/components/RecommendationIndexCard.vue-->
 <template>
   <el-card class="recommendation-index-card mb-4">
     <div class="card-header">

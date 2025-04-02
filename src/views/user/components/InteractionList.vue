@@ -1,3 +1,4 @@
+<!--src/views/user/components/InteractionList.vue-->
 <template>
   <div class="interaction-list-section">
     <div class="action-buttons">

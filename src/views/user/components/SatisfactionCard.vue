@@ -1,3 +1,4 @@
+<!--src/views/user/components/SatisfactionCard.vue-->
 <template>
   <el-card class="satisfaction-card mb-4">
     <div class="card-header">
