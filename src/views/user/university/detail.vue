@@ -88,22 +88,17 @@
                   @more="handleMoreSatisfaction"
                 />
 
-                <!-- 专业满意度 -->
+                <!-- 专业满意度 - 使用新组件 -->
                 <major-satisfaction-card
                   :major-satisfaction="majorSatisfaction"
                   @more="handleMoreMajorSatisfaction"
                 />
 
-                <!-- 专业推荐人数 -->
-                <recommendation-count-card
+                <!-- 专业推荐分析 - 使用新组件代替原来的两个组件 -->
+                <major-recommendation-card
                   :recommendation-counts="recommendationCounts"
-                  @more="handleMoreRecommendations"
-                />
-
-                <!-- 专业推荐指数 -->
-                <recommendation-index-card
                   :recommendation-index="recommendationIndex"
-                  @more="handleMoreRecommendationIndex"
+                  @more="handleMoreRecommendations"
                 />
               </el-col>
 
@@ -119,7 +114,7 @@
             </el-row>
           </el-tab-pane>
 
-          <!-- 新增：招生数据标签页 -->
+          <!-- 招生数据标签页 -->
           <el-tab-pane label="招生数据" name="admissionData">
             <admission-data-card
               :university-id="universityId"
@@ -305,10 +300,9 @@ import MarkdownRenderer from '@/components/MarkdownRenderer'
 import defaultLogo from '@/assets/404_images/404.png'
 import SatisfactionCard from '../components/SatisfactionCard'
 import MajorSatisfactionCard from '../components/MajorSatisfactionCard'
-import RecommendationCountCard from '../components/RecommendationCountCard'
-import RecommendationIndexCard from '../components/RecommendationIndexCard'
+import MajorRecommendationCard from '../components/MajorRecommendationCard'
 import ConsultationCard from '../components/ConsultationCard'
-import AdmissionDataCard from '@/components/AdmissionDataCard' // 导入招生数据卡片组件
+import AdmissionDataCard from '@/components/AdmissionDataCard'
 import { getNewsList } from '@/api/news'
 import dayjs from 'dayjs'
 
@@ -319,10 +313,9 @@ export default {
     MarkdownRenderer,
     SatisfactionCard,
     MajorSatisfactionCard,
-    RecommendationCountCard,
-    RecommendationIndexCard,
+    MajorRecommendationCard,
     ConsultationCard,
-    AdmissionDataCard // 注册招生数据卡片组件
+    AdmissionDataCard
   },
 
   data() {
@@ -346,7 +339,7 @@ export default {
       majorSatisfaction: state => state.university.majorSatisfaction || [],
       recommendations: state => state.university.recommendations || {},
       consultations: state => state.university.consultations || [],
-      admissionData: state => state.university.admissionData || [] // 添加招生数据状态映射
+      admissionData: state => state.university.admissionData || []
     }),
 
     universityId() {
@@ -399,7 +392,7 @@ export default {
           this.$store.dispatch('university/getMajorSatisfaction', this.universityId),
           this.$store.dispatch('university/getRecommendations', this.universityId),
           this.$store.dispatch('university/getConsultations', this.universityId),
-          this.$store.dispatch('university/getAdmissionData', this.universityId) // 获取招生数据
+          this.$store.dispatch('university/getAdmissionData', this.universityId)
         ])
       } catch (error) {
         console.error('获取大学详情失败:', error)
@@ -444,16 +437,10 @@ export default {
       })
     },
 
+    // 整合了推荐相关的方法
     handleMoreRecommendations() {
       this.$router.push({
         name: 'UserUniversityRecommendations',
-        params: { id: this.universityId }
-      })
-    },
-
-    handleMoreRecommendationIndex() {
-      this.$router.push({
-        name: 'UserUniversityRecommendationIndex',
         params: { id: this.universityId }
       })
     },
