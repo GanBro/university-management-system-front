@@ -34,6 +34,14 @@
           </el-select>
         </el-form-item>
 
+        <el-form-item label="通知状态" prop="status">
+          <el-select v-model="form.status" placeholder="请选择通知状态" style="width: 100%">
+            <el-option label="草稿" value="draft" />
+            <el-option label="已发布" value="published" />
+            <el-option label="已归档" value="archived" />
+          </el-select>
+        </el-form-item>
+
         <el-form-item>
           <el-button type="primary" @click="submitForm">提交</el-button>
           <el-button @click="cancel">取消</el-button>
@@ -54,12 +62,14 @@ export default {
       form: {
         title: '',
         content: '',
-        type: ''
+        type: '',
+        status: 'draft' // Default to draft
       },
       rules: {
         title: [{ required: true, message: '请输入通知标题', trigger: 'blur' }],
         content: [{ required: true, message: '请输入通知内容', trigger: 'blur' }],
-        type: [{ required: true, message: '请选择通知类型', trigger: 'change' }]
+        type: [{ required: true, message: '请选择通知类型', trigger: 'change' }],
+        status: [{ required: true, message: '请选择通知状态', trigger: 'change' }]
       }
     }
   },

@@ -16,8 +16,16 @@
         highlight-current-row
       >
         <el-table-column label="标题" prop="title" />
-        <el-table-column label="类型" prop="type" />
-        <el-table-column label="状态" prop="status" />
+        <el-table-column label="类型" width="120">
+          <template slot-scope="{row}">
+            <span>{{ formatType(row.type) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="120">
+          <template slot-scope="{row}">
+            <span>{{ formatStatus(row.status) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="创建时间" prop="createdAt" />
         <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
           <template slot-scope="{row}">
@@ -55,6 +63,16 @@ export default {
         limit: 20,
         type: undefined,
         status: undefined
+      },
+      typeMap: {
+        'system': '系统通知',
+        'user': '用户通知',
+        'broadcast': '广播通知'
+      },
+      statusMap: {
+        'draft': '草稿',
+        'published': '已发布',
+        'archived': '已归档'
       }
     }
   },
@@ -62,6 +80,12 @@ export default {
     this.getList()
   },
   methods: {
+    formatType(type) {
+      return this.typeMap[type] || type
+    },
+    formatStatus(status) {
+      return this.statusMap[status] || status
+    },
     async getList() {
       this.listLoading = true
       try {
