@@ -75,7 +75,7 @@
       </el-table-column>
       <el-table-column label="发布时间" width="160px" align="center">
         <template slot-scope="{row}">
-          <span>{{ row.publishTime | parseTime('{y}-{m}-{d} {h}:{i}') }}</span>
+          <span>{{ row.publishTime }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">

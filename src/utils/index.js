@@ -1,6 +1,4 @@
-/**
- * Created by PanJiaChen on 16/11/18.
- */
+// src/utils/request.js
 
 /**
  * Parse the time to string

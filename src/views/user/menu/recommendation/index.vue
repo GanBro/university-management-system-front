@@ -7,7 +7,7 @@
         <div class="stats-container">
           <span class="stats-text">当前累计投票数量</span>
           <span class="stats-number">633 万</span>
-          <el-tag type="warning" size="medium" class="student-tag">本校学生支付投票</el-tag>
+          <el-tag type="warning" size="medium" class="student-tag">本校学生实名投票</el-tag>
         </div>
       </div>
     </div>
