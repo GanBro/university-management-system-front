@@ -20,10 +20,23 @@ export function getInfo(token) {
 }
 
 export function register(data) {
+  // eslint-disable-next-line no-unused-vars
+  const { captcha, confirmPassword, ...userData } = data
+
+  // 使用userData而不是data发送请求
   return request({
     url: 'register',
     method: 'post',
-    data
+    data: userData
+  })
+}
+
+// 验证验证码
+export function verifyCaptcha(code) {
+  return request({
+    url: '/captcha/verify',
+    method: 'post',
+    params: { code }
   })
 }
 
