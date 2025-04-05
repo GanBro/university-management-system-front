@@ -43,6 +43,11 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/forgot-password',
+    component: () => import('@/views/common/forgot-password.vue'),
+    hidden: true
+  },
+  {
     path: '/404',
     component: () => import('@/views/common/404.vue'),
     hidden: true

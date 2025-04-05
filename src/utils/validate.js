@@ -34,6 +34,10 @@ export function validUsername(str) {
   return str.trim().length > 0
 }
 
+/**
+ * @param {string} password
+ * @returns {Object}
+ */
 export function validatePassword(password) {
   const minLength = 6;
   return {
@@ -42,6 +46,20 @@ export function validatePassword(password) {
   };
 }
 
+/**
+ * @param {string} password
+ * @param {string} confirmPassword
+ * @returns {Boolean}
+ */
 export function validatePasswordMatch(password, confirmPassword) {
   return password === confirmPassword;
+}
+
+/**
+ * @param {string} email
+ * @returns {Boolean}
+ */
+export function validateEmail(email) {
+  const reg = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+  return reg.test(email)
 }

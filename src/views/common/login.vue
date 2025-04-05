@@ -72,7 +72,7 @@
 
           <div class="remember-forgot">
             <el-checkbox v-model="rememberMe" class="remember-me">记住我</el-checkbox>
-            <el-link class="forgot-password" type="primary">忘记密码?</el-link>
+            <el-link class="forgot-password" type="primary" @click="handleForgotPassword">忘记密码?</el-link>
           </div>
 
           <div class="form-actions">
@@ -266,6 +266,16 @@ export default {
       // 延迟跳转，等待动画完成
       setTimeout(() => {
         this.$router.push('/register')
+      }, 400)
+    },
+
+    handleForgotPassword() {
+      // 添加离场动画
+      document.querySelector('.login-content').classList.add('fade-out')
+
+      // 延迟跳转，等待动画完成
+      setTimeout(() => {
+        this.$router.push('/forgot-password')
       }, 400)
     }
   }

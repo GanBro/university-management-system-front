@@ -40,6 +40,33 @@ export function verifyCaptcha(code) {
   })
 }
 
+// 请求密码重置验证码
+export function requestPasswordReset(data) {
+  return request({
+    url: '/request-password-reset',
+    method: 'post',
+    data
+  })
+}
+
+// 验证重置码
+export function verifyResetCode(data) {
+  return request({
+    url: '/verify-reset-code',
+    method: 'post',
+    data
+  })
+}
+
+// 重置密码
+export function resetPassword(data) {
+  return request({
+    url: '/reset-password',
+    method: 'post',
+    data
+  })
+}
+
 // 获取用户列表
 export function getUserList(params) {
   return request({
