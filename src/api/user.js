@@ -96,9 +96,9 @@ export function createUser(data) {
 // 更新用户
 export function updateUser(id, data) {
   return request({
-    url: `/users/${id}`,
+    url: '/users/profile', // 使用已有的用户资料更新端点
     method: 'put',
-    data
+    data: { ...data, userId: id } // 确保包含用户ID
   })
 }
 

@@ -1,4 +1,4 @@
-<!-- src/views/system/user/detail.vue -->
+<!-- src/views/user/detail.vue -->
 <template>
   <div class="app-container">
     <el-card>
@@ -27,9 +27,17 @@
         </el-form-item>
 
         <el-form-item label="角色">
-          <el-tag :type="userInfo.role === 'admin' ? 'danger' : 'success'">
-            {{ userInfo.role === 'admin' ? '管理员' : '普通用户' }}
+          <el-tag
+            :type="userInfo.role === 'admin' ? 'danger' :
+                   userInfo.role === 'university_admin' ? 'warning' : 'success'"
+          >
+            {{ userInfo.role === 'admin' ? '管理员' :
+            userInfo.role === 'university_admin' ? '高校管理员' : '普通用户' }}
           </el-tag>
+        </el-form-item>
+
+        <el-form-item v-if="userInfo.role === 'university_admin'" label="管理高校">
+          <span>{{ userInfo.universityName || '未分配高校' }}</span>
         </el-form-item>
 
         <el-form-item label="创建时间">
@@ -64,7 +72,9 @@ export default {
         avatar: '',
         createdAt: '',
         updatedAt: '',
-        lastLogin: ''
+        lastLogin: '',
+        universityId: '',
+        universityName: ''
       }
     }
   },

@@ -51,11 +51,23 @@
           <span>{{ scope.row.email }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="角色" width="110" align="center">
+      <el-table-column label="角色" width="130" align="center">
         <template slot-scope="scope">
-          <el-tag :type="scope.row.role === 'admin' ? 'danger' : 'success'">
-            {{ scope.row.role === 'admin' ? '管理员' : '普通用户' }}
+          <el-tag
+            :type="scope.row.role === 'admin' ? 'danger' :
+                   scope.row.role === 'university_admin' ? 'warning' : 'success'"
+          >
+            {{ scope.row.role === 'admin' ? '管理员' :
+            scope.row.role === 'university_admin' ? '高校管理员' : '普通用户' }}
           </el-tag>
+        </template>
+      </el-table-column>
+
+      <el-table-column v-if="showUniversityColumn" label="管理高校" min-width="150" align="center">
+        <template slot-scope="scope">
+          <span v-if="scope.row.role === 'university_admin'">
+            {{ scope.row.universityName || '未分配高校' }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column label="创建时间" width="180" align="center">
@@ -95,6 +107,11 @@ import Pagination from '@/components/Pagination/index.vue'
 export default {
   name: 'UserList',
   components: { Pagination },
+  computed: {
+    showUniversityColumn() {
+      return this.list.some(item => item.role === 'university_admin')
+    }
+  },
   data() {
     return {
       list: [],
@@ -110,7 +127,8 @@ export default {
       multipleSelection: [],
       roleOptions: [
         { value: 'admin', label: '管理员' },
-        { value: 'user', label: '普通用户' }
+        { value: 'user', label: '普通用户' },
+        { value: 'university_admin', label: '高校管理员' }
       ]
     }
   },
