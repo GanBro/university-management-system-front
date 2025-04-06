@@ -1,4 +1,4 @@
-<!--src/views/user/components/SatisfactionCard.vue-->
+<!--src/components/SatisfactionCard.vue-->
 <template>
   <el-card class="satisfaction-card mb-4">
     <div class="card-header">
@@ -13,14 +13,15 @@
       <div v-for="(item, index) in satisfactionRatings" :key="index" class="rating-circle">
         <el-progress
           type="circle"
-          :percentage="item.rating * 20"
+          :percentage="getRatingPercentage(item.rating)"
           :stroke-width="8"
           :width="100"
           :color="getRatingColor(item.rating)"
         >
           <template slot="default">
             <div class="circle-content">
-              <div class="rating">{{ item.rating.toFixed(1) }}</div>
+              <div v-if="item.rating > 0" class="rating">{{ item.rating.toFixed(1) }}</div>
+              <div v-else class="rating no-rating">暂无</div>
               <div class="count">{{ item.count }}人评价</div>
             </div>
           </template>
@@ -41,10 +42,18 @@ export default {
     }
   },
   methods: {
+    getRatingPercentage(rating) {
+      // 处理无评分或评分为0的情况
+      if (!rating || rating <= 0) return 0;
+      return rating * 20; // 转换为百分比
+    },
     getRatingColor(rating) {
-      if (rating >= 4.5) return '#10b981'  // 绿色
-      if (rating >= 4.0) return '#3b82f6'  // 蓝色
-      return '#f59e0b'  // 橙色
+      if (!rating || rating <= 0) return '#909399'; // 灰色 - 无评分
+      if (rating >= 4.5) return '#10b981';  // 绿色 - 极佳
+      if (rating >= 4.0) return '#3b82f6';  // 蓝色 - 优秀
+      if (rating >= 3.5) return '#f59e0b';  // 橙色 - 良好
+      if (rating >= 3.0) return '#ec4899';  // 粉色 - 一般
+      return '#ef4444';                     // 红色 - 较差
     }
   }
 }
@@ -97,6 +106,13 @@ export default {
           font-size: 20px;
           font-weight: bold;
           color: #333;
+
+          &.no-rating {
+            font-size: 16px;
+            font-weight: normal;
+            color: #909399;
+            font-style: italic;
+          }
         }
 
         .count {

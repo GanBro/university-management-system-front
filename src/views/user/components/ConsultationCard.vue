@@ -1,4 +1,4 @@
-<!--src/views/user/components/ConsultationCard.vue-->
+<!--src/components/ConsultationCard.vue-->
 <template>
   <el-card class="consultation-card">
     <div class="card-header">

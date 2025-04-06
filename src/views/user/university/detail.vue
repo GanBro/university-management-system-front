@@ -7,13 +7,14 @@
         <div class="basic-info">
           <!-- Logo区域 -->
           <div class="logo-wrapper">
-            <img
-              v-if="universityData.logo"
-              :src="getLogoUrl(universityData.logo)"
-              :alt="universityData.name + '的logo'"
-              class="university-logo"
-              @error="handleLogoError"
-            >
+            <template v-if="universityData.logo && !logoLoadErrors.has(universityData.logo)">
+              <img
+                :src="getLogoUrl(universityData.logo)"
+                :alt="universityData.name + '的logo'"
+                class="university-logo"
+                @error="handleLogoError(universityData)"
+              >
+            </template>
             <div v-else class="logo-placeholder">
               <span>{{ universityData.name ? universityData.name.substring(0, 2) : 'N/A' }}</span>
             </div>
@@ -328,7 +329,8 @@ export default {
       newsList: [],
       currentPage: 1,
       pageSize: 10,
-      total: 0
+      total: 0,
+      logoLoadErrors: new Set() // 添加这一行，记录加载失败的logo
     }
   },
 
@@ -402,14 +404,47 @@ export default {
       }
     },
 
+    // 替换为使用首页的logo处理逻辑
     getLogoUrl(logo) {
-      if (!logo) return defaultLogo
-      if (logo.startsWith('http')) return logo
-      return process.env.VUE_APP_BASE_API + logo
+      // 如果没有 logo，返回默认 logo
+      if (!logo) {
+        return defaultLogo
+      }
+
+      // 如果是完整的 URL，直接返回
+      if (logo.startsWith('http')) {
+        return logo
+      }
+
+      // 如果是相对路径，需要转换为正确的资源引用
+      try {
+        // 处理相对路径
+        if (logo.includes('/')) {
+          let relativePath = logo
+          // 确保路径以 images/ 开头
+          if (!logo.startsWith('images/')) {
+            relativePath = `images/${logo.split('/').pop()}`
+          }
+          return require(`@/assets/${relativePath}`)
+        }
+        // 如果只是文件名，假设在 images 目录下
+        return require(`@/assets/images/${logo}`)
+      } catch (error) {
+        console.warn(`Logo loading failed for: ${logo}`, error)
+        return defaultLogo
+      }
     },
 
-    handleLogoError(event) {
-      event.target.src = defaultLogo
+    // 添加处理logo加载错误的方法
+    handleLogoError(item) {
+      const imgElement = window.event?.target
+      if (imgElement) {
+        imgElement.src = defaultLogo
+        // 防止循环触发 error 事件
+        imgElement.onerror = null
+        // 如果已经显示了默认图片，则不再重试加载
+        this.logoLoadErrors.add(item.logo)
+      }
     },
 
     formatNumber(num) {

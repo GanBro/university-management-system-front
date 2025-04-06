@@ -1,4 +1,4 @@
-<!--src/views/user/components/MajorRecommendationCard.vue-->
+<!--src/components/MajorRecommendationCard.vue-->
 <template>
   <el-card class="major-recommendation-card mb-4">
     <div class="card-header">
@@ -28,7 +28,9 @@
         <div v-for="(item, index) in sortedRecommendations" :key="index" class="recommendation-item">
           <div class="item-header">
             <span class="major-name">{{ item.name }}</span>
-            <div class="indicator-badge" :style="{ backgroundColor: getColorByIndex(index) }">
+            <div v-if="item.rating !== undefined && item.rating !== null"
+                 class="indicator-badge"
+                 :style="{ backgroundColor: getColorByIndex(index) }">
               {{ getIndicatorText(item) }}
             </div>
           </div>
@@ -37,9 +39,12 @@
             <div class="metrics">
               <div class="metric">
                 <span class="label">推荐指数：</span>
-                <span class="value">{{ item.rating ? item.rating.toFixed(1) : '暂无' }}</span>
+                <span v-if="item.rating !== undefined && item.rating !== null" class="value">
+                  {{ item.rating.toFixed(1) }}
+                </span>
+                <span v-else class="value no-rating">暂无</span>
                 <el-rate
-                  v-if="item.rating"
+                  v-if="item.rating !== undefined && item.rating !== null"
                   v-model="item.ratingValue"
                   disabled
                   :colors="['#99A9BF', '#F7BA2A', '#FF9900']"
@@ -51,7 +56,7 @@
               </div>
               <div class="metric">
                 <span class="label">推荐人数：</span>
-                <span class="value count">{{ item.count }}人</span>
+                <span class="value count">{{ item.count || 0 }}人</span>
               </div>
             </div>
 
@@ -107,7 +112,7 @@ export default {
         this.recommendationCounts.forEach(item => {
           mergedMap.set(item.name, {
             name: item.name,
-            count: item.count,
+            count: item.count || 0,
             rating: null
           })
         })
@@ -123,7 +128,7 @@ export default {
           } else {
             mergedMap.set(item.name, {
               name: item.name,
-              count: item.count,
+              count: item.count || 0,
               rating: item.rating,
               ratingValue: item.rating
             })
@@ -133,7 +138,7 @@ export default {
 
       // 转为数组并按推荐人数排序
       return Array.from(mergedMap.values())
-        .sort((a, b) => b.count - a.count)
+        .sort((a, b) => (b.count || 0) - (a.count || 0))
         .slice(0, 6)
     }
   },
@@ -183,11 +188,13 @@ export default {
     },
     getCompletionPercentage(count) {
       if (!count) return 0
-      const maxCount = Math.max(...this.sortedRecommendations.map(item => item.count))
-      return Math.round((count / maxCount) * 100)
+      const maxCount = Math.max(...this.sortedRecommendations.map(item => item.count || 0))
+      return maxCount > 0 ? Math.round((count / maxCount) * 100) : 0
     },
     getRecommendationColor(count) {
-      const maxCount = Math.max(...this.sortedRecommendations.map(item => item.count))
+      const maxCount = Math.max(...this.sortedRecommendations.map(item => item.count || 0))
+      if (maxCount <= 0) return '#9ca3af' // 灰色 - 数据不足
+
       const percentage = (count / maxCount) * 100
 
       if (percentage >= 90) return '#10b981'  // 绿色
@@ -206,14 +213,35 @@ export default {
       // 初始化图表
       this.chart = echarts.init(this.$refs.chartContainer)
 
-      // 准备数据
-      const data = this.sortedRecommendations.map((item, index) => ({
+      // 准备数据 - 过滤掉没有评分的项目
+      const validData = this.sortedRecommendations.filter(item =>
+        item.rating !== undefined && item.rating !== null
+      );
+
+      if (validData.length === 0) {
+        // 如果没有有效数据，显示提示信息
+        this.chart.setOption({
+          title: {
+            text: '暂无足够的推荐指数数据以生成图表',
+            left: 'center',
+            top: 'center',
+            textStyle: {
+              fontSize: 14,
+              color: '#909399'
+            }
+          }
+        });
+        return;
+      }
+
+      // 准备图表数据
+      const data = validData.map((item, index) => ({
         name: item.name,
-        value: [item.rating || 0, item.count, item.name],
+        value: [item.rating || 0, item.count || 0, item.name],
         itemStyle: {
           color: this.getColorByIndex(index)
         }
-      }))
+      }));
 
       // 图表配置
       const option = {
@@ -412,6 +440,12 @@ export default {
 
                 &.count {
                   color: #3b82f6;
+                }
+
+                &.no-rating {
+                  font-style: italic;
+                  color: #909399;
+                  font-weight: normal;
                 }
               }
 

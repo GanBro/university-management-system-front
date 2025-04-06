@@ -1,4 +1,4 @@
-<!--src/views/user/components/MajorSatisfactionCard.vue-->
+<!--src/components/MajorSatisfactionCard.vue-->
 <template>
   <el-card class="major-satisfaction-card mb-4">
     <div class="card-header">
@@ -15,13 +15,14 @@
 
       <!-- 列表展示 -->
       <div class="rating-list">
-        <div v-for="(item, index) in majorSatisfaction" :key="index" class="rating-item">
+        <div v-for="(item, index) in processedData" :key="index" class="rating-item">
           <div class="rank-badge" :class="getRankClass(index)">{{ index + 1 }}</div>
           <div class="item-content">
             <div class="item-header">
               <span class="major-name">{{ item.name }}</span>
               <div class="rating-info">
                 <el-rate
+                  v-if="item.rating !== undefined && item.rating !== null"
                   v-model="item.ratingValue"
                   disabled
                   text-color="#ff9900"
@@ -31,16 +32,24 @@
                   :show-score="false"
                 >
                 </el-rate>
-                <span class="rating">{{ item.rating.toFixed(1) }}</span>
+                <span v-else class="no-rating">暂无评分</span>
+                <span v-if="item.rating" class="rating">{{ item.rating.toFixed(1) }}</span>
               </div>
             </div>
             <div class="item-footer">
               <el-progress
+                v-if="item.rating"
                 :percentage="item.rating * 20"
                 :stroke-width="8"
                 :color="getRatingColor(item.rating)"
               ></el-progress>
-              <span class="count">({{ item.count }}人评价)</span>
+              <el-progress
+                v-else
+                :percentage="0"
+                :stroke-width="8"
+                :color="getRatingColor(0)"
+              ></el-progress>
+              <span class="count">({{ item.count || 0 }}人评价)</span>
             </div>
           </div>
         </div>
@@ -70,12 +79,17 @@ export default {
     }
   },
   computed: {
-    // 为rating-value计算值
+    // 为rating-value计算值，并处理可能的null值
     processedData() {
       return this.majorSatisfaction.map(item => ({
         ...item,
-        ratingValue: item.rating
-      }))
+        ratingValue: item.rating !== undefined && item.rating !== null ? item.rating : 0
+      })).sort((a, b) => {
+        // 按评分降序排序，处理null值
+        if (a.rating === undefined || a.rating === null) return 1;
+        if (b.rating === undefined || b.rating === null) return -1;
+        return b.rating - a.rating;
+      });
     }
   },
   watch: {
@@ -115,6 +129,7 @@ export default {
       return index < 3 ? classes[index] : 'rank-normal'
     },
     getRatingColor(rating) {
+      if (!rating || rating <= 0) return '#909399';  // 灰色 - 无评分
       if (rating >= 4.5) return '#10b981'  // 绿色
       if (rating >= 4.0) return '#3b82f6'  // 蓝色
       return '#f59e0b'  // 橙色
@@ -130,12 +145,32 @@ export default {
       // 初始化图表
       this.chart = echarts.init(this.$refs.chartContainer)
 
-      // 准备数据
-      const data = this.majorSatisfaction.slice(0, 5).map(item => ({
-        name: item.name,
-        value: item.rating * 20,  // 转换为百分比
-        count: item.count
-      }))
+      // 准备数据 - 过滤掉无评分的专业
+      const data = this.processedData
+        .filter(item => item.rating !== undefined && item.rating !== null)
+        .slice(0, 5)
+        .map(item => ({
+          name: item.name,
+          value: item.rating * 20,  // 转换为百分比
+          count: item.count || 0
+        }));
+
+      // 检查是否有有效数据
+      if (data.length === 0) {
+        // 如果没有有效评分数据，显示提示信息
+        this.chart.setOption({
+          title: {
+            text: '暂无专业评分数据',
+            left: 'center',
+            top: 'center',
+            textStyle: {
+              fontSize: 14,
+              color: '#909399'
+            }
+          }
+        });
+        return;
+      }
 
       // 图表配置
       const option = {
@@ -294,6 +329,12 @@ export default {
                 font-size: 14px;
                 font-weight: bold;
                 color: #f59e0b;
+              }
+
+              .no-rating {
+                font-size: 12px;
+                color: #909399;
+                font-style: italic;
               }
             }
           }
