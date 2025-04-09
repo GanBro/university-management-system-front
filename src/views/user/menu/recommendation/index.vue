@@ -17,43 +17,43 @@
       <!-- Featured recommendation card -->
       <div class="featured-card">
         <div class="university-info">
-          <div class="university-name">江苏电子信息职业学院</div>
-          <div class="major-name">计算机应用技术</div>
+          <div class="university-name">清华大学</div>
+          <div class="major-name">计算机科学与技术</div>
         </div>
         <div class="vertical-line"></div>
         <div class="rating-container">
           <div class="rating-title">推荐指数</div>
-          <div class="rating-value">4.7</div>
+          <div class="rating-value">4.8</div>
           <div class="rating-stars">
             <span class="star full"></span>
             <span class="star full"></span>
             <span class="star full"></span>
             <span class="star full"></span>
-            <span class="star half"></span>
+            <span class="star full"></span>
           </div>
-          <div class="rating-count">67人推荐</div>
+          <div class="rating-count">227人推荐</div>
         </div>
         <div class="rating-distribution">
           <div class="distribution-row">
             <div class="stars">5☆</div>
             <div class="progress-container">
-              <div class="progress-bar" style="width: 85%"></div>
+              <div class="progress-bar" style="width: 90%"></div>
             </div>
-            <div class="percentage">85%</div>
+            <div class="percentage">90%</div>
           </div>
           <div class="distribution-row">
             <div class="stars">4☆</div>
             <div class="progress-container">
-              <div class="progress-bar" style="width: 9%"></div>
+              <div class="progress-bar" style="width: 8%"></div>
             </div>
-            <div class="percentage">9%</div>
+            <div class="percentage">8%</div>
           </div>
           <div class="distribution-row">
             <div class="stars">3☆</div>
             <div class="progress-container">
-              <div class="progress-bar" style="width: 3%"></div>
+              <div class="progress-bar" style="width: 2%"></div>
             </div>
-            <div class="percentage">3%</div>
+            <div class="percentage">2%</div>
           </div>
           <div class="distribution-row">
             <div class="stars">2☆</div>
@@ -65,9 +65,9 @@
           <div class="distribution-row">
             <div class="stars">1☆</div>
             <div class="progress-container">
-              <div class="progress-bar" style="width: 3%"></div>
+              <div class="progress-bar" style="width: 0%"></div>
             </div>
-            <div class="percentage">3%</div>
+            <div class="percentage">0%</div>
           </div>
         </div>
         <div class="hot-label">
@@ -85,27 +85,23 @@
 
         <div class="filter-section">
           <div class="filter-label">筛选：</div>
-          <el-select v-model="filterLocation" placeholder="院校所在地" class="filter-select">
-            <el-option label="全部" value=""></el-option>
+          <el-select v-model="filterLocation" placeholder="院校所在地" class="filter-select" clearable>
             <el-option label="北京市" value="北京市"></el-option>
             <el-option label="上海市" value="上海市"></el-option>
             <el-option label="广东省" value="广东省"></el-option>
           </el-select>
 
-          <el-select v-model="filterCategory" placeholder="主管部门类别" class="filter-select">
-            <el-option label="全部" value=""></el-option>
+          <el-select v-model="filterCategory" placeholder="主管部门类别" class="filter-select" clearable>
             <el-option label="教育部" value="教育部"></el-option>
             <el-option label="省市自治区" value="省市自治区"></el-option>
           </el-select>
 
-          <el-select v-model="filterLevel" placeholder="办学层次" class="filter-select">
-            <el-option label="全部" value=""></el-option>
+          <el-select v-model="filterLevel" placeholder="办学层次" class="filter-select" clearable>
             <el-option label="本科" value="本科"></el-option>
             <el-option label="专科" value="专科"></el-option>
           </el-select>
 
-          <el-select v-model="filterType" placeholder="院校特性" class="filter-select">
-            <el-option label="全部" value=""></el-option>
+          <el-select v-model="filterType" placeholder="院校特性" class="filter-select" clearable>
             <el-option label="985" value="985"></el-option>
             <el-option label="211" value="211"></el-option>
             <el-option label="双一流" value="双一流"></el-option>

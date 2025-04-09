@@ -284,6 +284,7 @@ export default {
 
 <style lang="scss" scoped>
 /* --- 基础样式 --- */
+/* --- 基础样式 --- */
 .login-container {
   min-height: 100vh;
   width: 100%;
@@ -445,6 +446,7 @@ export default {
 /* --- 表单和输入框样式 --- */
 .login-form {
   margin-bottom: 15px;
+  width: 100%; /* 确保表单占满容器宽度 */
 }
 
 .input-wrapper {
@@ -542,22 +544,30 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  width: 100%; /* 确保按钮容器占满宽度 */
+  box-sizing: border-box; /* 确保padding不会增加总宽度 */
+}
+
+.submit-btn, .register-btn {
+  width: 100%; /* 确保两个按钮宽度相同 */
+  height: 50px; /* 统一按钮高度 */
+  border-radius: 12px; /* 统一圆角 */
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: flex; /* 统一使用flex布局 */
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* 移除内边距避免影响对齐 */
+  margin: 0; /* 移除外边距避免影响对齐 */
+  box-sizing: border-box; /* 确保边框包含在宽度内 */
 }
 
 .submit-btn {
-  width: 100%;
-  height: 50px;
-  border-radius: 12px;
   background: linear-gradient(to right, #0071e3, #40a9ff);
   border: none;
   font-size: 17px;
-  font-weight: 500;
   letter-spacing: 0.5px;
   color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
 }
@@ -617,15 +627,10 @@ export default {
 }
 
 .register-btn {
-  width: 100%;
-  height: 48px;
-  border-radius: 12px;
   background: transparent;
   border: 1px solid #d2d2d7;
   font-size: 16px;
-  font-weight: 500;
   color: #1d1d1f;
-  transition: all 0.2s ease;
 }
 
 .register-btn:hover {
@@ -670,6 +675,7 @@ export default {
 /* --- 表单项和错误消息 --- */
 ::v-deep(.el-form-item) {
   margin-bottom: 20px;
+  width: 100%; /* 确保表单项占满容器宽度 */
 }
 
 ::v-deep(.el-form-item__error) {

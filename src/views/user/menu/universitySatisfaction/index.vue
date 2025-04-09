@@ -21,27 +21,23 @@
 
         <div class="filter-section">
           <div class="filter-label">筛选：</div>
-          <el-select v-model="filterLocation" placeholder="院校所在地" class="filter-select">
-            <el-option label="全部" value=""></el-option>
+          <el-select v-model="filterLocation" placeholder="院校所在地" class="filter-select" clearable>
             <el-option label="北京" value="北京"></el-option>
             <el-option label="上海" value="上海"></el-option>
             <el-option label="广东" value="广东"></el-option>
           </el-select>
 
-          <el-select v-model="filterDepartment" placeholder="主管部门类别" class="filter-select">
-            <el-option label="全部" value=""></el-option>
+          <el-select v-model="filterDepartment" placeholder="主管部门类别" class="filter-select" clearable>
             <el-option label="教育部" value="教育部"></el-option>
             <el-option label="省市自治区" value="省市自治区"></el-option>
           </el-select>
 
-          <el-select v-model="filterLevel" placeholder="办学层次" class="filter-select">
-            <el-option label="全部" value=""></el-option>
+          <el-select v-model="filterLevel" placeholder="办学层次" class="filter-select" clearable>
             <el-option label="本科" value="本科"></el-option>
             <el-option label="专科" value="专科"></el-option>
           </el-select>
 
-          <el-select v-model="filterType" placeholder="院校特性" class="filter-select">
-            <el-option label="全部" value=""></el-option>
+          <el-select v-model="filterType" placeholder="院校特性" class="filter-select" clearable>
             <el-option label="985" value="985"></el-option>
             <el-option label="211" value="211"></el-option>
             <el-option label="双一流" value="双一流"></el-option>

@@ -40,7 +40,7 @@
             </div>
             <div class="info-item">
               <i class="el-icon-time"></i>
-              <span>最后登录：{{ formatTime(userForm.lastLogin) }}</span>
+              <span>最后登录：{{ formatTime(userForm.lastLogin) || '暂无记录' }}</span>
             </div>
           </div>
         </el-card>
@@ -49,7 +49,7 @@
       <!-- 右侧设置和通知 -->
       <el-col :span="16">
         <el-card shadow="hover">
-          <el-tabs v-model="activeTab">
+          <el-tabs v-model="activeTab" @tab-click="handleTabClick">
             <!-- 基本信息 -->
             <el-tab-pane label="基本信息" name="basic">
               <el-form :model="userForm" label-width="100px" class="setting-form">
@@ -76,31 +76,37 @@
             <!-- 通知消息 -->
             <el-tab-pane label="通知消息" name="notifications">
               <div class="notification-container">
-                <div class="notification-header">
-                  <el-button type="text" @click="markAllAsRead" v-if="unreadNotifications.length > 0">
-                    全部标为已读
+                <div class="notification-header" v-if="unreadNotifications.length > 0">
+                  <el-button type="text" @click="markAllAsRead">
+                    <i class="el-icon-check"></i> 全部标为已读
                   </el-button>
                 </div>
-                <el-tabs v-model="notificationTab">
+
+                <el-tabs v-model="notificationTab" class="notification-tabs">
                   <el-tab-pane label="未读消息" name="unread">
                     <div v-if="unreadNotifications.length === 0" class="empty-text">
-                      暂无未读消息
+                      <el-empty description="暂无未读消息"></el-empty>
                     </div>
                     <div v-else class="notification-list">
                       <div
                         v-for="item in unreadNotifications"
                         :key="item.id"
-                        class="notification-item"
+                        class="notification-item unread"
                         @click="handleNotificationClick(item)"
                       >
-                        <div class="notification-title">{{ item.title }}</div>
-                        <div class="notification-time">{{ formatTime(item.created_at) }}</div>
+                        <div class="notification-dot"></div>
+                        <div class="notification-content">
+                          <div class="notification-title">{{ item.title }}</div>
+                          <div class="notification-time">{{ formatTime(item.created_at) }}</div>
+                        </div>
+                        <i class="el-icon-arrow-right notification-arrow"></i>
                       </div>
                     </div>
                   </el-tab-pane>
+
                   <el-tab-pane label="全部消息" name="all">
                     <div v-if="allNotifications.length === 0" class="empty-text">
-                      暂无消息
+                      <el-empty description="暂无消息"></el-empty>
                     </div>
                     <div v-else class="notification-list">
                       <div
@@ -110,12 +116,27 @@
                         :class="{ 'is-read': item.status === 'read' }"
                         @click="handleNotificationClick(item)"
                       >
-                        <div class="notification-title">{{ item.title }}</div>
-                        <div class="notification-time">{{ formatTime(item.created_at) }}</div>
+                        <div v-if="item.status === 'unread'" class="notification-dot"></div>
+                        <div class="notification-content">
+                          <div class="notification-title">{{ item.title }}</div>
+                          <div class="notification-time">{{ formatTime(item.created_at) }}</div>
+                        </div>
+                        <i class="el-icon-arrow-right notification-arrow"></i>
                       </div>
                     </div>
                   </el-tab-pane>
                 </el-tabs>
+
+                <!-- Pagination if needed -->
+                <div class="notification-pagination" v-if="allNotifications.length > 10">
+                  <el-pagination
+                    @current-change="handleNotificationPageChange"
+                    :current-page="notificationPage"
+                    :page-size="10"
+                    layout="prev, pager, next"
+                    :total="allNotifications.length">
+                  </el-pagination>
+                </div>
               </div>
             </el-tab-pane>
 
@@ -176,13 +197,13 @@
                       ></el-input>
                     </el-form-item>
                     <el-form-item>
-                      <el-select v-model="universitySearch.province" placeholder="所在地">
+                      <el-select v-model="universitySearch.province" placeholder="所在地" clearable>
                         <el-option label="北京" value="北京"></el-option>
                         <el-option label="上海" value="上海"></el-option>
                       </el-select>
                     </el-form-item>
                     <el-form-item>
-                      <el-select v-model="universitySearch.type" placeholder="隶属">
+                      <el-select v-model="universitySearch.type" placeholder="隶属" clearable>
                         <el-option label="教育部" value="教育部"></el-option>
                         <el-option label="省属" value="省属"></el-option>
                       </el-select>
@@ -253,16 +274,19 @@
     </el-dialog>
 
     <!-- 通知详情对话框 -->
-    <el-dialog title="通知详情" :visible.sync="notificationDetailVisible" width="500px">
+    <el-dialog title="通知详情" :visible.sync="notificationDetailVisible" width="500px" custom-class="notification-detail-dialog">
       <div v-if="currentNotification" class="notification-detail">
         <h3>{{ currentNotification.title }}</h3>
-        <div class="notification-meta">
+        <div class="notification-meta" v-if="currentNotification.created_at">
           <span>{{ formatTime(currentNotification.created_at) }}</span>
         </div>
-        <div class="notification-content">
-          {{ currentNotification.content }}
+        <div class="notification-content-text">
+          {{ currentNotification.content || '暂无内容' }}
         </div>
       </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="notificationDetailVisible = false">关闭</el-button>
+      </span>
     </el-dialog>
 
     <!-- 导出配置对话框 -->
@@ -347,6 +371,8 @@ export default {
       uploadLoading: false,
       allNotifications: [],
       unreadNotifications: [],
+      notificationLoading: false,
+      notificationPage: 1,
       // 高校收藏相关
       universitySearch: {
         name: '',
@@ -390,9 +416,11 @@ export default {
   },
   methods: {
     formatTime(time) {
-      if (!time) return '暂无记录'
-      const date = new Date(time)
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+      if (!time) return ''; // 当时间为空时返回空字符串
+      const date = new Date(time);
+      if (isNaN(date.getTime())) return ''; // 检查日期是否有效
+
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     },
 
     async getUserInfo() {
@@ -420,15 +448,26 @@ export default {
 
     async fetchNotifications() {
       try {
-        const userId = this.$store.getters.userId
-        const res = await getUserNotifications(userId)
+        this.notificationLoading = true;
+        const userId = this.$store.getters.userId;
+        const res = await getUserNotifications(userId);
+
         if (res.code === 200) {
-          this.allNotifications = res.data
-          this.unreadNotifications = res.data.filter(item => item.status === 'unread')
+          this.allNotifications = res.data || [];
+          this.unreadNotifications = this.allNotifications.filter(item => item.status === 'unread');
+
+          // Update unread count in the store if needed
+          if (this.$store.getters.hasUnreadNotifications !== (this.unreadNotifications.length > 0)) {
+            this.$store.commit('SET_HAS_UNREAD_NOTIFICATIONS', this.unreadNotifications.length > 0);
+          }
+        } else {
+          throw new Error(res.message || '获取通知失败');
         }
       } catch (error) {
-        console.error('获取通知失败:', error)
-        this.$message.error('获取通知失败')
+        console.error('获取通知失败:', error);
+        this.$message.error('获取通知失败，请刷新页面重试');
+      } finally {
+        this.notificationLoading = false;
       }
     },
 
@@ -486,30 +525,65 @@ export default {
     },
 
     async handleNotificationClick(notification) {
-      this.currentNotification = notification
-      this.notificationDetailVisible = true
+      this.currentNotification = notification;
+      this.notificationDetailVisible = true;
 
       if (notification.status === 'unread') {
         try {
-          const userId = this.$store.getters.userId
-          await markNotificationAsRead(notification.id, userId)
-          await this.fetchNotifications()
+          const userId = this.$store.getters.userId;
+          const res = await markNotificationAsRead(notification.id, userId);
+
+          if (res.code === 200) {
+            // Update notification status in our local arrays
+            notification.status = 'read';
+            this.unreadNotifications = this.allNotifications.filter(item => item.status === 'unread');
+
+            // Update unread status in the store if needed
+            if (this.unreadNotifications.length === 0) {
+              this.$store.commit('SET_HAS_UNREAD_NOTIFICATIONS', false);
+            }
+          } else {
+            throw new Error(res.message || '标记已读失败');
+          }
         } catch (error) {
-          console.error('标记通知已读失败:', error)
-          this.$message.error('标记已读失败')
+          console.error('标记通知已读失败:', error);
+          // Continue showing the notification even if marking as read fails
         }
       }
     },
 
     async markAllAsRead() {
       try {
-        const userId = this.$store.getters.userId
-        await markAllNotificationsAsRead(userId)
-        await this.fetchNotifications()
-        this.$message.success('已全部标记为已读')
+        const userId = this.$store.getters.userId;
+        const res = await markAllNotificationsAsRead(userId);
+
+        if (res.code === 200) {
+          // Update all notifications to read status
+          this.allNotifications.forEach(notification => {
+            notification.status = 'read';
+          });
+          this.unreadNotifications = [];
+
+          // Update store
+          this.$store.commit('SET_HAS_UNREAD_NOTIFICATIONS', false);
+
+          this.$message.success('已全部标记为已读');
+        } else {
+          throw new Error(res.message || '操作失败');
+        }
       } catch (error) {
-        console.error('标记全部已读失败:', error)
-        this.$message.error('操作失败，请重试')
+        console.error('标记全部已读失败:', error);
+        this.$message.error('操作失败，请重试');
+      }
+    },
+
+    handleNotificationPageChange(page) {
+      this.notificationPage = page;
+    },
+
+    handleTabClick(tab) {
+      if (tab.name === 'notifications') {
+        this.fetchNotifications();
       }
     },
 
@@ -812,63 +886,113 @@ export default {
   }
 
   .notification-container {
-    .notification-header {
-      display: flex;
-      justify-content: flex-end;
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .notification-list {
-      max-height: 400px;
-      overflow-y: auto;
-
-      .notification-item {
-        padding: 15px;
-        cursor: pointer;
-        border-bottom: 1px solid #f5f5f5;
-
-        &:hover {
-          background-color: #f5f7fa;
-        }
-
-        &.is-read {
-          opacity: 0.7;
-        }
-
-        .notification-title {
-          font-size: 14px;
-          margin-bottom: 5px;
-        }
-
-        .notification-time {
-          font-size: 12px;
-          color: #909399;
-        }
-      }
-    }
-
-    .empty-text {
-      text-align: center;
-      padding: 30px;
-      color: #909399;
-    }
+    margin-top: 10px;
   }
-}
 
-.notification-detail {
-  h3 {
+  .notification-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 10px 10px;
+    border-bottom: 1px solid #ebeef5;
+  }
+
+  .notification-tabs {
+    margin-top: 10px;
+  }
+
+  .notification-list {
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .notification-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f7fa;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .notification-item:hover {
+    background-color: #f5f7fa;
+  }
+
+  .notification-item.is-read {
+    opacity: 0.7;
+  }
+
+  .notification-item.unread {
+    background-color: #f0faff;
+  }
+
+  .notification-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #409EFF;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+
+  .notification-content {
+    flex: 1;
+  }
+
+  .notification-title {
+    font-size: 14px;
+    color: #303133;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+
+  .notification-time {
+    font-size: 12px;
+    color: #909399;
+  }
+
+  .notification-arrow {
+    color: #c0c4cc;
+    margin-left: 10px;
+  }
+
+  .empty-text {
+    padding: 30px 0;
+    text-align: center;
+  }
+
+  .notification-pagination {
+    margin-top: 15px;
+    text-align: center;
+  }
+
+  .notification-detail {
+    padding: 10px;
+  }
+
+  .notification-detail h3 {
     margin: 0 0 15px;
+    color: #303133;
+    font-size: 18px;
+    font-weight: 600;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ebeef5;
   }
 
   .notification-meta {
     color: #909399;
-    font-size: 12px;
-    margin-bottom: 15px;
+    font-size: 13px;
+    margin-bottom: 20px;
   }
 
-  .notification-content {
+  .notification-content-text {
     line-height: 1.6;
+    color: #606266;
+    white-space: pre-line;
+    font-size: 14px;
+    min-height: 60px;
+    padding: 15px 0;
   }
 }
 
@@ -916,5 +1040,9 @@ export default {
 
 ::v-deep .el-input-group__prepend {
   background-color: #fff;
+}
+
+::v-deep .notification-detail-dialog .el-dialog__body {
+  padding-top: 10px;
 }
 </style>
