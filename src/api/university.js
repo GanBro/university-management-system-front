@@ -13,7 +13,8 @@ export function getUniversityList(params) {
 export function getUniversityDetail(id) {
   return request({
     url: `/universities/${id}`,
-    method: 'get'
+    method: 'get',
+    timeout: 15000
   })
 }
 

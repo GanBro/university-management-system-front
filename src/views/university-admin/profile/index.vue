@@ -7,7 +7,16 @@
         <el-button style="float: right;" type="primary" @click="handleSave" :loading="saveLoading">保存修改</el-button>
       </div>
 
+      <!-- 无数据时显示提示 -->
+      <div v-if="noDataFound" class="no-data-container">
+        <i class="el-icon-warning-outline warning-icon"></i>
+        <h3>{{ errorTitle }}</h3>
+        <p>{{ errorMessage }}</p>
+        <el-button type="primary" @click="retryFetch" :loading="retryLoading">重新加载</el-button>
+      </div>
+
       <el-form
+        v-else
         ref="universityForm"
         :model="universityForm"
         :rules="rules"
@@ -140,7 +149,7 @@
                 v-model="universityForm.libraryCount"
                 :min="0"
                 :controls-position="'right'"
-                placeholder="请输入藏书量"
+                placeholder="请输入藏书量(万册)"
               />
             </el-form-item>
           </el-col>
@@ -163,6 +172,7 @@
             <markdown-editor
               v-model="universityForm.introduction"
               placeholder="请输入学校简介..."
+              :key="`editor-intro-${rerenderKey}`"
             />
           </el-tab-pane>
 
@@ -170,6 +180,7 @@
             <markdown-editor
               v-model="universityForm.departments"
               placeholder="请输入院系设置信息..."
+              :key="`editor-dept-${rerenderKey}`"
             />
           </el-tab-pane>
 
@@ -177,6 +188,7 @@
             <markdown-editor
               v-model="universityForm.majors"
               placeholder="请输入专业介绍信息..."
+              :key="`editor-major-${rerenderKey}`"
             />
           </el-tab-pane>
 
@@ -184,6 +196,7 @@
             <markdown-editor
               v-model="universityForm.admissionRules"
               placeholder="请输入录取规则..."
+              :key="`editor-rules-${rerenderKey}`"
             />
           </el-tab-pane>
 
@@ -191,6 +204,7 @@
             <markdown-editor
               v-model="universityForm.scholarships"
               placeholder="请输入奖学金设置信息..."
+              :key="`editor-scholar-${rerenderKey}`"
             />
           </el-tab-pane>
 
@@ -198,6 +212,7 @@
             <markdown-editor
               v-model="universityForm.accommodation"
               placeholder="请输入食宿条件信息..."
+              :key="`editor-accom-${rerenderKey}`"
             />
           </el-tab-pane>
 
@@ -205,6 +220,7 @@
             <markdown-editor
               v-model="universityForm.contactInfo"
               placeholder="请输入联系方式信息..."
+              :key="`editor-contact-${rerenderKey}`"
             />
           </el-tab-pane>
         </el-tabs>
@@ -232,8 +248,10 @@
 </template>
 
 <script>
-import { getUniversityDetail, updateUniversity } from '@/api/university'
 import MarkdownEditor from '@/components/Markdown/editor/index.vue'
+import { mapState } from 'vuex'
+import { getUserDetail } from '@/api/user'
+import { getUniversityDetail, updateUniversity } from '@/api/university'
 
 export default {
   name: 'UniversityAdminProfile',
@@ -243,10 +261,16 @@ export default {
   data() {
     return {
       loading: false,
+      retryLoading: false,
       saveLoading: false,
       saveSuccessDialogVisible: false,
       activeTab: 'introduction',
-      universityId: 1, // 假设当前管理员所属的高校 ID 为 1
+      universityId: null,
+      noDataFound: false,
+      errorTitle: '无法加载学校数据',
+      errorMessage: '请检查网络连接并稍后重试',
+      fetchAttempts: 0,
+      rerenderKey: 0, // 用于强制重新渲染编辑器组件
       universityForm: {
         name: '',
         province: '',
@@ -273,7 +297,8 @@ export default {
       typeOptions: ['公立', '私立'],
       levelOptions: ['双一流', '985', '211', '普通高校'],
       provinceOptions: [
-        '北京市', '上海市', '天津市', '重庆市', '河北省', '江苏省', '浙江省', '山东省'
+        '北京市', '上海市', '天津市', '重庆市', '河北省', '江苏省', '浙江省', '山东省',
+        '广东省', '湖北省', '湖南省', '四川省', '陕西省', '辽宁省', '江西省', '安徽省'
       ],
       rules: {
         contactNumber: [
@@ -294,32 +319,158 @@ export default {
       }
     }
   },
+  computed: {
+    ...mapState({
+      userId: state => state.user.userId
+    })
+  },
   created() {
-    this.fetchUniversityDetail()
+    this.getAdminUniversityId()
   },
   methods: {
-    async fetchUniversityDetail() {
+    // 获取管理员关联的大学ID
+    async getAdminUniversityId() {
       this.loading = true
+      this.noDataFound = false
+
       try {
-        // 实际项目中应该从用户状态或系统配置中获取当前管理员所属的大学 ID
-        const { data } = await getUniversityDetail(this.universityId)
-        this.universityForm = {
-          ...this.universityForm,
-          ...data
+        if (!this.userId) {
+          this.errorTitle = '未获取到用户信息'
+          this.errorMessage = '请重新登录系统后再试'
+          this.$message.error(this.errorTitle)
+          this.noDataFound = true
+          this.loading = false
+          return
+        }
+
+        console.log('正在获取管理员信息, userId:', this.userId)
+
+        // 获取当前用户详情，包含关联的大学ID
+        const response = await getUserDetail(this.userId)
+        const userData = response.data
+
+        if (userData && userData.universityId) {
+          this.universityId = userData.universityId
+          console.log('已获取管理员关联的大学ID:', this.universityId)
+          await this.fetchUniversityDetail()
+        } else {
+          this.errorTitle = '未找到关联的大学信息'
+          this.errorMessage = '当前账号未关联到任何高校，请联系系统管理员'
+          this.$message.error(this.errorTitle)
+          this.noDataFound = true
+          this.loading = false
+        }
+      } catch (error) {
+        console.error('获取管理员所属大学失败:', error)
+        this.errorTitle = '获取管理员信息失败'
+        this.errorMessage = '无法获取当前账号关联的高校信息，请稍后再试'
+        this.$message.error(this.errorTitle)
+        this.noDataFound = true
+        this.loading = false
+      }
+    },
+
+    async fetchUniversityDetail() {
+      if (!this.universityId) {
+        this.errorTitle = '未找到关联的大学ID'
+        this.errorMessage = '请联系系统管理员配置账号关联的高校'
+        this.$message.error(this.errorTitle)
+        this.noDataFound = true
+        this.loading = false
+        return
+      }
+
+      this.fetchAttempts++
+
+      try {
+        console.log(`正在获取大学信息 (尝试 ${this.fetchAttempts}/3), ID:`, this.universityId)
+
+        // 使用API函数获取大学详情
+        const response = await getUniversityDetail(this.universityId)
+
+        if (response && response.data) {
+          console.log('成功获取大学详情:', response.data.name)
+
+          // 更新表单数据
+          this.universityForm = {
+            ...this.universityForm,
+            ...response.data
+          }
+
+          // 确保数字类型字段正确
+          this.universityForm.studentCount = parseInt(this.universityForm.studentCount) || 0
+          this.universityForm.teacherCount = parseInt(this.universityForm.teacherCount) || 0
+          this.universityForm.libraryCount = parseInt(this.universityForm.libraryCount) || 0
+          this.universityForm.campusArea = parseFloat(this.universityForm.campusArea) || 0
+
+          // 重新渲染编辑器组件
+          this.rerenderKey++
+
+          this.noDataFound = false
+        } else {
+          this.errorTitle = '获取数据格式不正确'
+          this.errorMessage = '服务器返回的数据格式有误，请联系技术支持'
+          this.noDataFound = true
         }
       } catch (error) {
         console.error('获取学校详情失败:', error)
-        this.$message.error('获取学校信息失败')
+
+        // 根据错误类型提供更具体的错误信息
+        this.errorTitle = '获取学校信息失败'
+
+        if (error.message && error.message.includes('timeout')) {
+          this.errorMessage = '请求超时，服务器响应时间过长，请检查网络连接'
+        } else if (error.response) {
+          this.errorMessage = `服务器错误 (${error.response.status})，请稍后再试`
+        } else {
+          this.errorMessage = '网络错误，无法连接到服务器，请检查网络连接'
+        }
+
+        this.$message.error(this.errorTitle)
+        this.noDataFound = true
       } finally {
         this.loading = false
       }
     },
+
+    // 重试加载数据
+    retryFetch() {
+      this.retryLoading = true
+
+      if (this.fetchAttempts > 2) {
+        this.$confirm('多次重试仍无法加载数据，是否继续尝试?', '警告', {
+          confirmButtonText: '继续尝试',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          // 重置计数器
+          this.fetchAttempts = 0
+          this.loading = true
+          this.fetchUniversityDetail().finally(() => {
+            this.retryLoading = false
+          })
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消重试'
+          })
+          this.retryLoading = false
+        })
+      } else {
+        this.loading = true
+        this.fetchUniversityDetail().finally(() => {
+          this.retryLoading = false
+        })
+      }
+    },
+
     async handleSave() {
       try {
+        // 表单验证
         await this.$refs.universityForm.validate()
         this.saveLoading = true
 
-        // 准备提交的数据
+        // 准备提交的数据，过滤空值
         const submitForm = {
           ...this.universityForm,
           // 处理可能为空字符串的字段
@@ -332,17 +483,24 @@ export default {
           contactInfo: this.universityForm.contactInfo || null
         }
 
-        // 实际项目中这里应调用API进行保存
-        // await updateUniversity(this.universityId, submitForm)
+        console.log('保存学校信息:', submitForm.name)
 
-        // 模拟API调用延迟
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // 调用API进行保存
+        await updateUniversity(this.universityId, submitForm)
 
         // 显示保存成功提示
         this.saveSuccessDialogVisible = true
       } catch (error) {
         console.error('保存失败:', error)
-        this.$message.error('保存失败：' + (error.message || '未知错误'))
+
+        let errorMsg = '未知错误'
+        if (error.message) {
+          errorMsg = error.message
+        } else if (error.response && error.response.data) {
+          errorMsg = error.response.data.message || '服务器错误'
+        }
+
+        this.$message.error('保存失败：' + errorMsg)
       } finally {
         this.saveLoading = false
       }
@@ -387,6 +545,33 @@ export default {
 
   p {
     font-size: 16px;
+  }
+}
+
+.no-data-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  text-align: center;
+
+  .warning-icon {
+    font-size: 64px;
+    color: #E6A23C;
+    margin-bottom: 20px;
+  }
+
+  h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  p {
+    font-size: 14px;
+    color: #909399;
+    margin-bottom: 20px;
+    max-width: 400px;
   }
 }
 </style>
