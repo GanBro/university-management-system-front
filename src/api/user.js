@@ -169,3 +169,11 @@ export function getFollowedUniversities(userId) {
     method: 'get'
   })
 }
+
+export function searchUsers(params) {
+  return request({
+    url: '/users',
+    method: 'get',
+    params
+  })
+}

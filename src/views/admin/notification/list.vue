@@ -14,7 +14,6 @@
       <el-form :inline="true" :model="listQuery" class="filter-container" @submit.native.prevent>
         <el-form-item label="通知类型">
           <el-select v-model="listQuery.type" placeholder="全部" clearable @change="handleFilter">
-            <el-option label="系统通知" value="system" />
             <el-option label="用户通知" value="user" />
             <el-option label="广播通知" value="broadcast" />
           </el-select>
@@ -110,7 +109,6 @@ export default {
         status: undefined
       },
       typeMap: {
-        'system': '系统通知',
         'user': '用户通知',
         'broadcast': '广播通知'
       },
@@ -126,6 +124,10 @@ export default {
   },
   methods: {
     formatType(type) {
+      // 如果是系统通知，转为广播通知
+      if (type === 'system') {
+        return '广播通知'
+      }
       return this.typeMap[type] || type
     },
     formatStatus(status) {
@@ -155,8 +157,12 @@ export default {
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     },
     getNotificationTypeTag(type) {
+      // 如果是系统通知，处理为广播通知
+      if (type === 'system') {
+        return 'warning' // 广播通知的标签
+      }
+
       const typeTagMap = {
-        'system': 'primary',
         'user': 'success',
         'broadcast': 'warning'
       }

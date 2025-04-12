@@ -28,7 +28,6 @@
 
         <el-form-item label="通知类型" prop="type">
           <el-select v-model="form.type" placeholder="请选择通知类型" style="width: 100%">
-            <el-option label="系统通知" value="system" />
             <el-option label="用户通知" value="user" />
             <el-option label="广播通知" value="broadcast" />
           </el-select>
@@ -80,14 +79,6 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="通知状态" prop="status">
-          <el-select v-model="form.status" placeholder="请选择通知状态" style="width: 100%">
-            <el-option label="草稿" value="draft" />
-            <el-option label="已发布" value="published" />
-            <el-option label="已归档" value="archived" />
-          </el-select>
-        </el-form-item>
-
         <el-form-item>
           <el-button type="primary" @click="submitForm">保存</el-button>
           <el-button v-if="form.status === 'draft'" type="success" @click="publishNotification">保存并发布</el-button>
@@ -110,7 +101,7 @@ export default {
       form: {
         title: '',
         content: '',
-        type: 'system', // 默认系统通知
+        type: 'broadcast', // 默认广播通知
         status: 'draft', // 默认为草稿
         priority: 0, // 默认普通优先级
         targetType: 'all', // 默认所有用户
@@ -122,7 +113,6 @@ export default {
         title: [{ required: true, message: '请输入通知标题', trigger: 'blur' }],
         content: [{ required: true, message: '请输入通知内容', trigger: 'blur' }],
         type: [{ required: true, message: '请选择通知类型', trigger: 'change' }],
-        status: [{ required: true, message: '请选择通知状态', trigger: 'change' }],
         targetType: [{ required: true, message: '请选择目标用户类型', trigger: 'change' }],
         selectedRoles: [{
           required: true,
@@ -163,6 +153,11 @@ export default {
         const response = await getNotificationDetail(this.$route.params.id)
         if (response.code === 200) {
           const data = response.data
+          // 如果是系统通知类型，修改为广播通知
+          if (data.type === 'system') {
+            data.type = 'broadcast'
+          }
+
           this.form = {
             ...data,
             selectedRoles: [],
@@ -213,9 +208,9 @@ export default {
       if (query !== '') {
         this.userSearchLoading = true
         try {
-          const response = await searchUsers({ keyword: query, limit: 20 })
-          if (response.code === 200) {
-            this.userOptions = response.data || []
+          const response = await searchUsers({ username: query, limit: 20 })
+          if (response.code === 200 && response.data && response.data.records) {
+            this.userOptions = response.data.records || []
           }
         } catch (error) {
           console.error('搜索用户失败:', error)
