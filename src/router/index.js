@@ -297,6 +297,12 @@ export const constantRoutes = [
         component: () => import('@/views/admin/notification/form'),
         meta: { title: '编辑通知', noCache: true, roles: ['admin'] },
         hidden: true
+      },
+      {
+        path: 'archive',
+        name: 'NotificationArchive',
+        component: () => import('@/views/admin/notification/archive'),
+        meta: { title: '归档通知', roles: ['admin'] }
       }
     ]
   },

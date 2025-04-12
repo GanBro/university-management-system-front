@@ -57,12 +57,20 @@ const notificationAPI = {
     })
   },
 
-  // 用户端API - 修改：显式传入userId参数
+  // 从归档中恢复通知
+  restore(id) {
+    return request({
+      url: `/notifications/${id}/restore`,
+      method: 'post'
+    })
+  },
+
+  // 用户端API
   getUserNotifications(userId) {
     return request({
       url: '/notifications/user/notifications',
       method: 'get',
-      params: { userId }  // 显式传入userId
+      params: { userId }
     })
   },
 
@@ -71,7 +79,7 @@ const notificationAPI = {
     return request({
       url: '/notifications/user/notifications',
       method: 'get',
-      params: { ...params, userId, pageable: true }  // 确保userId存在
+      params: { ...params, userId, pageable: true }
     })
   },
 
@@ -79,7 +87,7 @@ const notificationAPI = {
     return request({
       url: `/notifications/user/notifications/${notificationId}/read`,
       method: 'put',
-      params: { userId }  // 显式传入userId
+      params: { userId }
     })
   },
 
@@ -87,7 +95,7 @@ const notificationAPI = {
     return request({
       url: '/notifications/user/notifications/read-all',
       method: 'put',
-      params: { userId }  // 显式传入userId
+      params: { userId }
     })
   },
 
@@ -95,7 +103,7 @@ const notificationAPI = {
     return request({
       url: '/notifications/user/notifications/unread-count',
       method: 'get',
-      params: { userId }  // 显式传入userId
+      params: { userId }
     })
   }
 }
@@ -112,6 +120,7 @@ export const markAllNotificationsAsRead = notificationAPI.markAllAsRead
 export const getUnreadCount = notificationAPI.getUnreadCount
 export const publishNotification = notificationAPI.publish
 export const archiveNotification = notificationAPI.archive
+export const restoreNotification = notificationAPI.restore
 
 // 导出整个API对象
 export default notificationAPI

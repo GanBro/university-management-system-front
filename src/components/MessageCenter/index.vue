@@ -100,7 +100,8 @@ export default {
       currentPage: 1,
       pageSize: 10,
       notificationDetailVisible: false,
-      currentNotification: null
+      currentNotification: null,
+      pollingTimer: null
     }
   },
   computed: {
@@ -110,18 +111,53 @@ export default {
   },
   created() {
     this.getUnreadCount()
-
-    // 定时刷新未读数
-    this.timer = setInterval(() => {
-      this.getUnreadCount()
-    }, 60000) // 每分钟刷新一次
+    this.startPolling()
   },
   beforeDestroy() {
-    if (this.timer) {
-      clearInterval(this.timer)
-    }
+    this.stopPolling()
   },
   methods: {
+    // 启动轮询
+    startPolling() {
+      // 每60秒轮询一次
+      this.pollingTimer = setInterval(() => {
+        this.checkForNewNotifications()
+      }, 60000)
+    },
+
+    // 停止轮询
+    stopPolling() {
+      if (this.pollingTimer) {
+        clearInterval(this.pollingTimer)
+        this.pollingTimer = null
+      }
+    },
+
+    // 检查新通知
+    async checkForNewNotifications() {
+      if (!this.userId) return
+
+      try {
+        const res = await getUnreadCount({ userId: this.userId })
+        if (res && res.code === 200) {
+          // 只有当未读数发生变化时才更新
+          if (this.unreadCount !== res.data) {
+            this.unreadCount = res.data
+            // 更新store中的未读状态
+            this.$store.commit('notification/SET_UNREAD_COUNT', res.data)
+
+            // 如果弹出框是打开的，重新加载通知列表
+            const popover = this.$el.querySelector('.el-popover')
+            if (popover && window.getComputedStyle(popover).display !== 'none') {
+              this.loadNotifications()
+            }
+          }
+        }
+      } catch (error) {
+        console.error('检查新通知失败:', error)
+      }
+    },
+
     // 点击通知图标
     clickNotificationIcon() {
       // 当点击图标时的处理逻辑

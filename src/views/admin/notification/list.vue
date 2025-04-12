@@ -4,7 +4,10 @@
     <el-card>
       <div slot="header" class="clearfix">
         <span>通知列表</span>
-        <el-button style="float: right;" type="primary" @click="handleCreate">发布新通知</el-button>
+        <div class="header-buttons">
+          <el-button style="margin-left: 10px;" type="info" @click="goToArchive">归档管理</el-button>
+          <el-button type="primary" @click="handleCreate">发布新通知</el-button>
+        </div>
       </div>
 
       <!-- 搜索筛选 -->
@@ -276,6 +279,9 @@ export default {
           this.$message.error(error.message || '归档失败')
         }
       }
+    },
+    goToArchive() {
+      this.$router.push('/notification/archive')
     }
   }
 }
@@ -284,5 +290,10 @@ export default {
 <style lang="scss" scoped>
 .filter-container {
   padding-bottom: 20px;
+}
+
+.header-buttons {
+  float: right;
+  display: flex;
 }
 </style>

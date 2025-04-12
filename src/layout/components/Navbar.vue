@@ -5,20 +5,13 @@
     <breadcrumb class="breadcrumb-container" />
 
     <div class="right-menu">
-      <!--todo: 通知功能高校管理员失效-->
-      <!-- 添加通知图标 -->
-      <div class="notification-container right-menu-item hover-effect" @click="goToNotifications">
-        <el-badge :value="unreadNotificationCount" :hidden="!hasUnreadNotifications" class="notification-badge">
-          <i class="el-icon-bell"></i>
-        </el-badge>
-      </div>
-
       <el-dropdown class="avatar-container" trigger="click">
         <div class="avatar-wrapper">
           <img :src="avatar" class="user-avatar">
           <i class="el-icon-caret-bottom" />
         </div>
         <el-dropdown-menu slot="dropdown" class="user-dropdown">
+          <!-- 使用点击事件代替router-link -->
           <el-dropdown-item @click.native="goToSettings">
             <i class="el-icon-setting"></i>
             设置
@@ -50,26 +43,10 @@ export default {
     ...mapGetters([
       'sidebar',
       'avatar',
-      'role',
-      'unreadNotificationCount',
-      'hasUnreadNotifications',
-      'userId'
+      'role'
     ])
   },
-  mounted() {
-    // 加载通知数据
-    this.fetchNotifications()
-  },
   methods: {
-    async fetchNotifications() {
-      if (this.userId) {
-        try {
-          await this.$store.dispatch('notification/getUnreadCount')
-        } catch (error) {
-          console.error('获取通知状态失败:', error)
-        }
-      }
-    },
     toggleSideBar() {
       this.$store.dispatch('app/toggleSideBar')
     },
@@ -94,16 +71,6 @@ export default {
         this.$router.push('/settings');
       } catch (err) {
         console.error('导航到设置页面出错:', err);
-      }
-    },
-    goToNotifications() {
-      // 根据角色导航到合适的通知页面
-      if (this.role === 'user') {
-        this.$router.push('/user/profile?tab=notifications');
-      } else if (this.role === 'admin') {
-        this.$router.push('/notification/list');
-      } else if (this.role === 'university_admin') {
-        this.$router.push('/university-admin/profile?tab=notifications');
       }
     },
     async logout() {
@@ -163,19 +130,6 @@ export default {
         &:hover {
           background: rgba(0, 0, 0, .025)
         }
-      }
-    }
-
-    .notification-container {
-      position: relative;
-      margin-right: 15px;
-
-      .notification-badge {
-        line-height: normal;
-      }
-
-      .el-icon-bell {
-        font-size: 20px;
       }
     }
 
