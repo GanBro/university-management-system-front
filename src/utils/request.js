@@ -14,7 +14,9 @@ const service = axios.create({
 service.interceptors.request.use(
   config => {
     if (store.getters.token) {
+      // 添加两种header格式的token，确保兼容性
       config.headers['X-Token'] = getToken()
+      config.headers['token'] = getToken()
     }
     return config
   },
@@ -72,7 +74,7 @@ service.interceptors.response.use(
         type: 'error',
         duration: 5 * 1000
       })
-      
+
       // 处理token过期的情况
       if (res.code === 401 || res.code === 403) {
         // 可以在这里调用登出方法
@@ -80,7 +82,7 @@ service.interceptors.response.use(
           location.reload()
         })
       }
-      
+
       return Promise.reject(new Error(res.message || 'Error'))
     } else {
       return res
@@ -89,11 +91,11 @@ service.interceptors.response.use(
   error => {
     // 处理网络错误、超时等情况
     let errorMsg = error.message || '请求失败'
-    
+
     if (error.code === 'ECONNABORTED' && error.message.indexOf('timeout') !== -1) {
       errorMsg = '请求超时'
     }
-    
+
     // 处理文件下载失败的情况
     if (error.config && error.config.responseType === 'blob') {
       errorMsg = '文件导出失败：' + errorMsg

@@ -10,6 +10,8 @@ const getters = {
   listLoading: state => state.university.listLoading,
   detailLoading: state => state.university.detailLoading,
   userId: state => state.user.userId,
-  role: state => state.user.role
+  role: state => state.user.role,
+  unreadNotificationCount: state => state.notification.unreadCount,
+  hasUnreadNotifications: state => state.notification.hasUnreadNotifications
 }
 export default getters

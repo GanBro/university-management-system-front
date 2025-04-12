@@ -450,15 +450,23 @@ export default {
       try {
         this.notificationLoading = true;
         const userId = this.$store.getters.userId;
+
+        // 确保userId存在
+        if (!userId) {
+          console.error('获取通知失败: 未找到用户ID');
+          this.$message.error('获取通知失败: 请先登录');
+          return;
+        }
+
         const res = await getUserNotifications(userId);
 
         if (res.code === 200) {
           this.allNotifications = res.data || [];
           this.unreadNotifications = this.allNotifications.filter(item => item.status === 'unread');
 
-          // Update unread count in the store if needed
+          // 更新store中的未读状态
           if (this.$store.getters.hasUnreadNotifications !== (this.unreadNotifications.length > 0)) {
-            this.$store.commit('SET_HAS_UNREAD_NOTIFICATIONS', this.unreadNotifications.length > 0);
+            this.$store.commit('notification/SET_HAS_UNREAD_NOTIFICATIONS', this.unreadNotifications.length > 0);
           }
         } else {
           throw new Error(res.message || '获取通知失败');
@@ -531,23 +539,29 @@ export default {
       if (notification.status === 'unread') {
         try {
           const userId = this.$store.getters.userId;
+
+          // 确保userId存在
+          if (!userId) {
+            throw new Error('未找到用户ID');
+          }
+
           const res = await markNotificationAsRead(notification.id, userId);
 
           if (res.code === 200) {
-            // Update notification status in our local arrays
+            // 更新本地通知状态
             notification.status = 'read';
             this.unreadNotifications = this.allNotifications.filter(item => item.status === 'unread');
 
-            // Update unread status in the store if needed
+            // 更新store中的未读状态
             if (this.unreadNotifications.length === 0) {
-              this.$store.commit('SET_HAS_UNREAD_NOTIFICATIONS', false);
+              this.$store.commit('notification/SET_HAS_UNREAD_NOTIFICATIONS', false);
             }
           } else {
             throw new Error(res.message || '标记已读失败');
           }
         } catch (error) {
           console.error('标记通知已读失败:', error);
-          // Continue showing the notification even if marking as read fails
+          // 即使标记失败，仍然显示通知详情
         }
       }
     },
@@ -555,17 +569,23 @@ export default {
     async markAllAsRead() {
       try {
         const userId = this.$store.getters.userId;
+
+        // 确保userId存在
+        if (!userId) {
+          throw new Error('未找到用户ID');
+        }
+
         const res = await markAllNotificationsAsRead(userId);
 
         if (res.code === 200) {
-          // Update all notifications to read status
+          // 更新所有通知为已读状态
           this.allNotifications.forEach(notification => {
             notification.status = 'read';
           });
           this.unreadNotifications = [];
 
-          // Update store
-          this.$store.commit('SET_HAS_UNREAD_NOTIFICATIONS', false);
+          // 更新store
+          this.$store.commit('notification/SET_HAS_UNREAD_NOTIFICATIONS', false);
 
           this.$message.success('已全部标记为已读');
         } else {

@@ -8,6 +8,7 @@ import dashboard from './modules/dashboard'
 import university from '@/store/modules/university'
 import upload from '@/store/modules/upload'
 import interaction from '@/store/modules/interaction'
+import notification from '@/api/notification'
 
 Vue.use(Vuex)
 
@@ -19,7 +20,8 @@ const store = new Vuex.Store({
     dashboard,
     university,
     upload,
-    interaction
+    interaction,
+    notification
   },
   getters
 })
