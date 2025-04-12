@@ -1,4 +1,3 @@
-// src/views/news/list.vue
 <template>
   <div class="app-container">
     <div class="filter-container">
@@ -100,59 +99,18 @@
       :limit.sync="listQuery.limit"
       @pagination="getList"
     />
-
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-      <el-form
-        ref="dataForm"
-        :rules="rules"
-        :model="temp"
-        label-position="left"
-        label-width="70px"
-        style="width: 400px; margin-left:50px;"
-      >
-        <el-form-item label="标题" prop="title">
-          <el-input v-model="temp.title" />
-        </el-form-item>
-        <el-form-item label="关联学校" prop="universityId">
-          <el-select v-model="temp.universityId" placeholder="请选择关联学校" clearable style="width: 100%">
-            <el-option
-              v-for="item in universities"
-              :key="item.id"
-              :label="item.name"
-              :value="item.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="类型" prop="type">
-          <el-select v-model="temp.type" class="filter-item">
-            <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="内容" prop="content">
-          <markdown-editor v-model="temp.content" />
-        </el-form-item>
-        <el-form-item label="作者" prop="author">
-          <el-input v-model="temp.author" />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="dialogFormVisible = false">取消</el-button>
-        <el-button type="primary" @click="dialogStatus === 'create' ? createData() : updateData()">确认</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getNewsList, createNews, updateNews, deleteNews, publishNews } from '@/api/news'
+import { getNewsList, deleteNews, publishNews } from '@/api/news'
 import { getUniversityList } from '@/api/university'
 import waves from '@/directive/waves'
 import Pagination from '@/components/Pagination/index.vue'
-import MarkdownEditor from '@/components/Markdown/editor/index.vue'
 
 export default {
   name: 'NewsList',
-  components: { Pagination, MarkdownEditor },
+  components: { Pagination },
   directives: { waves },
   filters: {
     typeFilter(type) {
@@ -214,29 +172,7 @@ export default {
         { label: '草稿', value: 0 },
         { label: '已发布', value: 1 }
       ],
-      temp: {
-        id: undefined,
-        title: '',
-        content: '',
-        type: 'news',
-        status: 0,
-        author: '',
-        universityId: undefined
-      },
-      universities: [],
-      dialogFormVisible: false,
-      dialogStatus: '',
-      textMap: {
-        update: '编辑',
-        create: '新增'
-      },
-      rules: {
-        title: [{ required: true, message: '标题不能为空', trigger: 'blur' }],
-        type: [{ required: true, message: '请选择类型', trigger: 'change' }],
-        content: [{ required: true, message: '内容不能为空', trigger: 'blur' }],
-        author: [{ required: true, message: '作者不能为空', trigger: 'blur' }],
-        universityId: [{ required: true, message: '请选择关联学校', trigger: 'change' }]
-      }
+      universities: []
     }
   },
   created() {
@@ -258,71 +194,11 @@ export default {
       this.listQuery.page = 1
       this.getList()
     },
-    resetTemp() {
-      this.temp = {
-        id: undefined,
-        title: '',
-        content: '',
-        type: 'news',
-        status: 0,
-        author: '',
-        universityId: undefined
-      }
-    },
     handleCreate() {
-      this.resetTemp()
-      this.dialogStatus = 'create'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
+      this.$router.push('/news/create')
     },
     handleUpdate(row) {
-      this.temp = Object.assign({}, row)
-      this.dialogStatus = 'update'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
-      })
-    },
-    async createData() {
-      this.$refs['dataForm'].validate(async (valid) => {
-        if (valid) {
-          try {
-            await createNews(this.temp)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: '成功',
-              message: '创建成功',
-              type: 'success',
-              duration: 2000
-            })
-            this.getList()
-          } catch (error) {
-            console.error('创建失败:', error)
-          }
-        }
-      })
-    },
-    async updateData() {
-      this.$refs['dataForm'].validate(async (valid) => {
-        if (valid) {
-          const tempData = Object.assign({}, this.temp)
-          try {
-            await updateNews(tempData.id, tempData)
-            this.dialogFormVisible = false
-            this.$notify({
-              title: '成功',
-              message: '更新成功',
-              type: 'success',
-              duration: 2000
-            })
-            this.getList()
-          } catch (error) {
-            console.error('更新失败:', error)
-          }
-        }
-      })
+      this.$router.push(`/news/edit/${row.id}`)
     },
     async handleDelete(row) {
       this.$confirm('确认删除?', '提示', {

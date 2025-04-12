@@ -1,4 +1,4 @@
-// src/views/news/form.vue
+// src/views/admin/news/form.vue
 <template>
   <div class="app-container">
     <el-card v-loading="loading">
@@ -38,6 +38,23 @@
           </el-select>
         </el-form-item>
 
+        <!-- 作者字段 - 无论创建还是编辑都完全一致 -->
+        <el-form-item label="作者" prop="author">
+          <el-input
+            v-model="formData.author"
+            placeholder="请输入作者，不填则使用当前用户名"
+          >
+            <template slot="append">
+              <el-button @click="useCurrentUser">使用当前用户</el-button>
+            </template>
+            <template slot="suffix">
+              <el-tooltip content="不填写时将自动使用当前用户名" placement="top">
+                <i class="el-icon-info" style="color: #909399;"></i>
+              </el-tooltip>
+            </template>
+          </el-input>
+        </el-form-item>
+
         <el-form-item label="内容" prop="content">
           <markdown-editor v-model="formData.content" height="400px" />
         </el-form-item>
@@ -69,6 +86,7 @@ export default {
       loading: false,
       submitLoading: false,
       universities: [], // 学校列表
+      currentUsername: '', // 保存当前用户名
       formData: {
         title: '',
         type: 'news',
@@ -93,67 +111,101 @@ export default {
     }
   },
   async created() {
-    // 获取学校列表
-    try {
-      const { data } = await getUniversityList({ limit: 1000 })
-      this.universities = data.records || []
-    } catch (error) {
-      console.error('Failed to get universities:', error)
-      this.$message.error('获取学校列表失败')
-    }
+    // 获取当前用户信息
+    this.getCurrentUsername();
 
-    // 获取详情（如果是编辑模式）
-    const id = this.$route.params.id
+    // 获取学校列表
+    await this.fetchUniversities();
+
+    // 判断是否为编辑模式
+    const id = this.$route.params.id;
     if (id && !isNaN(parseInt(id))) {
-      this.isEdit = true
-      this.getDetail(parseInt(id))
+      this.isEdit = true;
+      await this.getDetail(parseInt(id));
+    } else {
+      // 只在创建模式下默认填充当前用户名
+      this.formData.author = this.currentUsername;
     }
   },
   methods: {
-    async getDetail(id) {
-      if (!id) return
-
-      this.loading = true
+    // 获取当前用户名
+    getCurrentUsername() {
       try {
-        const { data } = await getNewsDetail(id)
+        const userInfo = this.$store.getters.userInfo;
+        if (userInfo && userInfo.username) {
+          this.currentUsername = userInfo.username;
+        }
+      } catch (error) {
+        console.error('获取当前用户信息失败:', error);
+      }
+    },
+
+    // 使用当前用户名填充作者字段
+    useCurrentUser() {
+      this.formData.author = this.currentUsername;
+    },
+
+    async fetchUniversities() {
+      try {
+        const { data } = await getUniversityList({ limit: 1000 });
+        this.universities = data.records || [];
+      } catch (error) {
+        console.error('获取学校列表失败:', error);
+        this.$message.error('获取学校列表失败');
+      }
+    },
+
+    async getDetail(id) {
+      if (!id) return;
+
+      this.loading = true;
+      try {
+        const { data } = await getNewsDetail(id);
         this.formData = {
           ...this.formData,
           ...data
-        }
+        };
       } catch (error) {
-        console.error('Failed to get news detail:', error)
-        this.$message.error('获取信息失败')
+        console.error('获取信息详情失败:', error);
+        this.$message.error('获取信息详情失败');
       } finally {
-        this.loading = false
+        this.loading = false;
       }
     },
+
     async submitForm() {
       try {
-        await this.$refs.form.validate()
-        this.submitLoading = true
+        // 表单验证
+        await this.$refs.form.validate();
 
-        // 设置作者（从用户信息中获取）
-        const userInfo = this.$store.getters.userInfo
-        this.formData.author = userInfo ? userInfo.username : '未知用户'
+        this.submitLoading = true;
 
-        const id = this.$route.params.id
-        if (this.isEdit && id) {
-          await updateNews(id, this.formData)
-          this.$message.success('更新成功')
-        } else {
-          await createNews(this.formData)
-          this.$message.success('发布成功')
+        // 如果没有填写作者，使用当前用户名
+        if (!this.formData.author) {
+          this.formData.author = this.currentUsername || '未知用户';
         }
-        this.$router.push('/news/list')
+
+        // 根据是否编辑模式选择不同的API
+        if (this.isEdit) {
+          await updateNews(this.$route.params.id, this.formData);
+          this.$message.success('更新成功');
+        } else {
+          await createNews(this.formData);
+          this.$message.success('发布成功');
+        }
+
+        // 返回列表页
+        this.$router.push('/news/list');
       } catch (error) {
-        console.error('Failed to submit form:', error)
-        this.$message.error(error.message || '提交失败')
+        console.error('提交表单失败:', error);
+        this.$message.error(error.message || '提交失败');
       } finally {
-        this.submitLoading = false
+        this.submitLoading = false;
       }
     },
+
     cancel() {
-      this.$router.push('/news/list')
+      this.$router.push('/news/list');
     }
   }
 }
