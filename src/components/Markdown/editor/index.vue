@@ -1,3 +1,4 @@
+// src/components/Markdown/editor/index.vue
 <template>
   <div class="markdown-editor">
     <div :id="id" ref="editorEl"></div>
@@ -8,6 +9,7 @@
 import '@toast-ui/editor/dist/toastui-editor.css'
 import { Editor } from '@toast-ui/editor'
 import { uploadFile } from '@/api/upload'
+import defaultOptions from './default-options'
 
 export default {
   name: 'MarkdownEditor',
@@ -36,45 +38,7 @@ export default {
       editor: null,
       currentContent: '',
       isInitialized: false,
-      isDestroying: false,
-      editorOptions: {
-        el: null,
-        height: this.height,
-        initialEditType: 'markdown',
-        previewStyle: 'vertical',
-        placeholder: this.placeholder,
-        language: 'zh-CN',
-        autofocus: false,
-        initialValue: this.value || '',
-        toolbarItems: [
-          ['heading', 'bold', 'italic', 'strike'],
-          ['hr', 'quote'],
-          ['ul', 'ol', 'task'],
-          ['table', 'image', 'link'],
-          ['code', 'codeblock'],
-          ['scrollSync']
-        ],
-        hooks: {
-          addImageBlobHook: async(blob, callback) => {
-            try {
-              const url = await this.handleImageUpload(blob)
-              if (url) {
-                callback(url, blob.name)
-              }
-            } catch (error) {
-              console.error('图片处理失败:', error)
-            }
-          }
-        },
-        events: {
-          focus: () => {
-            this.$emit('focus')
-          },
-          blur: () => {
-            this.$emit('blur')
-          }
-        }
-      }
+      isDestroying: false
     }
   },
   watch: {
@@ -94,9 +58,12 @@ export default {
     }
   },
   mounted() {
-    // 使用nextTick确保DOM已完全渲染
+    // 延迟初始化编辑器，以提高页面整体加载性能
     this.$nextTick(() => {
-      this.initEditor()
+      // 使用requestAnimationFrame进一步优化加载时机
+      window.requestAnimationFrame(() => {
+        this.initEditor()
+      })
     })
   },
   beforeDestroy() {
@@ -124,8 +91,36 @@ export default {
           return
         }
 
-        this.editorOptions.el = el
-        this.editor = new Editor(this.editorOptions)
+        // 合并默认选项和自定义选项
+        const editorOptions = {
+          ...defaultOptions,
+          el,
+          height: this.height,
+          placeholder: this.placeholder,
+          initialValue: this.value || '',
+          hooks: {
+            addImageBlobHook: async(blob, callback) => {
+              try {
+                const url = await this.handleImageUpload(blob)
+                if (url) {
+                  callback(url, blob.name)
+                }
+              } catch (error) {
+                console.error('图片处理失败:', error)
+              }
+            }
+          },
+          events: {
+            focus: () => {
+              this.$emit('focus')
+            },
+            blur: () => {
+              this.$emit('blur')
+            }
+          }
+        }
+
+        this.editor = new Editor(editorOptions)
 
         if (this.isDestroying) {
           // 如果在创建过程中触发了销毁，则立即销毁编辑器
@@ -136,24 +131,27 @@ export default {
         // 初始化内容
         this.updateContent(this.value)
 
-        // 绑定更改事件
-        this.editor.on('change', () => {
-          if (this.isDestroying) return
-
-          try {
-            const content = this.editor.getMarkdown()
-            this.currentContent = content
-            this.$emit('input', content)
-            this.$emit('change', content)
-          } catch (error) {
-            console.error('处理编辑器变更事件失败:', error)
-          }
-        })
+        // 绑定更改事件，使用函数引用而非匿名函数，便于后续移除
+        this.editor.on('change', this.handleEditorChange)
 
         this.isInitialized = true
       } catch (error) {
         console.error('初始化编辑器失败:', error)
         this.isInitialized = false
+      }
+    },
+
+    // 编辑器内容变更处理函数
+    handleEditorChange() {
+      if (this.isDestroying) return
+
+      try {
+        const content = this.editor.getMarkdown()
+        this.currentContent = content
+        this.$emit('input', content)
+        this.$emit('change', content)
+      } catch (error) {
+        console.error('处理编辑器变更事件失败:', error)
       }
     },
 
@@ -180,7 +178,7 @@ export default {
       try {
         // 移除事件监听
         try {
-          this.editor.off('change')
+          this.editor.off('change', this.handleEditorChange)
         } catch (e) {
           console.warn('移除事件监听失败:', e)
         }
@@ -250,24 +248,20 @@ export default {
 
           const fullUrl = `${baseUrl}/${imageUrl}`
 
-          console.log('最终图片URL:', fullUrl)
+          // 使用Image对象预加载图片，确保URL有效
+          const preloadImagePromise = new Promise((resolve, reject) => {
+            const img = new Image()
+            img.onload = resolve
+            img.onerror = reject
+            img.src = fullUrl
+            // 设置3秒超时
+            setTimeout(() => reject(new Error('图片加载超时')), 3000)
+          })
 
-          const img = new Image()
-          img.src = fullUrl
+          await preloadImagePromise
 
-          try {
-            await new Promise((resolve, reject) => {
-              img.onload = resolve
-              img.onerror = reject
-              setTimeout(() => reject(new Error('图片加载超时')), 3000)
-            })
-
-            this.$message.success('图片上传成功')
-            return fullUrl
-          } catch (error) {
-            console.error('图片验证失败:', error)
-            throw new Error('图片链接无法访问，请检查网络连接')
-          }
+          this.$message.success('图片上传成功')
+          return fullUrl
         } else {
           throw new Error(response.message || '上传失败')
         }
@@ -285,7 +279,7 @@ export default {
 .markdown-editor {
   width: 100%;
 
-  :deep(.toastui-editor-defaultUI) {
+  ::v-deep(.toastui-editor-defaultUI) {
     border: 1px solid #dcdfe6;
     border-radius: 4px;
 
@@ -319,13 +313,13 @@ export default {
   }
 
   &:hover {
-    :deep(.toastui-editor-defaultUI) {
+    ::v-deep(.toastui-editor-defaultUI) {
       border-color: #c0c4cc;
     }
   }
 
   &:focus-within {
-    :deep(.toastui-editor-defaultUI) {
+    ::v-deep(.toastui-editor-defaultUI) {
       border-color: #409EFF;
     }
   }

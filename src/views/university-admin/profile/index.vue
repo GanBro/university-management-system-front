@@ -170,57 +170,57 @@
         <el-tabs v-model="activeTab" type="border-card" class="markdown-tabs">
           <el-tab-pane label="学校简介" name="introduction">
             <markdown-editor
+              v-if="activeTab === 'introduction'"
               v-model="universityForm.introduction"
               placeholder="请输入学校简介..."
-              :key="`editor-intro-${rerenderKey}`"
             />
           </el-tab-pane>
 
           <el-tab-pane label="院系设置" name="departments">
             <markdown-editor
+              v-if="activeTab === 'departments'"
               v-model="universityForm.departments"
               placeholder="请输入院系设置信息..."
-              :key="`editor-dept-${rerenderKey}`"
             />
           </el-tab-pane>
 
           <el-tab-pane label="专业介绍" name="majors">
             <markdown-editor
+              v-if="activeTab === 'majors'"
               v-model="universityForm.majors"
               placeholder="请输入专业介绍信息..."
-              :key="`editor-major-${rerenderKey}`"
             />
           </el-tab-pane>
 
           <el-tab-pane label="录取规则" name="admissionRules">
             <markdown-editor
+              v-if="activeTab === 'admissionRules'"
               v-model="universityForm.admissionRules"
               placeholder="请输入录取规则..."
-              :key="`editor-rules-${rerenderKey}`"
             />
           </el-tab-pane>
 
           <el-tab-pane label="奖学金设置" name="scholarships">
             <markdown-editor
+              v-if="activeTab === 'scholarships'"
               v-model="universityForm.scholarships"
               placeholder="请输入奖学金设置信息..."
-              :key="`editor-scholar-${rerenderKey}`"
             />
           </el-tab-pane>
 
           <el-tab-pane label="食宿条件" name="accommodation">
             <markdown-editor
+              v-if="activeTab === 'accommodation'"
               v-model="universityForm.accommodation"
               placeholder="请输入食宿条件信息..."
-              :key="`editor-accom-${rerenderKey}`"
             />
           </el-tab-pane>
 
           <el-tab-pane label="联系方式" name="contactInfo">
             <markdown-editor
+              v-if="activeTab === 'contactInfo'"
               v-model="universityForm.contactInfo"
               placeholder="请输入联系方式信息..."
-              :key="`editor-contact-${rerenderKey}`"
             />
           </el-tab-pane>
         </el-tabs>
@@ -252,6 +252,7 @@ import MarkdownEditor from '@/components/Markdown/editor/index.vue'
 import { mapState } from 'vuex'
 import { getUserDetail } from '@/api/user'
 import { getUniversityDetail, updateUniversity } from '@/api/university'
+import { debounce } from 'lodash'
 
 export default {
   name: 'UniversityAdminProfile',
@@ -270,7 +271,6 @@ export default {
       errorTitle: '无法加载学校数据',
       errorMessage: '请检查网络连接并稍后重试',
       fetchAttempts: 0,
-      rerenderKey: 0, // 用于强制重新渲染编辑器组件
       universityForm: {
         name: '',
         province: '',
@@ -326,6 +326,8 @@ export default {
   },
   created() {
     this.getAdminUniversityId()
+    // 使用防抖优化重试功能
+    this.retryFetch = debounce(this._retryFetch, 300)
   },
   methods: {
     // 获取管理员关联的大学ID
@@ -335,15 +337,9 @@ export default {
 
       try {
         if (!this.userId) {
-          this.errorTitle = '未获取到用户信息'
-          this.errorMessage = '请重新登录系统后再试'
-          this.$message.error(this.errorTitle)
-          this.noDataFound = true
-          this.loading = false
+          this.handleError('未获取到用户信息', '请重新登录系统后再试')
           return
         }
-
-        console.log('正在获取管理员信息, userId:', this.userId)
 
         // 获取当前用户详情，包含关联的大学ID
         const response = await getUserDetail(this.userId)
@@ -351,46 +347,38 @@ export default {
 
         if (userData && userData.universityId) {
           this.universityId = userData.universityId
-          console.log('已获取管理员关联的大学ID:', this.universityId)
           await this.fetchUniversityDetail()
         } else {
-          this.errorTitle = '未找到关联的大学信息'
-          this.errorMessage = '当前账号未关联到任何高校，请联系系统管理员'
-          this.$message.error(this.errorTitle)
-          this.noDataFound = true
-          this.loading = false
+          this.handleError('未找到关联的大学信息', '当前账号未关联到任何高校，请联系系统管理员')
         }
       } catch (error) {
         console.error('获取管理员所属大学失败:', error)
-        this.errorTitle = '获取管理员信息失败'
-        this.errorMessage = '无法获取当前账号关联的高校信息，请稍后再试'
-        this.$message.error(this.errorTitle)
-        this.noDataFound = true
-        this.loading = false
+        this.handleError('获取管理员信息失败', '无法获取当前账号关联的高校信息，请稍后再试')
       }
+    },
+
+    // 错误处理统一方法
+    handleError(title, message) {
+      this.errorTitle = title
+      this.errorMessage = message
+      this.$message.error(title)
+      this.noDataFound = true
+      this.loading = false
     },
 
     async fetchUniversityDetail() {
       if (!this.universityId) {
-        this.errorTitle = '未找到关联的大学ID'
-        this.errorMessage = '请联系系统管理员配置账号关联的高校'
-        this.$message.error(this.errorTitle)
-        this.noDataFound = true
-        this.loading = false
+        this.handleError('未找到关联的大学ID', '请联系系统管理员配置账号关联的高校')
         return
       }
 
       this.fetchAttempts++
 
       try {
-        console.log(`正在获取大学信息 (尝试 ${this.fetchAttempts}/3), ID:`, this.universityId)
-
         // 使用API函数获取大学详情
         const response = await getUniversityDetail(this.universityId)
 
         if (response && response.data) {
-          console.log('成功获取大学详情:', response.data.name)
-
           // 更新表单数据
           this.universityForm = {
             ...this.universityForm,
@@ -403,38 +391,30 @@ export default {
           this.universityForm.libraryCount = parseInt(this.universityForm.libraryCount) || 0
           this.universityForm.campusArea = parseFloat(this.universityForm.campusArea) || 0
 
-          // 重新渲染编辑器组件
-          this.rerenderKey++
-
           this.noDataFound = false
         } else {
-          this.errorTitle = '获取数据格式不正确'
-          this.errorMessage = '服务器返回的数据格式有误，请联系技术支持'
-          this.noDataFound = true
+          this.handleError('获取数据格式不正确', '服务器返回的数据格式有误，请联系技术支持')
         }
       } catch (error) {
         console.error('获取学校详情失败:', error)
 
         // 根据错误类型提供更具体的错误信息
-        this.errorTitle = '获取学校信息失败'
+        let errorMessage = '网络错误，无法连接到服务器，请检查网络连接'
 
         if (error.message && error.message.includes('timeout')) {
-          this.errorMessage = '请求超时，服务器响应时间过长，请检查网络连接'
+          errorMessage = '请求超时，服务器响应时间过长，请检查网络连接'
         } else if (error.response) {
-          this.errorMessage = `服务器错误 (${error.response.status})，请稍后再试`
-        } else {
-          this.errorMessage = '网络错误，无法连接到服务器，请检查网络连接'
+          errorMessage = `服务器错误 (${error.response.status})，请稍后再试`
         }
 
-        this.$message.error(this.errorTitle)
-        this.noDataFound = true
+        this.handleError('获取学校信息失败', errorMessage)
       } finally {
         this.loading = false
       }
     },
 
-    // 重试加载数据
-    retryFetch() {
+    // 重试加载数据原始方法
+    _retryFetch() {
       this.retryLoading = true
 
       if (this.fetchAttempts > 2) {
@@ -483,8 +463,6 @@ export default {
           contactInfo: this.universityForm.contactInfo || null
         }
 
-        console.log('保存学校信息:', submitForm.name)
-
         // 调用API进行保存
         await updateUniversity(this.universityId, submitForm)
 
@@ -523,6 +501,7 @@ export default {
 
     ::v-deep .el-tabs__content {
       padding: 20px;
+      min-height: 300px;
     }
   }
 
