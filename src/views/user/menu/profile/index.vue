@@ -76,9 +76,12 @@
             <!-- 通知消息 -->
             <el-tab-pane label="通知消息" name="notifications">
               <div class="notification-container">
-                <div class="notification-header" v-if="unreadNotifications.length > 0">
-                  <el-button type="text" @click="markAllAsRead">
+                <div class="notification-header">
+                  <el-button type="text" @click="markAllAsRead" v-if="unreadNotifications.length > 0">
                     <i class="el-icon-check"></i> 全部标为已读
+                  </el-button>
+                  <el-button type="text" @click="fetchNotifications">
+                    <i class="el-icon-refresh"></i> 刷新消息
                   </el-button>
                 </div>
 
@@ -94,10 +97,15 @@
                         class="notification-item unread"
                         @click="handleNotificationClick(item)"
                       >
-                        <div class="notification-dot"></div>
+                        <div class="notification-dot" :class="getPriorityClass(item.priority)"></div>
                         <div class="notification-content">
-                          <div class="notification-title">{{ item.title }}</div>
-                          <div class="notification-time">{{ formatTime(item.created_at) }}</div>
+                          <div class="notification-title">
+                            {{ item.title }}
+                            <el-tag size="mini" :type="getTypeTag(item.type)" class="notification-type-tag">{{ formatType(item.type) }}</el-tag>
+                            <el-tag size="mini" :type="getPriorityTag(item.priority)" class="notification-priority-tag">{{ formatPriority(item.priority) }}</el-tag>
+                          </div>
+                          <div class="notification-brief">{{ truncateContent(item.content) }}</div>
+                          <div class="notification-time">{{ formatTime(item.createdAt) }}</div>
                         </div>
                         <i class="el-icon-arrow-right notification-arrow"></i>
                       </div>
@@ -113,13 +121,18 @@
                         v-for="item in allNotifications"
                         :key="item.id"
                         class="notification-item"
-                        :class="{ 'is-read': item.status === 'read' }"
+                        :class="{ 'is-read': item.readStatus === 'read' }"
                         @click="handleNotificationClick(item)"
                       >
-                        <div v-if="item.status === 'unread'" class="notification-dot"></div>
+                        <div v-if="item.readStatus === 'unread'" class="notification-dot" :class="getPriorityClass(item.priority)"></div>
                         <div class="notification-content">
-                          <div class="notification-title">{{ item.title }}</div>
-                          <div class="notification-time">{{ formatTime(item.created_at) }}</div>
+                          <div class="notification-title">
+                            {{ item.title }}
+                            <el-tag size="mini" :type="getTypeTag(item.type)" class="notification-type-tag">{{ formatType(item.type) }}</el-tag>
+                            <el-tag size="mini" :type="getPriorityTag(item.priority)" class="notification-priority-tag">{{ formatPriority(item.priority) }}</el-tag>
+                          </div>
+                          <div class="notification-brief">{{ truncateContent(item.content) }}</div>
+                          <div class="notification-time">{{ formatTime(item.createdAt) }}</div>
                         </div>
                         <i class="el-icon-arrow-right notification-arrow"></i>
                       </div>
@@ -277,11 +290,35 @@
     <el-dialog title="通知详情" :visible.sync="notificationDetailVisible" width="500px" custom-class="notification-detail-dialog">
       <div v-if="currentNotification" class="notification-detail">
         <h3>{{ currentNotification.title }}</h3>
-        <div class="notification-meta" v-if="currentNotification.created_at">
-          <span>{{ formatTime(currentNotification.created_at) }}</span>
+        <div class="notification-meta">
+          <div class="meta-item">
+            <span class="label">通知类型：</span>
+            <el-tag :type="getTypeTag(currentNotification.type)" size="small">{{ formatType(currentNotification.type) }}</el-tag>
+          </div>
+          <div class="meta-item">
+            <span class="label">优先级：</span>
+            <el-tag :type="getPriorityTag(currentNotification.priority)" size="small">{{ formatPriority(currentNotification.priority) }}</el-tag>
+          </div>
+          <div class="meta-item">
+            <span class="label">发布时间：</span>
+            <span>{{ formatTime(currentNotification.createdAt) }}</span>
+          </div>
+          <div class="meta-item" v-if="currentNotification.publishTime">
+            <span class="label">发送时间：</span>
+            <span>{{ formatTime(currentNotification.publishTime) }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="label">阅读状态：</span>
+            <el-tag :type="currentNotification.readStatus === 'read' ? 'info' : 'success'" size="small">
+              {{ currentNotification.readStatus === 'read' ? '已读' : '未读' }}
+            </el-tag>
+          </div>
         </div>
-        <div class="notification-content-text">
-          {{ currentNotification.content || '暂无内容' }}
+        <div class="notification-content-box">
+          <div class="content-label">通知内容：</div>
+          <div class="notification-content-text">
+            {{ currentNotification.content || '暂无内容' }}
+          </div>
         </div>
       </div>
       <span slot="footer" class="dialog-footer">
@@ -423,6 +460,60 @@ export default {
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
     },
 
+    // 新增：格式化通知类型
+    formatType(type) {
+      const typeMap = {
+        'user': '用户通知',
+        'broadcast': '广播通知'
+      }
+      return typeMap[type] || type
+    },
+
+    // 新增：格式化通知优先级
+    formatPriority(priority) {
+      const priorityMap = {
+        0: '普通',
+        1: '重要',
+        2: '紧急'
+      }
+      return priorityMap[priority] || '普通'
+    },
+
+    // 新增：获取通知类型对应的标签类型
+    getTypeTag(type) {
+      const typeTagMap = {
+        'user': 'success',
+        'broadcast': 'warning'
+      }
+      return typeTagMap[type] || ''
+    },
+
+    // 新增：获取优先级对应的标签类型
+    getPriorityTag(priority) {
+      const priorityTagMap = {
+        0: 'info',
+        1: 'warning',
+        2: 'danger'
+      }
+      return priorityTagMap[priority] || 'info'
+    },
+
+    // 新增：获取优先级对应的样式类
+    getPriorityClass(priority) {
+      const priorityClassMap = {
+        0: 'priority-normal',
+        1: 'priority-important',
+        2: 'priority-urgent'
+      }
+      return priorityClassMap[priority] || 'priority-normal'
+    },
+
+    // 新增：截断通知内容
+    truncateContent(content) {
+      if (!content) return '';
+      return content.length > 50 ? content.substring(0, 50) + '...' : content;
+    },
+
     async getUserInfo() {
       try {
         const response = await request({
@@ -462,7 +553,8 @@ export default {
 
         if (res.code === 200) {
           this.allNotifications = res.data || [];
-          this.unreadNotifications = this.allNotifications.filter(item => item.status === 'unread');
+          // 修正：使用readStatus字段而不是status字段来过滤未读消息
+          this.unreadNotifications = this.allNotifications.filter(item => item.readStatus === 'unread');
 
           // 更新store中的未读状态
           if (this.$store.getters.hasUnreadNotifications !== (this.unreadNotifications.length > 0)) {
@@ -536,7 +628,7 @@ export default {
       this.currentNotification = notification;
       this.notificationDetailVisible = true;
 
-      if (notification.status === 'unread') {
+      if (notification.readStatus === 'unread') {
         try {
           const userId = this.$store.getters.userId;
 
@@ -549,8 +641,8 @@ export default {
 
           if (res.code === 200) {
             // 更新本地通知状态
-            notification.status = 'read';
-            this.unreadNotifications = this.allNotifications.filter(item => item.status === 'unread');
+            notification.readStatus = 'read';
+            this.unreadNotifications = this.allNotifications.filter(item => item.readStatus === 'unread');
 
             // 更新store中的未读状态
             if (this.unreadNotifications.length === 0) {
@@ -580,7 +672,7 @@ export default {
         if (res.code === 200) {
           // 更新所有通知为已读状态
           this.allNotifications.forEach(notification => {
-            notification.status = 'read';
+            notification.readStatus = 'read';
           });
           this.unreadNotifications = [];
 
@@ -927,8 +1019,8 @@ export default {
 
   .notification-item {
     display: flex;
-    align-items: center;
-    padding: 12px 15px;
+    align-items: flex-start;
+    padding: 15px;
     cursor: pointer;
     border-bottom: 1px solid #f5f7fa;
     transition: all 0.3s;
@@ -953,7 +1045,20 @@ export default {
     border-radius: 50%;
     background-color: #409EFF;
     margin-right: 12px;
+    margin-top: 6px;
     flex-shrink: 0;
+
+    &.priority-normal {
+      background-color: #409EFF;
+    }
+
+    &.priority-important {
+      background-color: #E6A23C;
+    }
+
+    &.priority-urgent {
+      background-color: #F56C6C;
+    }
   }
 
   .notification-content {
@@ -965,6 +1070,25 @@ export default {
     color: #303133;
     margin-bottom: 5px;
     font-weight: 500;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .notification-type-tag,
+  .notification-priority-tag {
+    margin-left: 5px;
+    font-size: 10px;
+    height: 18px;
+    line-height: 16px;
+    padding: 0 5px;
+  }
+
+  .notification-brief {
+    font-size: 13px;
+    color: #606266;
+    margin-bottom: 5px;
+    line-height: 1.4;
   }
 
   .notification-time {
@@ -975,6 +1099,7 @@ export default {
   .notification-arrow {
     color: #c0c4cc;
     margin-left: 10px;
+    margin-top: 6px;
   }
 
   .empty-text {
@@ -989,30 +1114,51 @@ export default {
 
   .notification-detail {
     padding: 10px;
-  }
 
-  .notification-detail h3 {
-    margin: 0 0 15px;
-    color: #303133;
-    font-size: 18px;
-    font-weight: 600;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #ebeef5;
-  }
+    h3 {
+      margin: 0 0 15px;
+      color: #303133;
+      font-size: 18px;
+      font-weight: 600;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ebeef5;
+    }
 
-  .notification-meta {
-    color: #909399;
-    font-size: 13px;
-    margin-bottom: 20px;
-  }
+    .notification-meta {
+      margin-bottom: 20px;
 
-  .notification-content-text {
-    line-height: 1.6;
-    color: #606266;
-    white-space: pre-line;
-    font-size: 14px;
-    min-height: 60px;
-    padding: 15px 0;
+      .meta-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+
+        .label {
+          width: 80px;
+          font-weight: 500;
+          color: #606266;
+        }
+      }
+    }
+
+    .notification-content-box {
+      background: #f8f8f8;
+      border-radius: 4px;
+      padding: 15px;
+
+      .content-label {
+        font-weight: 500;
+        margin-bottom: 10px;
+        color: #606266;
+      }
+
+      .notification-content-text {
+        line-height: 1.6;
+        color: #303133;
+        white-space: pre-line;
+        font-size: 14px;
+        min-height: 60px;
+      }
+    }
   }
 }
 

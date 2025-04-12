@@ -193,12 +193,25 @@ export default {
     async loadSelectedUsers() {
       if (this.form.selectedUsers && this.form.selectedUsers.length > 0) {
         try {
-          const response = await searchUsers({ userIds: this.form.selectedUsers.join(',') })
-          if (response.code === 200) {
-            this.userOptions = response.data || []
+          // 使用searchUsers API获取已选用户的详细信息
+          const response = await searchUsers({
+            // 使用正确参数查询指定ID的用户
+            userIds: this.form.selectedUsers.join(',')
+          })
+
+          if (response.code === 200 && response.data && response.data.records) {
+            // 确保使用records数组 - 这是服务器返回的分页数据结构
+            this.userOptions = response.data.records || [];
+          } else if (response.code === 200 && Array.isArray(response.data)) {
+            // 如果直接返回数组，也处理
+            this.userOptions = response.data;
+          } else {
+            console.error('加载已选用户格式错误:', response);
+            this.$message.warning('加载已选用户信息异常');
           }
         } catch (error) {
-          console.error('加载已选用户失败:', error)
+          console.error('加载已选用户失败:', error);
+          this.$message.warning('加载已选用户信息失败');
         }
       }
     },
@@ -206,19 +219,33 @@ export default {
     // 远程搜索用户
     async remoteSearchUsers(query) {
       if (query !== '') {
-        this.userSearchLoading = true
+        this.userSearchLoading = true;
         try {
-          const response = await searchUsers({ username: query, limit: 20 })
+          // 使用username参数搜索用户
+          const response = await searchUsers({
+            username: query,
+            limit: 20,
+            page: 1
+          });
+
           if (response.code === 200 && response.data && response.data.records) {
-            this.userOptions = response.data.records || []
+            // 确保使用records数组
+            this.userOptions = response.data.records || [];
+          } else if (response.code === 200 && Array.isArray(response.data)) {
+            // 如果直接返回数组，也处理
+            this.userOptions = response.data;
+          } else {
+            console.error('搜索用户返回格式错误:', response);
+            this.userOptions = [];
           }
         } catch (error) {
-          console.error('搜索用户失败:', error)
+          console.error('搜索用户失败:', error);
+          this.userOptions = [];
         } finally {
-          this.userSearchLoading = false
+          this.userSearchLoading = false;
         }
       } else {
-        this.userOptions = []
+        this.userOptions = [];
       }
     },
 
