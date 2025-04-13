@@ -16,30 +16,28 @@
     <div class="main-content">
       <!-- Search and filter section -->
       <div class="search-section">
-        <el-input placeholder="请输入院校名称" v-model="searchKeyword" class="search-input"></el-input>
+        <el-input placeholder="请输入院校名称" v-model="searchForm.name" class="search-input" clearable @keyup.enter.native="handleSearch"></el-input>
         <el-button type="success" icon="el-icon-search" @click="handleSearch">搜索</el-button>
 
         <div class="filter-section">
           <div class="filter-label">筛选：</div>
-          <el-select v-model="filterLocation" placeholder="院校所在地" class="filter-select" clearable>
-            <el-option label="北京" value="北京"></el-option>
-            <el-option label="上海" value="上海"></el-option>
-            <el-option label="广东" value="广东"></el-option>
+          <el-select v-model="searchForm.location" placeholder="院校所在地" class="filter-select" clearable @change="handleFilter">
+            <el-option v-for="item in locationOptions" :key="item" :label="item" :value="item"></el-option>
           </el-select>
 
-          <el-select v-model="filterDepartment" placeholder="主管部门类别" class="filter-select" clearable>
+          <el-select v-model="searchForm.department" placeholder="主管部门类别" class="filter-select" clearable @change="handleFilter">
             <el-option label="教育部" value="教育部"></el-option>
             <el-option label="省市自治区" value="省市自治区"></el-option>
           </el-select>
 
-          <el-select v-model="filterLevel" placeholder="办学层次" class="filter-select" clearable>
+          <el-select v-model="searchForm.level" placeholder="办学层次" class="filter-select" clearable @change="handleFilter">
             <el-option label="本科" value="本科"></el-option>
             <el-option label="专科" value="专科"></el-option>
           </el-select>
 
-          <el-select v-model="filterType" placeholder="院校特性" class="filter-select" clearable>
-            <el-option label="985" value="985"></el-option>
-            <el-option label="211" value="211"></el-option>
+          <el-select v-model="searchForm.feature" placeholder="院校特性" class="filter-select" clearable @change="handleFilter">
+            <el-option label="985工程" value="985工程"></el-option>
+            <el-option label="211工程" value="211工程"></el-option>
             <el-option label="双一流" value="双一流"></el-option>
           </el-select>
         </div>
@@ -47,30 +45,30 @@
 
       <!-- Results table -->
       <div class="results-section">
-        <el-table :data="paginatedData" border style="width: 100%" :fit="true">
+        <el-table :data="tableData" border style="width: 100%" :fit="true" v-loading="loading">
           <el-table-column prop="name" label="院校名称" min-width="180"></el-table-column>
           <el-table-column prop="location" label="院校所在地" min-width="120"></el-table-column>
           <el-table-column label="综合满意度" min-width="180">
             <template slot-scope="scope">
               <div class="rating-info">
-                <span class="rating-value orange">{{ scope.row.overallRating }}</span>
-                <span class="rating-count">({{ scope.row.overallCount }}人)</span>
+                <span class="rating-value orange">{{ scope.row.overallRating || 'N/A' }}</span>
+                <span class="rating-count" v-if="scope.row.overallCount">({{ scope.row.overallCount }}人)</span>
               </div>
             </template>
           </el-table-column>
           <el-table-column label="环境满意度" min-width="180">
             <template slot-scope="scope">
               <div class="rating-info">
-                <span class="rating-value orange">{{ scope.row.environmentRating }}</span>
-                <span class="rating-count">({{ scope.row.environmentCount }}人)</span>
+                <span class="rating-value orange">{{ scope.row.environmentRating || 'N/A' }}</span>
+                <span class="rating-count" v-if="scope.row.environmentCount">({{ scope.row.environmentCount }}人)</span>
               </div>
             </template>
           </el-table-column>
           <el-table-column label="生活满意度" min-width="180">
             <template slot-scope="scope">
               <div class="rating-info">
-                <span class="rating-value orange">{{ scope.row.lifeRating }}</span>
-                <span class="rating-count">({{ scope.row.lifeCount }}人)</span>
+                <span class="rating-value orange">{{ scope.row.lifeRating || 'N/A' }}</span>
+                <span class="rating-count" v-if="scope.row.lifeCount">({{ scope.row.lifeCount }}人)</span>
               </div>
             </template>
           </el-table-column>
@@ -90,7 +88,7 @@
             :page-sizes="[5, 10, 20, 50]"
             :page-size="pageSize"
             layout="total, sizes, prev, pager, next, jumper"
-            :total="totalItems">
+            :total="total">
           </el-pagination>
         </div>
       </div>
@@ -99,269 +97,111 @@
 </template>
 
 <script>
+import { getUniversitySatisfactionList } from '@/api/universitySatisfaction'
+
 export default {
   name: 'UniversitySatisfaction',
   data() {
     return {
-      searchKeyword: '',
-      filterLocation: '',
-      filterDepartment: '',
-      filterLevel: '',
-      filterType: '',
+      // 查询表单
+      searchForm: {
+        name: '',
+        location: '',
+        department: '',
+        level: '',
+        feature: ''
+      },
+
+      // 分页参数
       currentPage: 1,
       pageSize: 10,
-      totalItems: 0,
-      universityData: [
-        {
-          id: 1,
-          name: '北京大学',
-          location: '北京',
-          overallRating: 4.6,
-          overallCount: 1803,
-          environmentRating: 4.5,
-          environmentCount: 2011,
-          lifeRating: 4.3,
-          lifeCount: 1773
-        },
-        {
-          id: 2,
-          name: '中国人民大学',
-          location: '北京',
-          overallRating: 4.6,
-          overallCount: 1154,
-          environmentRating: 4.3,
-          environmentCount: 1321,
-          lifeRating: 4.1,
-          lifeCount: 1139
-        },
-        {
-          id: 3,
-          name: '清华大学',
-          location: '北京',
-          overallRating: 4.7,
-          overallCount: 1807,
-          environmentRating: 4.7,
-          environmentCount: 1960,
-          lifeRating: 4.7,
-          lifeCount: 1778
-        },
-        {
-          id: 4,
-          name: '北京交通大学',
-          location: '北京',
-          overallRating: 4.4,
-          overallCount: 3581,
-          environmentRating: 4.3,
-          environmentCount: 3836,
-          lifeRating: 4.0,
-          lifeCount: 3482
-        },
-        {
-          id: 5,
-          name: '北京工业大学',
-          location: '北京',
-          overallRating: 4.3,
-          overallCount: 1132,
-          environmentRating: 4.4,
-          environmentCount: 1330,
-          lifeRating: 4.1,
-          lifeCount: 1105
-        },
-        {
-          id: 6,
-          name: '北京航空航天大学',
-          location: '北京',
-          overallRating: 4.3,
-          overallCount: 1599,
-          environmentRating: 4.3,
-          environmentCount: 1909,
-          lifeRating: 4.0,
-          lifeCount: 1577
-        },
-        {
-          id: 7,
-          name: '北京理工大学',
-          location: '北京',
-          overallRating: 4.4,
-          overallCount: 2218,
-          environmentRating: 4.4,
-          environmentCount: 2473,
-          lifeRating: 4.2,
-          lifeCount: 2146
-        },
-        {
-          id: 8,
-          name: '北京科技大学',
-          location: '北京',
-          overallRating: 4.5,
-          overallCount: 2525,
-          environmentRating: 4.4,
-          environmentCount: 2738,
-          lifeRating: 4.4,
-          lifeCount: 2437
-        },
-        {
-          id: 9,
-          name: '上海交通大学',
-          location: '上海',
-          overallRating: 4.7,
-          overallCount: 1905,
-          environmentRating: 4.6,
-          environmentCount: 2103,
-          lifeRating: 4.5,
-          lifeCount: 1888
-        },
-        {
-          id: 10,
-          name: '复旦大学',
-          location: '上海',
-          overallRating: 4.8,
-          overallCount: 1732,
-          environmentRating: 4.7,
-          environmentCount: 1892,
-          lifeRating: 4.6,
-          lifeCount: 1765
-        },
-        {
-          id: 11,
-          name: '同济大学',
-          location: '上海',
-          overallRating: 4.5,
-          overallCount: 1630,
-          environmentRating: 4.4,
-          environmentCount: 1752,
-          lifeRating: 4.3,
-          lifeCount: 1687
-        },
-        {
-          id: 12,
-          name: '华东师范大学',
-          location: '上海',
-          overallRating: 4.4,
-          overallCount: 1521,
-          environmentRating: 4.3,
-          environmentCount: 1645,
-          lifeRating: 4.5,
-          lifeCount: 1587
-        },
-        {
-          id: 13,
-          name: '武汉大学',
-          location: '湖北',
-          overallRating: 4.6,
-          overallCount: 1843,
-          environmentRating: 4.8,
-          environmentCount: 1973,
-          lifeRating: 4.4,
-          lifeCount: 1812
-        },
-        {
-          id: 14,
-          name: '华中科技大学',
-          location: '湖北',
-          overallRating: 4.5,
-          overallCount: 1736,
-          environmentRating: 4.4,
-          environmentCount: 1832,
-          lifeRating: 4.3,
-          lifeCount: 1765
-        },
-        {
-          id: 15,
-          name: '南京大学',
-          location: '江苏',
-          overallRating: 4.7,
-          overallCount: 1678,
-          environmentRating: 4.6,
-          environmentCount: 1823,
-          lifeRating: 4.5,
-          lifeCount: 1732
-        }
-      ]
-    }
-  },
-  computed: {
-    // Filter data based on search criteria
-    filteredData() {
-      let result = this.universityData;
+      total: 0,
 
-      // Filter by name
-      if (this.searchKeyword) {
-        result = result.filter(item =>
-          item.name.toLowerCase().includes(this.searchKeyword.toLowerCase())
-        );
-      }
+      // 表格数据
+      tableData: [],
 
-      // Filter by location
-      if (this.filterLocation) {
-        result = result.filter(item => item.location === this.filterLocation);
-      }
+      // 加载状态
+      loading: false,
 
-      // Additional filters would be implemented here
-
-      return result;
-    },
-
-    // Paginate the filtered data
-    paginatedData() {
-      const startIndex = (this.currentPage - 1) * this.pageSize;
-      const endIndex = startIndex + this.pageSize;
-      return this.filteredData.slice(startIndex, endIndex);
+      // 地区选项，可以从后端获取，这里简化处理
+      locationOptions: ['北京市', '上海市', '广东省', '江苏省', '浙江省', '湖北省', '四川省']
     }
   },
   methods: {
+    // 搜索处理
     handleSearch() {
-      console.log('Searching for universities');
-      this.currentPage = 1; // Reset to first page when searching
+      this.currentPage = 1
+      this.fetchData()
     },
+
+    // 筛选处理
+    handleFilter() {
+      this.currentPage = 1
+      this.fetchData()
+    },
+
+    // 查看详情
     viewDetail(university) {
-      console.log('View details for:', university.name);
-      this.$router.push(`/user/university/${university.id}/satisfaction`);
+      this.$router.push(`/user/university/${university.id}/satisfaction`)
     },
+
+    // 分页大小变化
     handleSizeChange(size) {
-      this.pageSize = size;
-      console.log(`Page size changed to ${size}`);
+      this.pageSize = size
+      this.fetchData()
     },
+
+    // 当前页变化
     handleCurrentChange(page) {
-      this.currentPage = page;
-      console.log(`Current page changed to ${page}`);
+      this.currentPage = page
+      this.fetchData()
     },
 
-    // This would be replaced with an actual API call in a real application
+    // 获取数据
     fetchData() {
-      // In a real app, this would be an API call
-      // For demo purposes, we're just setting the total count based on filtered data
-      this.totalItems = this.filteredData.length;
-    }
-  },
-  watch: {
-    // Watch for changes in filters to update data
-    searchKeyword() {
-      this.fetchData();
-    },
-    filterLocation() {
-      this.fetchData();
-    },
-    filterDepartment() {
-      this.fetchData();
-    },
-    filterLevel() {
-      this.fetchData();
-    },
-    filterType() {
-      this.fetchData();
+      this.loading = true
+
+      // 构建查询参数
+      const params = {
+        page: this.currentPage,
+        limit: this.pageSize,
+        ...this.searchForm
+      }
+
+      getUniversitySatisfactionList(params)
+        .then(response => {
+          if (response.code === 200) {
+            const { records, total } = response.data
+            this.tableData = records || []
+            this.total = total || 0
+          } else {
+            this.$message.error(response.message || '获取数据失败')
+          }
+        })
+        .catch(error => {
+          console.error('获取院校满意度列表失败:', error)
+          this.$message.error('获取数据失败，请稍后重试')
+        })
+        .finally(() => {
+          this.loading = false
+        })
     },
 
-    // Watch for changes in filtered data to update total
-    filteredData: {
-      handler() {
-        this.totalItems = this.filteredData.length;
-      },
-      immediate: true
+    // 重置表单
+    resetForm() {
+      this.searchForm = {
+        name: '',
+        location: '',
+        department: '',
+        level: '',
+        feature: ''
+      }
+      this.currentPage = 1
+      this.fetchData()
     }
   },
-  mounted() {
-    this.fetchData();
+  created() {
+    this.fetchData()
   }
 }
 </script>
@@ -525,8 +365,6 @@ export default {
     border-color: #4fcba4;
   }
 }
-
-/* 删除固定列样式 */
 
 ::v-deep .el-table .cell {
   line-height: 23px;
