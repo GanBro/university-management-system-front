@@ -9,6 +9,7 @@ import university from '@/store/modules/university'
 import upload from '@/store/modules/upload'
 import interaction from '@/store/modules/interaction'
 import notification from '@/api/notification'
+import admission from '@/store/modules/admission'
 
 Vue.use(Vuex)
 
@@ -21,7 +22,8 @@ const store = new Vuex.Store({
     university,
     upload,
     interaction,
-    notification
+    notification,
+    admission
   },
   getters
 })

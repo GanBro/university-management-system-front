@@ -184,12 +184,13 @@
 </template>
 
 <script>
+import { mapGetters, mapState, mapActions } from 'vuex'
+
 export default {
   name: 'UniversityAdminAdmission',
   data() {
     return {
       loading: false,
-      universityId: 1, // 假设当前管理员所属的高校 ID 为 1
       listQuery: {
         page: 1,
         limit: 10,
@@ -223,88 +224,42 @@ export default {
       }
     }
   },
+  computed: {
+    ...mapGetters([
+      'userId',
+      'role'
+    ]),
+    ...mapState({
+      admissionListStore: state => state.admission.list,
+      totalStore: state => state.admission.total,
+      loadingStore: state => state.admission.loading
+    }),
+    universityId() {
+      // 从store中获取当前用户管理的大学ID
+      // 在实际项目中，您可能需要通过API获取这个值，或者从登录信息中获取
+      return this.$store.getters.universityId || 1
+    }
+  },
   created() {
     this.fetchData()
   },
   methods: {
+    ...mapActions({
+      getAdmissionListAction: 'admission/getList',
+      createAdmissionAction: 'admission/create',
+      updateAdmissionAction: 'admission/update',
+      deleteAdmissionAction: 'admission/delete'
+    }),
+
     async fetchData() {
       this.loading = true
       try {
-        // 实际项目中应该调用接口获取数据
-        // const { data } = await getAdmissionList({
-        //   universityId: this.universityId,
-        //   ...this.listQuery
-        // })
-
-        // 模拟数据
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        // 使用模拟数据
-        this.admissionList = [
-          {
-            id: 1,
-            universityId: 1,
-            province: '北京市',
-            year: 2025,
-            scoreRequired: 680,
-            planCount: 2600,
-            actualCount: 2580,
-            lowestRank: 600
-          },
-          {
-            id: 2,
-            universityId: 1,
-            province: '江苏省',
-            year: 2025,
-            scoreRequired: 655,
-            planCount: 1600,
-            actualCount: 1590,
-            lowestRank: 800
-          },
-          {
-            id: 3,
-            universityId: 1,
-            province: '北京市',
-            year: 2024,
-            scoreRequired: 690,
-            planCount: 2500,
-            actualCount: 2480,
-            lowestRank: 800
-          },
-          {
-            id: 4,
-            universityId: 1,
-            province: '江苏省',
-            year: 2024,
-            scoreRequired: 670,
-            planCount: 1500,
-            actualCount: 1490,
-            lowestRank: 1000
-          },
-          {
-            id: 7,
-            universityId: 1,
-            province: '浙江省',
-            year: 2024,
-            scoreRequired: 655,
-            planCount: 1100,
-            actualCount: 1090,
-            lowestRank: 1600
-          },
-          {
-            id: 8,
-            universityId: 1,
-            province: '北京市',
-            year: 2023,
-            scoreRequired: 655,
-            planCount: null,
-            actualCount: null,
-            lowestRank: null
-          }
-        ]
-
-        this.total = this.admissionList.length
-
+        await this.getAdmissionListAction({
+          universityId: this.universityId,
+          query: this.listQuery
+        })
+        this.admissionList = this.admissionListStore
+        this.total = this.totalStore
       } catch (error) {
         console.error('获取分数线数据失败:', error)
         this.$message.error('获取数据失败')
@@ -349,6 +304,7 @@ export default {
     handleAddAdmission() {
       this.dialogStatus = 'create'
       this.dialogForm = {
+        universityId: this.universityId,
         province: '',
         year: new Date().getFullYear().toString(),
         scoreRequired: 0,
@@ -381,10 +337,7 @@ export default {
           type: 'warning'
         })
 
-        // 实际项目中应该调用接口删除数据
-        // await deleteAdmission(row.id)
-
-        // 模拟删除成功
+        await this.deleteAdmissionAction(row.id)
         this.$message.success('删除成功')
         this.fetchData()
 
@@ -411,23 +364,23 @@ export default {
           year: parseInt(this.dialogForm.year)
         }
 
-        // 实际项目中应该调用接口保存数据
-        // if (this.dialogStatus === 'create') {
-        //   await createAdmission(formData)
-        // } else {
-        //   await updateAdmission(formData.id, formData)
-        // }
+        if (this.dialogStatus === 'create') {
+          await this.createAdmissionAction(formData)
+          this.$message.success('添加成功')
+        } else {
+          await this.updateAdmissionAction({
+            id: formData.id,
+            data: formData
+          })
+          this.$message.success('更新成功')
+        }
 
-        // 模拟保存成功
-        await new Promise(resolve => setTimeout(resolve, 800))
-
-        this.$message.success(this.dialogStatus === 'create' ? '添加成功' : '更新成功')
         this.dialogFormVisible = false
         this.fetchData()
 
       } catch (error) {
         console.error('提交失败:', error)
-        this.$message.error('提交失败')
+        this.$message.error('提交失败: ' + (error.message || '未知错误'))
       } finally {
         this.dialogSubmitLoading = false
       }
