@@ -252,6 +252,7 @@
 
 <script>
 import dayjs from 'dayjs'
+import { mapState, mapActions } from 'vuex'
 
 export default {
   name: 'UniversityAdminInteraction',
@@ -259,12 +260,11 @@ export default {
     return {
       loading: false,
       tableLoading: false,
-      universityId: 1, // 假设当前管理员所属的高校 ID 为 1
       stats: {
-        total: 54,
-        pending: 12,
-        avgResponseTime: 4.5,
-        responseRate: 96.3
+        total: 0,
+        pending: 0,
+        avgResponseTime: 0,
+        responseRate: 0
       },
       listQuery: {
         page: 1,
@@ -273,8 +273,8 @@ export default {
         keyword: '',
         timeRange: []
       },
-      list: [],
       total: 0,
+      list: [],
       pickerOptions: {
         shortcuts: [
           {
@@ -323,109 +323,75 @@ export default {
       replySubmitting: false
     }
   },
+  computed: {
+    ...mapState({
+      interactionList: state => state.interaction.list,
+      interactionTotal: state => state.interaction.total,
+      listLoading: state => state.interaction.listLoading,
+      detailLoading: state => state.interaction.detailLoading,
+      currentInteractionStore: state => state.interaction.currentInteraction
+    }),
+    universityId() {
+      // 从store中获取当前用户管理的大学ID
+      // 在实际项目中，您应该从用户信息中获取这个值
+      return this.$store.getters.universityId || 1
+    }
+  },
   created() {
     this.fetchData()
+    this.fetchStats()
   },
   methods: {
+    ...mapActions({
+      getInteractionList: 'interaction/getList',
+      getInteractionDetail: 'interaction/getDetail',
+      closeInteractionAction: 'interaction/closeInteraction',
+      reopenInteractionAction: 'interaction/reopenInteraction',
+      deleteInteractionAction: 'interaction/deleteInteraction',
+      replyInteractionAction: 'interaction/replyInteraction',
+      getInteractionStats: 'interaction/getStats'
+    }),
+
     async fetchData() {
       this.tableLoading = true
       try {
-        // 实际项目中应该调用API获取数据
-        // const { data } = await getInteractionList({
-        //   universityId: this.universityId,
-        //   ...this.listQuery
-        // })
+        // 构建查询参数
+        const query = {
+          ...this.listQuery,
+          universityId: this.universityId
+        }
 
-        // 模拟数据加载
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // 处理时间范围
+        if (this.listQuery.timeRange && this.listQuery.timeRange.length === 2) {
+          query.startTime = dayjs(this.listQuery.timeRange[0]).format('YYYY-MM-DD')
+          query.endTime = dayjs(this.listQuery.timeRange[1]).format('YYYY-MM-DD')
+        }
+        delete query.timeRange
 
-        // 模拟数据
-        this.list = [
-          {
-            id: 1,
-            universityId: 1,
-            userId: 13,
-            userName: '用户小王',
-            title: '请问贵校计算机专业的就业方向有哪些？',
-            content: '我对计算机专业很感兴趣，请问贵校计算机专业毕业生主要去向是哪里？大型互联网企业的比例有多少？',
-            status: 'pending',
-            createdAt: '2025-03-24 15:30:22',
-            responseTime: null,
-            viewCount: 12
-          },
-          {
-            id: 2,
-            universityId: 1,
-            userId: 14,
-            userName: '考生家长',
-            title: '关于奖学金的问题',
-            content: '请问贵校特等奖学金的具体申请条件是什么？每年多少人可以获得？',
-            status: 'replied',
-            createdAt: '2025-03-23 10:15:47',
-            responseTime: '2025-03-23 14:26:35',
-            viewCount: 18,
-            replies: [
-              {
-                id: 1,
-                interactionId: 2,
-                userId: 35,
-                userName: '北大管理员',
-                content: '您好，我校特等奖学金每年评选20人，需要学年GPA在3.8以上，并且在科研或社会实践方面有突出表现。具体评选细则可以参考学校官网奖学金专栏。',
-                isOfficial: true,
-                createdAt: '2025-03-23 14:26:35'
-              }
-            ]
-          },
-          {
-            id: 3,
-            universityId: 1,
-            userId: 15,
-            userName: '未来大学生',
-            title: '关于住宿问题',
-            content: '请问宿舍是几人间？有独立卫浴吗？需要另外付费吗？',
-            status: 'closed',
-            createdAt: '2025-03-22 16:42:18',
-            responseTime: '2025-03-22 17:30:45',
-            viewCount: 25,
-            replies: [
-              {
-                id: 2,
-                interactionId: 3,
-                userId: 35,
-                userName: '北大管理员',
-                content: '您好，我校本科生宿舍为4人间，配备空调、独立卫浴。住宿费用已包含在学费中，不需另外付费。',
-                isOfficial: true,
-                createdAt: '2025-03-22 17:30:45'
-              },
-              {
-                id: 3,
-                interactionId: 3,
-                userId: 15,
-                userName: '未来大学生',
-                content: '谢谢回复！请问宿舍有饮水机和洗衣机吗？',
-                isOfficial: false,
-                createdAt: '2025-03-22 19:15:22'
-              },
-              {
-                id: 4,
-                interactionId: 3,
-                userId: 35,
-                userName: '北大管理员',
-                content: '是的，每层楼都配有公共饮水机和洗衣房，洗衣房内有多台洗衣机和烘干机，使用校园卡即可付费使用。',
-                isOfficial: true,
-                createdAt: '2025-03-22 20:05:10'
-              }
-            ]
-          }
-        ]
-
-        this.total = 54 // 模拟总数
-
+        const response = await this.getInteractionList(query)
+        if (response && response.data) {
+          this.list = response.data.records || []
+          this.total = response.data.total || 0
+        }
       } catch (error) {
         console.error('获取互动列表失败:', error)
         this.$message.error('获取数据失败')
       } finally {
         this.tableLoading = false
+      }
+    },
+
+    async fetchStats() {
+      this.loading = true
+      try {
+        const response = await this.getInteractionStats({ universityId: this.universityId })
+        if (response && response.data) {
+          this.stats = response.data
+        }
+      } catch (error) {
+        console.error('获取统计数据失败:', error)
+      } finally {
+        this.loading = false
       }
     },
 
@@ -495,17 +461,9 @@ export default {
     async showDetail(row) {
       try {
         this.detailDialogVisible = true
-
-        // 实际项目中应该调用API获取详情
-        // const { data } = await getInteractionDetail(row.id)
-
-        // 模拟API调用，使用当前行数据
-        if (this.list.find(item => item.id === row.id)) {
-          this.currentInteraction = this.list.find(item => item.id === row.id)
-        } else {
-          // 如果列表中没有该数据，模拟加载
-          await new Promise(resolve => setTimeout(resolve, 300))
-          this.currentInteraction = row
+        const response = await this.getInteractionDetail(row.id)
+        if (response && response.data) {
+          this.currentInteraction = response.data
         }
 
         // 重置回复表单
@@ -513,7 +471,6 @@ export default {
           content: '',
           isOfficial: true
         }
-
       } catch (error) {
         console.error('获取详情失败:', error)
         this.$message.error('获取详情失败')
@@ -528,23 +485,19 @@ export default {
           type: 'warning'
         })
 
-        // 实际项目中应该调用API切换状态
-        // if (row.status === 'closed') {
-        //   await reopenInteraction(row.id)
-        // } else {
-        //   await closeInteraction(row.id)
-        // }
-
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 300))
+        if (row.status === 'closed') {
+          await this.reopenInteractionAction(row.id)
+        } else {
+          await this.closeInteractionAction(row.id)
+        }
 
         this.$message.success(`已${action}`)
         this.fetchData()
-
+        this.fetchStats()
       } catch (error) {
         if (error !== 'cancel') {
           console.error('操作失败:', error)
-          this.$message.error('操作失败')
+          this.$message.error('操作失败: ' + (error.message || '未知错误'))
         }
       }
     },
@@ -558,19 +511,14 @@ export default {
           confirmButtonClass: 'el-button--danger'
         })
 
-        // 实际项目中应该调用API删除
-        // await deleteInteraction(row.id)
-
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 300))
-
+        await this.deleteInteractionAction(row.id)
         this.$message.success('删除成功')
         this.fetchData()
-
+        this.fetchStats()
       } catch (error) {
         if (error !== 'cancel') {
           console.error('删除失败:', error)
-          this.$message.error('删除失败')
+          this.$message.error('删除失败: ' + (error.message || '未知错误'))
         }
       }
     },
@@ -579,53 +527,41 @@ export default {
     async submitReply() {
       try {
         await this.$refs.replyForm.validate()
-
         this.replySubmitting = true
 
         // 构造回复数据
         const replyData = {
-          interactionId: this.currentInteraction.id,
           content: this.replyForm.content,
           isOfficial: this.replyForm.isOfficial,
-          userId: 35 // 模拟当前用户ID
+          // 获取当前登录用户ID
+          userId: this.$store.getters.userId || 35 // 如果无法获取，使用默认值
         }
 
-        // 实际项目中应该调用API提交回复
-        // await replyInteraction(replyData)
-
-        // 模拟API调用
-        await new Promise(resolve => setTimeout(resolve, 800))
+        await this.replyInteractionAction({
+          id: this.currentInteraction.id,
+          data: replyData
+        })
 
         this.$message.success('回复成功')
 
-        // 更新当前互动数据，添加一条回复
-        const newReply = {
-          id: Date.now(), // 模拟ID
-          interactionId: this.currentInteraction.id,
-          userId: 35,
-          userName: '北大管理员', // 模拟用户名
-          content: this.replyForm.content,
-          isOfficial: this.replyForm.isOfficial,
-          createdAt: new Date().toISOString()
-        }
-
-        if (!this.currentInteraction.replies) {
-          this.currentInteraction.replies = []
-        }
-
-        this.currentInteraction.replies.push(newReply)
+        // 更新当前互动状态
         this.currentInteraction.status = 'replied'
-        this.currentInteraction.responseTime = new Date().toISOString()
+
+        // 重新获取详情以确保数据是最新的
+        const response = await this.getInteractionDetail(this.currentInteraction.id)
+        if (response && response.data) {
+          this.currentInteraction = response.data
+        }
 
         // 重置表单
         this.replyForm.content = ''
 
-        // 刷新列表
+        // 刷新列表和统计数据
         this.fetchData()
-
+        this.fetchStats()
       } catch (error) {
         console.error('回复失败:', error)
-        this.$message.error('回复失败')
+        this.$message.error('回复失败: ' + (error.message || '未知错误'))
       } finally {
         this.replySubmitting = false
       }
