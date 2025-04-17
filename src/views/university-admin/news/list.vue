@@ -71,7 +71,7 @@
       </el-table-column>
       <el-table-column label="发布时间" width="160px" align="center">
         <template slot-scope="{row}">
-          <span>{{ row.publishTime | formatDate }}</span>
+          <span>{{ formatDate(row.publishTime) }}</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="180" class-name="small-padding fixed-width">
@@ -113,29 +113,21 @@
 import waves from '@/directive/waves'
 import Pagination from '@/components/Pagination/index.vue'
 import { parseTime } from '@/utils'
+import { mapState, mapActions } from 'vuex'
 
 export default {
   name: 'UniversityAdminNewsList',
   components: { Pagination },
   directives: { waves },
-  filters: {
-    formatDate(time) {
-      if (!time) return ''
-      return parseTime(time, '{y}-{m}-{d} {h}:{i}')
-    }
-  },
   data() {
     return {
-      list: [],
-      total: 0,
-      listLoading: true,
       listQuery: {
         page: 1,
         limit: 10,
         type: undefined,
         keyword: undefined,
         status: undefined,
-        universityId: 1 // 假设当前管理员所属的高校 ID 为 1
+        universityId: undefined
       },
       typeOptions: [
         { label: '新闻动态', value: 'news' },
@@ -150,71 +142,42 @@ export default {
       ]
     }
   },
+  computed: {
+    ...mapState({
+      list: state => state.news.list,
+      total: state => state.news.total,
+      listLoading: state => state.news.listLoading
+    }),
+    universityId() {
+      // 获取当前高校管理员的高校ID
+      // 在实际项目中，应该从用户信息或store中获取
+      return this.$store.getters.universityId || 1
+    }
+  },
   created() {
+    // 设置高校ID
+    this.listQuery.universityId = this.universityId
     this.getList()
   },
   methods: {
-    getList() {
-      this.listLoading = true
+    ...mapActions({
+      fetchNewsList: 'news/getList',
+      deleteNewsAction: 'news/deleteNews',
+      publishNewsAction: 'news/publishNews'
+    }),
 
-      // 模拟API请求
-      setTimeout(() => {
-        // 模拟数据
-        this.list = [
-          {
-            id: 10,
-            title: '北京大学2025年本科招生简章发布',
-            type: 'notice',
-            status: 1,
-            author: '招生办',
-            viewCount: 3245,
-            publishTime: '2025-03-24 10:30:00',
-            university: { id: 1, name: '北京大学' }
-          },
-          {
-            id: 9,
-            title: '我校学子在全国大学生创新创业大赛中获特等奖',
-            type: 'news',
-            status: 1,
-            author: '新闻中心',
-            viewCount: 1856,
-            publishTime: '2025-03-22 14:15:00',
-            university: { id: 1, name: '北京大学' }
-          },
-          {
-            id: 8,
-            title: '关于2025年高考咨询会安排的通知',
-            type: 'notice',
-            status: 1,
-            author: '招生办',
-            viewCount: 2765,
-            publishTime: '2025-03-20 09:45:00',
-            university: { id: 1, name: '北京大学' }
-          },
-          {
-            id: 7,
-            title: '校长在开学典礼上的重要讲话',
-            type: 'news',
-            status: 1,
-            author: '宣传部',
-            viewCount: 1987,
-            publishTime: '2025-03-15 16:20:00',
-            university: { id: 1, name: '北京大学' }
-          },
-          {
-            id: 6,
-            title: '2025年奖学金申请指南',
-            type: 'policy',
-            status: 0,
-            author: '学生工作处',
-            viewCount: 0,
-            publishTime: null,
-            university: { id: 1, name: '北京大学' }
-          }
-        ]
-        this.total = 50
-        this.listLoading = false
-      }, 500)
+    async getList() {
+      try {
+        await this.fetchNewsList(this.listQuery)
+      } catch (error) {
+        console.error('获取新闻列表失败:', error)
+        this.$message.error('获取新闻列表失败')
+      }
+    },
+
+    formatDate(time) {
+      if (!time) return ''
+      return parseTime(time, '{y}-{m}-{d} {h}:{i}')
     },
 
     handleFilter() {
@@ -256,15 +219,14 @@ export default {
       this.$router.push(`/university-admin/news/detail/${row.id}`)
     },
 
-    // 新增处理下拉菜单命令的方法
     // 处理下拉菜单命令
     handleCommand(command, row) {
       if (command === 'view') {
-        this.handleView(row);
+        this.handleView(row)
       } else if (command === 'delete') {
-        this.handleDelete(row);
+        this.handleDelete(row)
       } else if (command === 'publish') {
-        this.handlePublish(row);
+        this.handlePublish(row)
       }
     },
 
@@ -276,17 +238,18 @@ export default {
           type: 'warning'
         })
 
-        // 模拟API请求
-        await new Promise(resolve => setTimeout(resolve, 500))
-
+        await this.publishNewsAction(row.id)
         this.$message({
           type: 'success',
           message: '发布成功!'
         })
-        row.status = 1
-        row.publishTime = new Date().toISOString()
+        // 重新获取列表数据以更新状态
+        this.getList()
       } catch (error) {
-        console.log(error)
+        if (error !== 'cancel') {
+          console.error('发布新闻失败:', error)
+          this.$message.error('发布失败: ' + (error.message || '未知错误'))
+        }
       }
     },
 
@@ -298,20 +261,18 @@ export default {
           type: 'warning'
         })
 
-        // 模拟API请求
-        await new Promise(resolve => setTimeout(resolve, 500))
-
+        await this.deleteNewsAction(row.id)
         this.$message({
           type: 'success',
           message: '删除成功!'
         })
-
-        const index = this.list.findIndex(item => item.id === row.id)
-        if (index !== -1) {
-          this.list.splice(index, 1)
-        }
+        // 重新获取列表数据
+        this.getList()
       } catch (error) {
-        console.log(error)
+        if (error !== 'cancel') {
+          console.error('删除新闻失败:', error)
+          this.$message.error('删除失败: ' + (error.message || '未知错误'))
+        }
       }
     }
   }
@@ -332,7 +293,7 @@ export default {
   color: #409EFF;
   text-decoration: none;
 }
-/* 新增操作按钮样式 */
+/* 操作按钮样式 */
 .operation-buttons {
   display: flex;
   gap: 8px;

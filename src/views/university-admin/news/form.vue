@@ -46,6 +46,7 @@
 
 <script>
 import MarkdownEditor from '@/components/Markdown/editor/index.vue'
+import { mapState, mapActions } from 'vuex'
 
 export default {
   name: 'UniversityAdminNewsForm',
@@ -63,7 +64,7 @@ export default {
         content: '',
         author: '',
         status: 0,
-        universityId: 1 // 假设当前管理员所属的高校 ID 为 1
+        universityId: undefined // 将从store中获取
       },
       typeOptions: [
         { label: '新闻动态', value: 'news' },
@@ -79,8 +80,21 @@ export default {
       }
     }
   },
+  computed: {
+    ...mapState({
+      currentNews: state => state.news.currentNews,
+      detailLoading: state => state.news.detailLoading
+    }),
+    universityId() {
+      // 获取当前高校管理员的高校ID
+      return this.$store.getters.universityId || 1
+    }
+  },
   created() {
-    // 获取详情（如果是编辑模式）
+    // 设置高校ID
+    this.formData.universityId = this.universityId
+
+    // 判断是创建还是编辑
     const id = this.$route.params.id
     if (id && !isNaN(parseInt(id))) {
       this.isEdit = true
@@ -88,32 +102,29 @@ export default {
     }
   },
   methods: {
+    ...mapActions({
+      fetchNewsDetail: 'news/getDetail',
+      createNewsAction: 'news/createNews',
+      updateNewsAction: 'news/updateNews'
+    }),
+
     async getDetail(id) {
       if (!id) return
 
       this.loading = true
       try {
-        // 模拟API请求
-        await new Promise(resolve => setTimeout(resolve, 500))
+        await this.fetchNewsDetail(id)
 
-        // 模拟数据
-        const newsData = {
-          id: id,
-          title: '北京大学2025年本科招生简章发布',
-          type: 'notice',
-          content: '# 北京大学2025年本科招生简章\n\n## 一、招生计划\n\n2025年，北京大学计划招收本科生约4000人，其中包括普通类、特长类、国防生等各类招生计划。\n\n## 二、报名条件\n\n符合2025年高考报名条件，德智体美劳全面发展，综合素质优良的高中毕业生。\n\n## 三、录取政策\n\n1. 按照"分数优先、遵循志愿"的原则录取。\n2. 实行大类招生，入学后按照学校规定进行分流。\n\n## 四、联系方式\n\n招生办公室电话：010-12345678\n招生网站：https://admission.pku.edu.cn',
-          status: 0,
-          author: '招生办',
-          universityId: 1
-        }
-
-        this.formData = {
-          ...this.formData,
-          ...newsData
+        // 如果获取到数据，填充表单
+        if (this.currentNews) {
+          this.formData = {
+            ...this.formData,
+            ...this.currentNews
+          }
         }
       } catch (error) {
-        console.error('Failed to get news detail:', error)
-        this.$message.error('获取新闻失败')
+        console.error('获取新闻详情失败:', error)
+        this.$message.error('获取新闻详情失败')
       } finally {
         this.loading = false
       }
@@ -124,16 +135,33 @@ export default {
         await this.$refs.form.validate()
         this.submitLoading = true
 
-        // 设置作者（这里简单使用硬编码，实际应该从登录信息获取）
-        this.formData.author = this.formData.author || '北大管理员'
+        // 设置作者（应该从登录信息获取，这里使用默认值）
+        if (!this.formData.author) {
+          this.formData.author = this.$store.getters.name || '高校管理员'
+        }
 
-        // 模拟API请求
-        await new Promise(resolve => setTimeout(resolve, 800))
+        // 根据状态判断是否设置发布时间
+        if (this.formData.status === 1 && !this.formData.publishTime) {
+          this.formData.publishTime = new Date().toISOString()
+        }
 
-        this.$message.success(this.isEdit ? '更新成功' : '提交成功')
+        if (this.isEdit) {
+          // 更新新闻
+          await this.updateNewsAction({
+            id: this.formData.id,
+            data: this.formData
+          })
+          this.$message.success('更新成功')
+        } else {
+          // 创建新闻
+          await this.createNewsAction(this.formData)
+          this.$message.success('创建成功')
+        }
+
+        // 跳转回列表页
         this.$router.push('/university-admin/news/list')
       } catch (error) {
-        console.error('Failed to submit form:', error)
+        console.error('提交表单失败:', error)
         this.$message.error(error.message || '提交失败')
       } finally {
         this.submitLoading = false

@@ -61,14 +61,13 @@
 <script>
 import MarkdownIt from 'markdown-it'
 import dayjs from 'dayjs'
+import { mapState, mapActions } from 'vuex'
 
 export default {
   name: 'UniversityAdminNewsDetail',
 
   data() {
     return {
-      loading: true,
-      newsData: {},
       markdownIt: new MarkdownIt({
         html: true,
         linkify: true,
@@ -78,6 +77,10 @@ export default {
   },
 
   computed: {
+    ...mapState({
+      newsData: state => state.news.currentNews || {},
+      loading: state => state.news.detailLoading
+    }),
     renderedContent() {
       return this.newsData.content
         ? this.markdownIt.render(this.newsData.content)
@@ -87,33 +90,40 @@ export default {
 
   created() {
     this.fetchNewsDetail()
+    // 增加浏览量
+    this.incrementViewCount()
   },
 
   methods: {
+    ...mapActions({
+      getNewsDetail: 'news/getDetail',
+      deleteNewsAction: 'news/deleteNews',
+      publishNewsAction: 'news/publishNews',
+      increaseViewAction: 'news/increaseViewCount'
+    }),
+
     async fetchNewsDetail() {
+      const id = this.$route.params.id
+      if (!id) return
+
       try {
-        this.loading = true
-
-        // 模拟API请求
-        await new Promise(resolve => setTimeout(resolve, 500))
-
-        // 模拟数据
-        this.newsData = {
-          id: this.$route.params.id,
-          title: '北京大学2025年本科招生简章发布',
-          type: 'notice',
-          content: '# 北京大学2025年本科招生简章\n\n## 一、招生计划\n\n2025年，北京大学计划招收本科生约4000人，其中包括普通类、特长类、国防生等各类招生计划。\n\n## 二、报名条件\n\n符合2025年高考报名条件，德智体美劳全面发展，综合素质优良的高中毕业生。\n\n## 三、录取政策\n\n1. 按照"分数优先、遵循志愿"的原则录取。\n2. 实行大类招生，入学后按照学校规定进行分流。\n\n## 四、联系方式\n\n招生办公室电话：010-12345678\n招生网站：https://admission.pku.edu.cn',
-          status: 1,
-          author: '招生办',
-          viewCount: 3245,
-          publishTime: '2025-03-24 10:30:00',
-          universityId: 1
-        }
+        await this.getNewsDetail(id)
       } catch (error) {
         console.error('获取新闻详情失败:', error)
         this.$message.error('获取新闻详情失败')
-      } finally {
-        this.loading = false
+      }
+    },
+
+    // 增加浏览量
+    async incrementViewCount() {
+      const id = this.$route.params.id
+      if (!id) return
+
+      try {
+        // 增加浏览量的操作，需要在store中添加相应的action
+        await this.increaseViewAction(id)
+      } catch (error) {
+        console.error('增加浏览量失败:', error)
       }
     },
 
@@ -159,12 +169,11 @@ export default {
           type: 'warning'
         })
 
-        // 模拟API请求
-        await new Promise(resolve => setTimeout(resolve, 500))
-
+        await this.publishNewsAction(this.newsData.id)
         this.$message.success('发布成功')
-        this.newsData.status = 1
-        this.newsData.publishTime = new Date().toISOString()
+
+        // 重新获取详情以刷新状态
+        this.fetchNewsDetail()
       } catch (error) {
         if (error !== 'cancel') {
           console.error('发布失败:', error)
@@ -181,9 +190,7 @@ export default {
           type: 'warning'
         })
 
-        // 模拟API请求
-        await new Promise(resolve => setTimeout(resolve, 500))
-
+        await this.deleteNewsAction(this.newsData.id)
         this.$message.success('删除成功')
         this.goBack()
       } catch (error) {

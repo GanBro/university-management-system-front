@@ -10,6 +10,7 @@ import upload from '@/store/modules/upload'
 import interaction from '@/store/modules/interaction'
 import notification from '@/api/notification'
 import admission from '@/store/modules/admission'
+import news from '@/store/modules/news'
 
 Vue.use(Vuex)
 
@@ -23,7 +24,8 @@ const store = new Vuex.Store({
     upload,
     interaction,
     notification,
-    admission
+    admission,
+    news
   },
   getters
 })
