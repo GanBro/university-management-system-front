@@ -165,3 +165,53 @@ export function getAdmissionData(id) {
     method: 'get'
   })
 }
+
+/**
+ * 更新专业满意度
+ * @param {Object} data 更新的满意度数据
+ * @returns {Promise} Promise对象
+ */
+export function updateSatisfactionRating(data) {
+  return request({
+    url: `/universities/${data.universityId}/update-satisfaction`,
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 删除专业满意度
+ * @param {Number} id 记录ID
+ * @returns {Promise} Promise对象
+ */
+export function deleteSatisfactionRating(id) {
+  return request({
+    url: `/universities/satisfaction/${id}`,
+    method: 'delete'
+  })
+}
+
+/**
+ * 更新专业推荐
+ * @param {Object} data 更新的推荐数据
+ * @returns {Promise} Promise对象
+ */
+export function updateRecommendationRating(data) {
+  return request({
+    url: `/universities/${data.universityId}/update-recommendation`,
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 删除专业推荐
+ * @param {Number} id 记录ID
+ * @returns {Promise} Promise对象
+ */
+export function deleteRecommendationRating(id) {
+  return request({
+    url: `/universities/recommendation/${id}`,
+    method: 'delete'
+  })
+}
