@@ -11,6 +11,7 @@ import interaction from '@/store/modules/interaction'
 import notification from '@/api/notification'
 import admission from '@/store/modules/admission'
 import news from '@/store/modules/news'
+import universitySatisfaction from '@/store/modules/universitySatisfaction'
 
 Vue.use(Vuex)
 
@@ -25,7 +26,8 @@ const store = new Vuex.Store({
     interaction,
     notification,
     admission,
-    news
+    news,
+    universitySatisfaction
   },
   getters
 })

@@ -3,7 +3,7 @@ import request from '@/utils/request'
 
 /**
  * 获取院校满意度列表
- * @param {Object} params 查询参数
+ * @param {Object} params 查询参数 - 包含: page, limit, universityId, category, minRating, maxRating, startDate, endDate
  * @returns {Promise} Promise对象
  */
 export function getUniversitySatisfactionList(params) {
@@ -36,5 +36,17 @@ export function saveUniversitySatisfaction(data) {
     url: '/university-satisfaction/save',
     method: 'post',
     data
+  })
+}
+
+/**
+ * 删除满意度记录
+ * @param {Number} id 记录ID
+ * @returns {Promise} Promise对象
+ */
+export function deleteSatisfactionRating(id) {
+  return request({
+    url: `/university-satisfaction/${id}`,
+    method: 'delete'
   })
 }

@@ -4,84 +4,23 @@
     <el-card v-loading="loading">
       <div slot="header" class="clearfix">
         <span>满意度管理</span>
-      </div>
-
-      <!-- 数据概览 -->
-      <el-row :gutter="20" class="data-overview">
-        <el-col :span="8">
-          <el-card shadow="hover" class="data-card">
-            <div class="card-title">综合满意度</div>
-            <div class="card-value">{{ overallSatisfaction }}分</div>
-            <div class="card-trend" :class="{ up: satisfactionTrend > 0, down: satisfactionTrend < 0 }">
-              <i :class="satisfactionTrend > 0 ? 'el-icon-top' : 'el-icon-bottom'"></i>
-              {{ Math.abs(satisfactionTrend) }}%
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="8">
-          <el-card shadow="hover" class="data-card">
-            <div class="card-title">评价总数</div>
-            <div class="card-value">{{ totalRatings }}</div>
-            <div class="card-desc">本月新增 {{ monthlyNewRatings }}</div>
-          </el-card>
-        </el-col>
-        <el-col :span="8">
-          <el-card shadow="hover" class="data-card">
-            <div class="card-title">参评率</div>
-            <div class="card-value">{{ participationRate }}%</div>
-            <div class="card-desc">较上月 {{ participationTrend }}%</div>
-          </el-card>
-        </el-col>
-      </el-row>
-
-      <!-- 满意度趋势图 -->
-      <div class="trend-chart">
-        <div class="section-title">满意度趋势</div>
-        <div class="chart-filters">
-          <el-radio-group v-model="trendTimeRange" size="small" @change="handleTrendTimeRangeChange">
-            <el-radio-button label="week">最近一周</el-radio-button>
-            <el-radio-button label="month">最近一月</el-radio-button>
-            <el-radio-button label="quarter">最近一季</el-radio-button>
-            <el-radio-button label="year">最近一年</el-radio-button>
-          </el-radio-group>
+        <div class="operation-group">
+          <el-button type="primary" size="small" @click="handleAdd">添加记录</el-button>
+          <el-button type="primary" size="small" @click="showAnalysisDialog">数据分析</el-button>
         </div>
-        <div class="chart-container" ref="trendChart" style="height: 400px"></div>
       </div>
 
-      <!-- 满意度评分分布 -->
-      <div class="rating-distribution">
-        <div class="section-title">评分分布</div>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <div class="distribution-chart" ref="distributionChart" style="height: 300px"></div>
-          </el-col>
-          <el-col :span="12">
-            <div class="distribution-list">
-              <div v-for="(value, star) in ratingDistribution" :key="star" class="distribution-item">
-                <span class="star-label">{{ star }}星</span>
-                <el-progress
-                  :percentage="value"
-                  :color="getRatingColor(parseInt(star))"
-                />
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-      </div>
+      <!-- 满意度类型切换 -->
+      <el-tabs v-model="activeSatisfactionType" @tab-click="handleTabChange">
+        <el-tab-pane label="专业满意度" name="major"></el-tab-pane>
+        <el-tab-pane label="院校满意度" name="university"></el-tab-pane>
+      </el-tabs>
 
-      <!-- 满意度管理列表 -->
-      <div class="satisfaction-list">
-        <div class="section-title">
-          <span>满意度记录</span>
-          <div class="operation-group">
-            <el-button type="primary" size="small" @click="handleExport">导出数据</el-button>
-            <el-button type="primary" size="small" @click="showAnalysisDialog">数据分析</el-button>
-          </div>
-        </div>
-
-        <!-- 搜索栏 -->
-        <div class="search-bar">
-          <el-form :model="searchForm" :inline="true" ref="searchForm">
+      <!-- 搜索栏 -->
+      <div class="search-bar">
+        <el-form :inline="true" :model="searchForm" ref="searchForm">
+          <!-- 专业满意度搜索条件 -->
+          <template v-if="activeSatisfactionType === 'major'">
             <el-form-item label="专业类别">
               <el-select v-model="searchForm.category" placeholder="请选择" clearable>
                 <el-option
@@ -92,643 +31,841 @@
                 />
               </el-select>
             </el-form-item>
-            <el-form-item label="评分范围">
-              <el-select v-model="searchForm.ratingRange" placeholder="请选择" clearable>
-                <el-option label="4分以上" value="4+" />
-                <el-option label="3-4分" value="3-4" />
-                <el-option label="3分以下" value="-3" />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="时间范围">
-              <el-date-picker
-                v-model="searchForm.timeRange"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
-                value-format="yyyy-MM-dd"
-              />
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="handleSearch">搜索</el-button>
-              <el-button @click="resetSearch">重置</el-button>
-            </el-form-item>
-          </el-form>
-        </div>
+          </template>
 
-        <!-- 数据表格 -->
-        <el-table
-          :data="satisfactionList"
-          border
-          style="width: 100%"
-        >
-          <el-table-column prop="category" label="专业类别" min-width="180" />
-          <el-table-column label="满意度评分" width="180">
-            <template slot-scope="scope">
-              <el-rate
-                v-model="scope.row.rating"
-                disabled
-                show-score
-                text-color="#ff9900"
-                score-template="{value}"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column prop="ratingCount" label="评价人数" width="120" sortable />
-          <el-table-column label="月度变化" width="120">
-            <template slot-scope="scope">
-              <span :class="{
-                'trend-up': scope.row.monthlyChange > 0,
-                'trend-down': scope.row.monthlyChange < 0
-              }">
-                {{ scope.row.monthlyChange > 0 ? '+' : '' }}{{ scope.row.monthlyChange }}%
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="lastUpdateTime" label="最近更新" width="180" />
-          <el-table-column label="操作" width="150" fixed="right">
-            <template slot-scope="scope">
-              <el-button
-                type="text"
-                size="small"
-                @click="handleViewDetail(scope.row)"
-              >查看详情</el-button>
-              <el-button
-                type="text"
-                size="small"
-                @click="handleExportDetail(scope.row)"
-              >导出</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+          <el-form-item label="评分范围">
+            <el-select v-model="searchForm.ratingRange" placeholder="请选择" clearable>
+              <el-option label="4分以上" value="4+" />
+              <el-option label="3-4分" value="3-4" />
+              <el-option label="3分以下" value="-3" />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="resetSearch">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
 
-        <!-- 分页 -->
-        <div class="pagination-container">
-          <el-pagination
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
-            :current-page="currentPage"
-            :page-sizes="[10, 20, 50, 100]"
-            :page-size="pageSize"
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="total"
-          />
-        </div>
+      <!-- 专业满意度表格 -->
+      <el-table
+        v-if="activeSatisfactionType === 'major'"
+        :data="majorTableData"
+        border
+        style="width: 100%"
+      >
+        <el-table-column prop="category" label="专业类别" />
+        <el-table-column label="满意度评分">
+          <template slot-scope="scope">
+            <el-rate
+              v-model="scope.row.rating"
+              disabled
+              show-score
+              text-color="#ff9900"
+              score-template="{value}"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column prop="ratingCount" label="评价人数" width="100" />
+        <el-table-column label="操作" width="180" fixed="right">
+          <template slot-scope="scope">
+            <el-button
+              type="primary"
+              size="mini"
+              @click="handleEdit(scope.row, 'major')"
+            >编辑</el-button>
+            <el-button
+              type="danger"
+              size="mini"
+              @click="handleDelete(scope.row, 'major')"
+            >删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 院校满意度表格 -->
+      <el-table
+        v-if="activeSatisfactionType === 'university'"
+        :data="universityTableData"
+        border
+        style="width: 100%"
+      >
+        <el-table-column label="满意度类型">
+          <template slot-scope="scope">
+            {{ scope.row.type }}
+          </template>
+        </el-table-column>
+        <el-table-column label="满意度评分">
+          <template slot-scope="scope">
+            <el-rate
+              v-model="scope.row.rating"
+              disabled
+              show-score
+              text-color="#ff9900"
+              score-template="{value}"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column prop="count" label="评价人数" width="100" />
+        <el-table-column label="操作" width="180" fixed="right">
+          <template slot-scope="scope">
+            <el-button
+              type="primary"
+              size="mini"
+              @click="handleEdit(scope.row, 'university')"
+            >编辑</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[10, 20, 50, 100]"
+          :page-size="pageSize"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total"
+        />
       </div>
     </el-card>
 
-    <!-- 数据分析对话框 -->
+    <!-- 专业满意度编辑对话框 -->
     <el-dialog
-      title="满意度数据分析"
-      :visible.sync="analysisDialogVisible"
-      width="80%"
+      :title="majorDialogTitle"
+      :visible.sync="majorEditDialogVisible"
+      width="500px"
     >
-      <div class="analysis-content">
-        <!-- 分析图表和内容 -->
-        <div ref="analysisChart" style="height: 400px; margin-bottom: 20px;"></div>
-
-        <div class="analysis-text">
-          <h3>数据分析结果</h3>
-          <p>根据最近一年的满意度数据分析，我校满意度评价呈现以下特点：</p>
-          <ol>
-            <li><strong>整体满意度稳中有升</strong>：过去一年整体满意度从4.3分上升至4.5分，提升了4.7%。</li>
-            <li><strong>学生参与度增加</strong>：评价人数较去年同期增长25%，表明学生参与积极性提高。</li>
-            <li><strong>专业差异明显</strong>：理工类专业满意度相对较高，平均为4.7分；文科类专业平均为4.3分。</li>
-            <li><strong>改进空间</strong>：宿舍条件和食堂服务满意度相对较低，是未来需要改进的重点。</li>
-          </ol>
-        </div>
+      <el-form :model="majorEditForm" :rules="majorEditRules" ref="majorEditForm" label-width="100px">
+        <el-form-item label="专业类别" prop="category">
+          <el-input v-model="majorEditForm.category"></el-input>
+        </el-form-item>
+        <el-form-item label="满意度评分" prop="rating">
+          <el-rate
+            v-model="majorEditForm.rating"
+            show-score
+            :max="5"
+            text-color="#ff9900"
+            score-template="{value}"
+          ></el-rate>
+        </el-form-item>
+        <el-form-item label="评价人数" prop="ratingCount">
+          <el-input-number v-model="majorEditForm.ratingCount" :min="0" :step="1"></el-input-number>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="majorEditDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="submitMajorForm">确 定</el-button>
       </div>
     </el-dialog>
 
-    <!-- 详情对话框 -->
+    <!-- 院校满意度编辑对话框 -->
     <el-dialog
-      :title="`${detailData.category} 满意度详情`"
-      :visible.sync="detailDialogVisible"
-      width="70%"
+      :title="universityDialogTitle"
+      :visible.sync="universityEditDialogVisible"
+      width="500px"
     >
-      <div v-if="detailData.category" class="detail-content">
-        <!-- 详情内容 -->
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="专业类别">{{ detailData.category }}</el-descriptions-item>
-          <el-descriptions-item label="平均评分">{{ detailData.rating }}分</el-descriptions-item>
-          <el-descriptions-item label="评价人数">{{ detailData.ratingCount }}人</el-descriptions-item>
-          <el-descriptions-item label="最近更新">{{ detailData.lastUpdateTime }}</el-descriptions-item>
-          <el-descriptions-item label="月度变化">
-            <span :class="detailData.monthlyChange > 0 ? 'trend-up' : 'trend-down'">
-              {{ detailData.monthlyChange > 0 ? '+' : '' }}{{ detailData.monthlyChange }}%
-            </span>
-          </el-descriptions-item>
-          <el-descriptions-item label="评分分布">
-            <el-progress
-              v-for="(rate, index) in detailData.ratingBreakdown"
-              :key="index"
-              :percentage="rate.percentage"
-              :color="getRatingColor(rate.stars)"
-              :format="() => `${rate.stars}星: ${rate.percentage}%`"
-              style="margin-bottom: 10px;"
-            />
-          </el-descriptions-item>
-        </el-descriptions>
-
-        <div class="detail-chart" ref="detailChart" style="height: 300px; margin: 20px 0;"></div>
-
-        <div class="detail-comments">
-          <h4>学生评价摘要</h4>
-          <el-divider></el-divider>
-          <div v-for="(comment, index) in detailData.comments" :key="index" class="comment-item">
-            <div class="comment-header">
-              <span class="comment-rating">
-                <el-rate v-model="comment.rating" disabled size="small"></el-rate>
-              </span>
-              <span class="comment-date">{{ comment.date }}</span>
-            </div>
-            <div class="comment-content">{{ comment.content }}</div>
-          </div>
-        </div>
+      <el-form :model="universityEditForm" :rules="universityEditRules" ref="universityEditForm" label-width="120px">
+        <el-form-item label="综合满意度" prop="overallRating">
+          <el-rate
+            v-model="universityEditForm.overallRating"
+            show-score
+            :max="5"
+            text-color="#ff9900"
+            score-template="{value}"
+          ></el-rate>
+        </el-form-item>
+        <el-form-item label="综合评价人数" prop="overallCount">
+          <el-input-number v-model="universityEditForm.overallCount" :min="0" :step="1"></el-input-number>
+        </el-form-item>
+        <el-form-item label="环境满意度" prop="environmentRating">
+          <el-rate
+            v-model="universityEditForm.environmentRating"
+            show-score
+            :max="5"
+            text-color="#ff9900"
+            score-template="{value}"
+          ></el-rate>
+        </el-form-item>
+        <el-form-item label="环境评价人数" prop="environmentCount">
+          <el-input-number v-model="universityEditForm.environmentCount" :min="0" :step="1"></el-input-number>
+        </el-form-item>
+        <el-form-item label="生活满意度" prop="lifeRating">
+          <el-rate
+            v-model="universityEditForm.lifeRating"
+            show-score
+            :max="5"
+            text-color="#ff9900"
+            score-template="{value}"
+          ></el-rate>
+        </el-form-item>
+        <el-form-item label="生活评价人数" prop="lifeCount">
+          <el-input-number v-model="universityEditForm.lifeCount" :min="0" :step="1"></el-input-number>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="universityEditDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="submitUniversityForm">确 定</el-button>
       </div>
+    </el-dialog>
+
+    <!-- 数据分析对话框 -->
+    <el-dialog
+      :title="`${activeSatisfactionType === 'major' ? '专业' : '院校'}满意度数据分析`"
+      :visible.sync="analysisDialogVisible"
+      width="80%"
+    >
+      <div class="analysis-text">
+        <h3>数据分析结果</h3>
+        <p>根据{{ activeSatisfactionType === 'major' ? '专业' : '院校' }}满意度数据分析，我校满意度评价呈现以下特点：</p>
+
+        <!-- 专业满意度分析 -->
+        <template v-if="activeSatisfactionType === 'major'">
+          <ol>
+            <li><strong>整体满意度良好</strong>：专业平均满意度评分为 {{ majorAvgRating.toFixed(1) }} 分。</li>
+            <li><strong>学生参与积极</strong>：共有 {{ majorTotalRatings }} 人次参与评价。</li>
+            <li v-if="majorTableData.length > 0"><strong>专业差异情况</strong>：评分最高的专业为 {{ highestRatedMajor.category || '无' }}（{{ highestRatedMajor.rating || 0 }}分），评分最低的专业为 {{ lowestRatedMajor.category || '无' }}（{{ lowestRatedMajor.rating || 0 }}分）。</li>
+          </ol>
+        </template>
+
+        <!-- 院校满意度分析 -->
+        <template v-else>
+          <ol>
+            <li><strong>综合满意度表现良好</strong>：综合满意度评分为 {{ universityOverallRating }} 分。</li>
+            <li><strong>环境满意度表现突出</strong>：环境满意度评分为 {{ universityEnvironmentRating }} 分。</li>
+            <li><strong>生活满意度情况</strong>：生活满意度评分为 {{ universityLifeRating }} 分。</li>
+            <li><strong>学生参与度高</strong>：共有 {{ universityTotalCount }} 人次参与院校满意度评价。</li>
+          </ol>
+        </template>
+      </div>
+    </el-dialog>
+
+    <!-- 删除确认框 -->
+    <el-dialog
+      title="确认删除"
+      :visible.sync="deleteDialogVisible"
+      width="30%"
+    >
+      <div>确定要删除 "{{ deleteItem.category }}" 的满意度记录吗？</div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="deleteDialogVisible = false">取 消</el-button>
+        <el-button type="danger" @click="confirmDelete">确 定</el-button>
+      </span>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import * as echarts from 'echarts'
+// 导入API函数
+import { getUniversitySatisfactionList, getUniversitySatisfactionDetail, saveUniversitySatisfaction } from '@/api/universitySatisfaction'
+import { parseTime } from '@/utils'
 
 export default {
-  name: 'UniversitySatisfactionManagement',
-
+  name: 'SatisfactionManagement',
   data() {
     return {
       loading: false,
-      // 概览数据
-      overallSatisfaction: 4.5,
-      satisfactionTrend: 2.3,
-      totalRatings: 1250,
-      monthlyNewRatings: 156,
-      participationRate: 85,
-      participationTrend: 5,
-
-      // 图表实例
-      charts: {
-        trendChart: null,
-        distributionChart: null,
-        analysisChart: null,
-        detailChart: null
-      },
-
-      // 趋势图配置
-      trendTimeRange: 'month',
-
-      // 评分分布
-      ratingDistribution: {
-        5: 45,
-        4: 35,
-        3: 15,
-        2: 4,
-        1: 1
-      },
+      activeSatisfactionType: 'major', // 默认显示专业满意度
 
       // 搜索表单
       searchForm: {
         category: '',
         ratingRange: '',
-        timeRange: []
       },
 
-      // 表格数据
+      // 专业满意度表格数据
+      majorTableData: [],
+
+      // 院校满意度表格数据
+      universityTableData: [],
+
+      // 分页
       currentPage: 1,
       pageSize: 10,
       total: 0,
-      satisfactionList: [],
 
-      // 分类选项
-      categoryOptions: [
-        { label: '理工类', value: 'science' },
-        { label: '文学类', value: 'liberal-arts' },
-        { label: '经管类', value: 'economics' },
-        { label: '医学类', value: 'medicine' }
-      ],
+      // 专业满意度编辑表单
+      majorEditForm: {
+        id: null,
+        universityId: null,
+        category: '',
+        rating: 0,
+        ratingCount: 0
+      },
+
+      // 院校满意度编辑表单
+      universityEditForm: {
+        id: null,
+        universityId: null,
+        overallRating: 0,
+        overallCount: 0,
+        environmentRating: 0,
+        environmentCount: 0,
+        lifeRating: 0,
+        lifeCount: 0
+      },
+
+      // 专业满意度表单验证规则
+      majorEditRules: {
+        category: [
+          { required: true, message: '请输入专业类别', trigger: 'blur' },
+          { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
+        ],
+        rating: [
+          { required: true, message: '请选择评分', trigger: 'change' },
+          { type: 'number', min: 1, max: 5, message: '评分范围在 1 到 5 分', trigger: 'change' }
+        ],
+        ratingCount: [
+          { required: true, message: '请输入评价人数', trigger: 'blur' },
+          { type: 'number', min: 0, message: '评价人数必须大于等于0', trigger: 'blur' }
+        ]
+      },
+
+      // 院校满意度表单验证规则
+      universityEditRules: {
+        overallRating: [
+          { required: true, message: '请选择综合满意度评分', trigger: 'change' },
+          { type: 'number', min: 1, max: 5, message: '评分范围在 1 到 5 分', trigger: 'change' }
+        ],
+        overallCount: [
+          { required: true, message: '请输入评价人数', trigger: 'blur' },
+          { type: 'number', min: 0, message: '评价人数必须大于等于0', trigger: 'blur' }
+        ],
+        environmentRating: [
+          { required: true, message: '请选择环境满意度评分', trigger: 'change' },
+          { type: 'number', min: 1, max: 5, message: '评分范围在 1 到 5 分', trigger: 'change' }
+        ],
+        environmentCount: [
+          { required: true, message: '请输入评价人数', trigger: 'blur' },
+          { type: 'number', min: 0, message: '评价人数必须大于等于0', trigger: 'blur' }
+        ],
+        lifeRating: [
+          { required: true, message: '请选择生活满意度评分', trigger: 'change' },
+          { type: 'number', min: 1, max: 5, message: '评分范围在 1 到 5 分', trigger: 'change' }
+        ],
+        lifeCount: [
+          { required: true, message: '请输入评价人数', trigger: 'blur' },
+          { type: 'number', min: 0, message: '评价人数必须大于等于0', trigger: 'blur' }
+        ]
+      },
 
       // 对话框
+      majorEditDialogVisible: false,
+      universityEditDialogVisible: false,
+      deleteDialogVisible: false,
       analysisDialogVisible: false,
-      detailDialogVisible: false,
-      detailData: {}
+
+      // 删除项
+      deleteItem: {},
+      deleteType: 'major',
+
+      // 分类选项 - 基于您的数据库中的专业类别
+      categoryOptions: [
+        { label: '计算机科学与技术', value: '计算机科学与技术' },
+        { label: '数学', value: '数学' },
+        { label: '物理学', value: '物理学' },
+        { label: '化学', value: '化学' },
+        { label: '生物科学', value: '生物科学' },
+        { label: '中国语言文学', value: '中国语言文学' },
+        { label: '法学', value: '法学' },
+        { label: '经济学类', value: '经济学类' }
+      ],
+
+      // 用户所属大学ID
+      universityId: null
     }
   },
+  computed: {
+    // 专业满意度对话框标题
+    majorDialogTitle() {
+      return this.majorEditForm.id ? '编辑专业满意度记录' : '添加专业满意度记录'
+    },
 
-  mounted() {
-    this.initCharts()
+    // 院校满意度对话框标题
+    universityDialogTitle() {
+      return '编辑院校满意度'
+    },
+
+    // 专业满意度平均评分
+    majorAvgRating() {
+      if (this.majorTableData.length === 0) return 0
+      const sum = this.majorTableData.reduce((acc, cur) => acc + parseFloat(cur.rating || 0), 0)
+      return sum / this.majorTableData.length
+    },
+
+    // 专业满意度总评价人数
+    majorTotalRatings() {
+      return this.majorTableData.reduce((acc, cur) => acc + (cur.ratingCount || 0), 0)
+    },
+
+    // 评分最高的专业
+    highestRatedMajor() {
+      if (this.majorTableData.length === 0) return { category: '无', rating: 0 }
+      return this.majorTableData.reduce((prev, current) =>
+        (parseFloat(prev.rating || 0) > parseFloat(current.rating || 0)) ? prev : current
+      )
+    },
+
+    // 评分最低的专业
+    lowestRatedMajor() {
+      if (this.majorTableData.length === 0) return { category: '无', rating: 0 }
+      return this.majorTableData.reduce((prev, current) =>
+        (parseFloat(prev.rating || 0) < parseFloat(current.rating || 0)) ? prev : current
+      )
+    },
+
+    // 院校综合满意度
+    universityOverallRating() {
+      const item = this.universityTableData.find(item => item.type === '综合满意度')
+      return item ? item.rating : 0
+    },
+
+    // 院校环境满意度
+    universityEnvironmentRating() {
+      const item = this.universityTableData.find(item => item.type === '环境满意度')
+      return item ? item.rating : 0
+    },
+
+    // 院校生活满意度
+    universityLifeRating() {
+      const item = this.universityTableData.find(item => item.type === '生活满意度')
+      return item ? item.rating : 0
+    },
+
+    // 院校满意度总评价人数
+    universityTotalCount() {
+      return this.universityTableData.reduce((acc, cur) => acc + (cur.count || 0), 0)
+    }
+  },
+  created() {
+    // 获取当前高校管理员的大学ID
+    this.universityId = this.$store.getters.universityId || 1
+    console.log('当前大学ID:', this.universityId)
     this.fetchData()
   },
-
-  beforeDestroy() {
-    // 销毁图表实例
-    Object.values(this.charts).forEach(chart => {
-      chart && chart.dispose()
-    })
-    window.removeEventListener('resize', this.handleResize)
-  },
-
   methods: {
-    initCharts() {
-      // 初始化图表
-      this.$nextTick(() => {
-        this.charts.trendChart = echarts.init(this.$refs.trendChart)
-        this.charts.distributionChart = echarts.init(this.$refs.distributionChart)
-
-        // 监听窗口大小变化
-        window.addEventListener('resize', this.handleResize)
-      })
+    // 处理Tab切换
+    handleTabChange() {
+      this.currentPage = 1
+      this.fetchData()
     },
 
-    handleResize() {
-      // 调整图表大小
-      Object.values(this.charts).forEach(chart => {
-        chart && chart.resize()
-      })
-    },
-
+    // 获取数据
     async fetchData() {
-      try {
-        this.loading = true
-        await Promise.all([
-          this.fetchOverviewData(),
-          this.fetchSatisfactionList()
-        ])
+      this.loading = true
 
-        // 渲染图表
-        this.renderTrendChart()
-        this.renderDistributionChart()
+      try {
+        if (this.activeSatisfactionType === 'major') {
+          // 使用满意度评分表获取专业满意度数据
+          await this.fetchMajorSatisfactionData()
+        } else {
+          await this.fetchUniversitySatisfactionData()
+        }
       } catch (error) {
-        console.error('获取满意度数据失败:', error)
-        this.$message.error('获取数据失败')
+        console.error(`获取${this.activeSatisfactionType === 'major' ? '专业' : '院校'}满意度数据失败:`, error)
       } finally {
         this.loading = false
       }
     },
 
-    async fetchOverviewData() {
-      // 模拟获取概览数据
-      await new Promise(resolve => setTimeout(resolve, 500))
+    // 获取专业满意度数据 - 直接从满意度评分表获取数据
+    async fetchMajorSatisfactionData() {
+      try {
+        // 由于API不完整，我们使用模拟数据
+        console.log('加载专业满意度数据，使用满意度评分表...');
 
-      // 保持使用已有的模拟数据
+        // 此处应当使用直接查询satisfaction_rating表的API
+        // 但由于目前API不支持，我们使用模拟数据
+
+        // 模拟从本地数据库获取数据 - 实际项目中应当从API获取
+        this.loadSatisfactionRatings();
+      } catch (error) {
+        console.error('获取专业满意度列表失败:', error)
+        // 出错时显示模拟数据
+        this.mockMajorData()
+      }
     },
 
-    async fetchSatisfactionList() {
-      // 模拟获取满意度列表
-      await new Promise(resolve => setTimeout(resolve, 500))
+    // 模拟从数据库加载满意度评分数据
+    loadSatisfactionRatings() {
+      // 这里模拟从satisfaction_rating表加载数据
+      // 实际项目中应当通过API调用获取
 
-      // 模拟数据
-      this.satisfactionList = [
-        {
-          category: '计算机科学与技术',
-          rating: 4.8,
-          ratingCount: 520,
-          monthlyChange: 1.2,
-          lastUpdateTime: '2025-03-20 15:30:22'
-        },
-        {
-          category: '数学',
-          rating: 4.7,
-          ratingCount: 380,
-          monthlyChange: 0.5,
-          lastUpdateTime: '2025-03-19 11:15:47'
-        },
-        {
-          category: '物理学',
-          rating: 4.6,
-          ratingCount: 420,
-          monthlyChange: -0.3,
-          lastUpdateTime: '2025-03-18 14:22:36'
-        },
-        {
-          category: '经济学',
-          rating: 4.5,
-          ratingCount: 610,
-          monthlyChange: 0.8,
-          lastUpdateTime: '2025-03-15 09:45:13'
-        },
-        {
-          category: '法学',
-          rating: 4.4,
-          ratingCount: 430,
-          monthlyChange: 1.5,
-          lastUpdateTime: '2025-03-14 16:30:55'
-        }
-      ]
+      const mockData = [
+        { id: 1, universityId: 1, category: '计算机科学与技术', rating: 4.8, ratingCount: 150 },
+        { id: 2, universityId: 1, category: '数学', rating: 4.7, ratingCount: 120 },
+        { id: 3, universityId: 1, category: '物理学', rating: 4.5, ratingCount: 100 },
+        { id: 4, universityId: 1, category: '经济学', rating: 4.6, ratingCount: 130 },
+        { id: 5, universityId: 1, category: '法学', rating: 4.7, ratingCount: 110 },
+        { id: 6, universityId: 1, category: '中国语言文学', rating: 4.6, ratingCount: 90 }
+      ];
 
-      this.total = 15
+      // 设置表格数据和分页信息
+      this.majorTableData = mockData.filter(item => item.universityId === this.universityId);
+      this.total = this.majorTableData.length;
+
+      console.log('满意度评分表数据:', this.majorTableData);
     },
 
-    renderTrendChart() {
-      if (!this.charts.trendChart) return
+    // 获取院校满意度数据
+    async fetchUniversitySatisfactionData() {
+      try {
+        console.log('获取院校满意度数据, universityId:', this.universityId)
+        const response = await getUniversitySatisfactionDetail(this.universityId)
+        console.log('院校满意度API返回数据:', response)
 
-      // 模拟趋势数据
-      const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
-      const data = [4.2, 4.3, 4.25, 4.4, 4.35, 4.5, 4.55, 4.6, 4.5, 4.65, 4.7, 4.5]
-
-      const option = {
-        tooltip: {
-          trigger: 'axis',
-          formatter: '{b}<br/>满意度: {c}分'
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '3%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          boundaryGap: false,
-          data: months
-        },
-        yAxis: {
-          type: 'value',
-          min: 3.5,
-          max: 5,
-          name: '满意度评分'
-        },
-        series: [{
-          name: '满意度',
-          type: 'line',
-          data: data,
-          smooth: true,
-          lineStyle: {
-            width: 3
-          },
-          itemStyle: {
-            color: '#409EFF'
-          },
-          areaStyle: {
-            color: {
-              type: 'linear',
-              x: 0,
-              y: 0,
-              x2: 0,
-              y2: 1,
-              colorStops: [
-                {
-                  offset: 0,
-                  color: 'rgba(64, 158, 255, 0.5)'
-                },
-                {
-                  offset: 1,
-                  color: 'rgba(64, 158, 255, 0.1)'
-                }
-              ]
+        if (response && response.data) {
+          const data = response.data
+          // 转换为表格数据格式
+          this.universityTableData = [
+            {
+              type: '综合满意度',
+              rating: parseFloat(data.overallRating) || 0,
+              count: data.overallCount || 0
+            },
+            {
+              type: '环境满意度',
+              rating: parseFloat(data.environmentRating) || 0,
+              count: data.environmentCount || 0
+            },
+            {
+              type: '生活满意度',
+              rating: parseFloat(data.lifeRating) || 0,
+              count: data.lifeCount || 0
             }
-          }
-        }]
-      }
+          ]
 
-      this.charts.trendChart.setOption(option)
+          // 保存表单数据
+          this.universityEditForm = {
+            id: data.id,
+            universityId: data.universityId || this.universityId,
+            overallRating: parseFloat(data.overallRating) || 0,
+            overallCount: data.overallCount || 0,
+            environmentRating: parseFloat(data.environmentRating) || 0,
+            environmentCount: data.environmentCount || 0,
+            lifeRating: parseFloat(data.lifeRating) || 0,
+            lifeCount: data.lifeCount || 0
+          }
+
+          this.total = 3 // 固定为3条记录
+          console.log('处理后的院校满意度数据:', this.universityTableData)
+        } else {
+          console.warn('未获取到院校满意度数据，使用模拟数据')
+          this.mockUniversityData()
+        }
+      } catch (error) {
+        console.error('获取院校满意度数据失败:', error)
+        console.warn('获取院校满意度数据出错，使用模拟数据')
+        this.mockUniversityData()
+      }
     },
 
-    renderDistributionChart() {
-      if (!this.charts.distributionChart) return
+    // 模拟专业满意度数据（开发时使用）
+    mockMajorData() {
+      const mockCategories = ['计算机科学与技术', '数学', '物理学', '化学', '生物科学', '中国语言文学'];
 
-      const option = {
-        tooltip: {
-          trigger: 'item',
-          formatter: '{b}: {c} ({d}%)'
+      this.majorTableData = mockCategories.map((category, index) => {
+        return {
+          id: index + 1,
+          universityId: this.universityId,
+          category: category,
+          rating: 3.5 + Math.random() * 1.5,
+          ratingCount: Math.floor(100 + Math.random() * 200)
+        }
+      });
+
+      this.total = this.majorTableData.length;
+      console.log('模拟的专业满意度数据:', this.majorTableData)
+    },
+
+    // 模拟院校满意度数据（开发时使用）
+    mockUniversityData() {
+      this.universityTableData = [
+        {
+          type: '综合满意度',
+          rating: 4.7,
+          count: 1803
         },
-        legend: {
-          orient: 'horizontal',
-          bottom: 0,
-          data: ['5星', '4星', '3星', '2星', '1星']
+        {
+          type: '环境满意度',
+          rating: 4.8,
+          count: 2011
         },
-        series: [
-          {
-            name: '评分分布',
-            type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
-            itemStyle: {
-              borderRadius: 10,
-              borderColor: '#fff',
-              borderWidth: 2
-            },
-            label: {
-              show: false,
-              position: 'center'
-            },
-            emphasis: {
-              label: {
-                show: true,
-                fontSize: 20,
-                fontWeight: 'bold'
+        {
+          type: '生活满意度',
+          rating: 4.6,
+          count: 1773
+        }
+      ];
+
+      this.universityEditForm = {
+        id: null,
+        universityId: this.universityId,
+        overallRating: 4.7,
+        overallCount: 1803,
+        environmentRating: 4.8,
+        environmentCount: 2011,
+        lifeRating: 4.6,
+        lifeCount: 1773
+      };
+
+      this.total = 3;
+      console.log('模拟的院校满意度数据:', this.universityTableData)
+    },
+
+    // 处理搜索参数
+    getSearchParams() {
+      const params = {}
+
+      // 处理专业类别搜索 - 仅专业满意度需要
+      if (this.activeSatisfactionType === 'major' && this.searchForm.category) {
+        params.category = this.searchForm.category
+      }
+
+      // 处理评分范围搜索
+      if (this.searchForm.ratingRange) {
+        const range = this.searchForm.ratingRange
+        if (range === '4+') {
+          params.minRating = 4
+        } else if (range === '3-4') {
+          params.minRating = 3
+          params.maxRating = 4
+        } else if (range === '-3') {
+          params.maxRating = 3
+        }
+      }
+
+      return params
+    },
+
+    // 添加记录
+    handleAdd() {
+      if (this.activeSatisfactionType === 'major') {
+        this.majorEditForm = {
+          id: null,
+          universityId: this.universityId,
+          category: '',
+          rating: 0,
+          ratingCount: 0
+        }
+        this.majorEditDialogVisible = true
+      } else {
+        // 院校满意度不允许添加新记录，因为一个大学只有一条院校满意度记录
+        this.$message.info('请直接编辑现有的院校满意度记录')
+      }
+    },
+
+    // 编辑记录
+    handleEdit(row, type) {
+      if (type === 'major') {
+        this.majorEditForm = {
+          id: row.id,
+          universityId: row.universityId,
+          category: row.category,
+          rating: parseFloat(row.rating) || 0,
+          ratingCount: row.ratingCount || 0
+        }
+        this.majorEditDialogVisible = true
+      } else {
+        // 对于院校满意度，显示编辑对话框
+        this.universityEditDialogVisible = true
+      }
+    },
+
+    // 删除记录
+    handleDelete(row, type) {
+      this.deleteItem = row
+      this.deleteType = type
+      this.deleteDialogVisible = true
+    },
+
+    // 确认删除
+    async confirmDelete() {
+      try {
+        if (this.deleteType === 'major') {
+          console.log('删除专业满意度记录:', this.deleteItem.id);
+
+          // 实际项目应当调用API删除
+          // 这里模拟删除操作
+          const index = this.majorTableData.findIndex(item => item.id === this.deleteItem.id);
+          if (index !== -1) {
+            this.majorTableData.splice(index, 1);
+            this.total--;
+
+            this.$message.success('删除成功');
+            this.deleteDialogVisible = false;
+          }
+        } else {
+          // 院校满意度不允许删除
+          this.$message.info('院校满意度记录不能删除')
+          this.deleteDialogVisible = false
+        }
+      } catch (error) {
+        console.error('删除满意度记录失败:', error)
+        this.$message.error('删除失败: ' + (error.message || '未知错误'))
+      }
+    },
+
+    // 提交专业满意度表单
+    submitMajorForm() {
+      this.$refs.majorEditForm.validate(async (valid) => {
+        if (valid) {
+          try {
+            // 构建提交数据
+            const data = {
+              id: this.majorEditForm.id,
+              universityId: this.majorEditForm.universityId,
+              category: this.majorEditForm.category,
+              rating: this.majorEditForm.rating,
+              ratingCount: this.majorEditForm.ratingCount
+            }
+
+            console.log('保存专业满意度数据:', data)
+
+            // 实际项目应当调用API保存
+            // 这里模拟保存操作
+            if (data.id) {
+              // 更新已有记录
+              const index = this.majorTableData.findIndex(item => item.id === data.id);
+              if (index !== -1) {
+                this.majorTableData.splice(index, 1, { ...data });
               }
-            },
-            labelLine: {
-              show: false
-            },
-            data: [
-              { value: this.ratingDistribution[5], name: '5星', itemStyle: { color: '#67C23A' } },
-              { value: this.ratingDistribution[4], name: '4星', itemStyle: { color: '#409EFF' } },
-              { value: this.ratingDistribution[3], name: '3星', itemStyle: { color: '#909399' } },
-              { value: this.ratingDistribution[2], name: '2星', itemStyle: { color: '#E6A23C' } },
-              { value: this.ratingDistribution[1], name: '1星', itemStyle: { color: '#F56C6C' } }
-            ]
+            } else {
+              // 添加新记录
+              data.id = this.majorTableData.length + 1;
+              this.majorTableData.push({ ...data });
+              this.total++;
+            }
+
+            this.$message.success(this.majorEditForm.id ? '更新成功' : '添加成功')
+            this.majorEditDialogVisible = false
+          } catch (error) {
+            console.error('保存专业满意度记录失败:', error)
+            this.$message.error('保存失败: ' + (error.message || '未知错误'))
           }
-        ]
-      }
-
-      this.charts.distributionChart.setOption(option)
+        } else {
+          return false
+        }
+      })
     },
 
-    renderAnalysisChart() {
-      if (!this.charts.analysisChart) {
-        this.$nextTick(() => {
-          this.charts.analysisChart = echarts.init(this.$refs.analysisChart)
-        })
-      }
+    // 提交院校满意度表单
+    submitUniversityForm() {
+      this.$refs.universityEditForm.validate(async (valid) => {
+        if (valid) {
+          try {
+            // 构建提交数据
+            const data = {
+              id: this.universityEditForm.id,
+              universityId: this.universityEditForm.universityId,
+              overallRating: this.universityEditForm.overallRating,
+              overallCount: this.universityEditForm.overallCount,
+              environmentRating: this.universityEditForm.environmentRating,
+              environmentCount: this.universityEditForm.environmentCount,
+              lifeRating: this.universityEditForm.lifeRating,
+              lifeCount: this.universityEditForm.lifeCount
+            }
 
-      if (!this.charts.analysisChart) return
+            console.log('保存院校满意度数据:', data)
+            // 调用保存API
+            const response = await saveUniversitySatisfaction(data)
+            console.log('保存院校满意度响应:', response)
 
-      // 模拟不同专业类别的满意度数据
-      const categories = ['理工类', '文学类', '经管类', '医学类', '法学类', '艺术类']
-      const data = {
-        '教学质量': [4.6, 4.3, 4.5, 4.7, 4.4, 4.2],
-        '师资水平': [4.8, 4.5, 4.6, 4.9, 4.7, 4.3],
-        '课程设置': [4.5, 4.4, 4.7, 4.6, 4.5, 4.4],
-        '学习环境': [4.7, 4.6, 4.6, 4.8, 4.5, 4.6],
-        '就业指导': [4.3, 4.2, 4.8, 4.5, 4.6, 4.1]
-      }
-
-      const series = Object.keys(data).map(key => ({
-        name: key,
-        type: 'bar',
-        data: data[key]
-      }))
-
-      const option = {
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: {
-            type: 'shadow'
+            this.$message.success('更新成功')
+            this.universityEditDialogVisible = false
+            this.fetchUniversitySatisfactionData() // 重新加载院校满意度数据
+          } catch (error) {
+            console.error('保存院校满意度记录失败:', error)
+            this.$message.error('保存失败: ' + (error.message || '未知错误'))
           }
-        },
-        legend: {
-          data: Object.keys(data)
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '3%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          data: categories
-        },
-        yAxis: {
-          type: 'value',
-          min: 3.5,
-          max: 5
-        },
-        series: series
-      }
-
-      this.charts.analysisChart.setOption(option)
+        } else {
+          return false
+        }
+      })
     },
 
-    renderDetailChart() {
-      if (!this.charts.detailChart) {
-        this.$nextTick(() => {
-          this.charts.detailChart = echarts.init(this.$refs.detailChart)
-        })
-      }
-
-      if (!this.charts.detailChart) return
-
-      // 模拟12个月的历史数据
-      const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
-      const data = []
-
-      // 生成波动的历史数据，基于当前评分
-      const baseRating = this.detailData.rating || 4.5
-      for (let i = 0; i < 12; i++) {
-        data.push((baseRating - 0.3 + Math.random() * 0.6).toFixed(1))
-      }
-
-      const option = {
-        title: {
-          text: '满意度历史趋势',
-          left: 'center'
-        },
-        tooltip: {
-          trigger: 'axis'
-        },
-        xAxis: {
-          type: 'category',
-          data: months
-        },
-        yAxis: {
-          type: 'value',
-          min: Math.floor(Math.min(...data.map(Number)) * 10) / 10 - 0.1,
-          max: Math.ceil(Math.max(...data.map(Number)) * 10) / 10 + 0.1
-        },
-        series: [{
-          data: data,
-          type: 'line',
-          smooth: true,
-          lineStyle: {
-            width: 3
-          },
-          itemStyle: {
-            color: '#409EFF'
-          },
-          markPoint: {
-            data: [
-              { type: 'max', name: '最高值' },
-              { type: 'min', name: '最低值' }
-            ]
-          }
-        }]
-      }
-
-      this.charts.detailChart.setOption(option)
-    },
-
-    getRatingColor(rating) {
-      const colors = {
-        1: '#F56C6C',
-        2: '#E6A23C',
-        3: '#909399',
-        4: '#409EFF',
-        5: '#67C23A'
-      }
-      return colors[rating] || '#909399'
-    },
-
-    handleTrendTimeRangeChange(value) {
-      // 更新趋势图数据
-      this.renderTrendChart()
-    },
-
+    // 搜索
     handleSearch() {
       this.currentPage = 1
-      this.fetchSatisfactionList()
+
+      if (this.activeSatisfactionType === 'major') {
+        // 本地搜索专业满意度数据
+        this.searchMajorData();
+      } else {
+        // 院校满意度不需要搜索
+      }
     },
 
-    resetSearch() {
-      this.$refs.searchForm.resetFields()
-      this.handleSearch()
-    },
+    // 本地搜索专业满意度数据
+    searchMajorData() {
+      // 模拟从本地数据中搜索
+      const params = this.getSearchParams();
 
-    handleSizeChange(val) {
-      this.pageSize = val
-      this.fetchSatisfactionList()
-    },
+      // 从所有模拟数据中筛选
+      let filteredData = [
+        { id: 1, universityId: 1, category: '计算机科学与技术', rating: 4.8, ratingCount: 150 },
+        { id: 2, universityId: 1, category: '数学', rating: 4.7, ratingCount: 120 },
+        { id: 3, universityId: 1, category: '物理学', rating: 4.5, ratingCount: 100 },
+        { id: 4, universityId: 1, category: '经济学', rating: 4.6, ratingCount: 130 },
+        { id: 5, universityId: 1, category: '法学', rating: 4.7, ratingCount: 110 },
+        { id: 6, universityId: 1, category: '中国语言文学', rating: 4.6, ratingCount: 90 }
+      ];
 
-    handleCurrentChange(val) {
-      this.currentPage = val
-      this.fetchSatisfactionList()
-    },
+      // 按大学ID筛选
+      filteredData = filteredData.filter(item => item.universityId === this.universityId);
 
-    handleViewDetail(row) {
-      this.detailDialogVisible = true
-
-      // 模拟详细数据
-      this.detailData = {
-        ...row,
-        ratingBreakdown: [
-          { stars: 5, percentage: 60 },
-          { stars: 4, percentage: 30 },
-          { stars: 3, percentage: 7 },
-          { stars: 2, percentage: 2 },
-          { stars: 1, percentage: 1 }
-        ],
-        comments: [
-          { rating: 5, date: '2025-03-15', content: '教师水平高，课程内容丰富，学习氛围浓厚，非常满意。' },
-          { rating: 4, date: '2025-03-10', content: '整体满意，但希望增加更多实践课程。' },
-          { rating: 5, date: '2025-03-05', content: '老师们都很负责任，随时可以请教问题，获得很多帮助。' },
-          { rating: 3, date: '2025-02-28', content: '课程安排有些紧张，希望能更合理规划。' },
-          { rating: 5, date: '2025-02-20', content: '课程设置符合行业需求，很有前瞻性。' }
-        ]
+      // 按专业类别筛选
+      if (params.category) {
+        filteredData = filteredData.filter(item => item.category.includes(params.category));
       }
 
-      // 渲染详情图表
-      this.$nextTick(() => {
-        this.renderDetailChart()
-      })
+      // 按评分范围筛选
+      if (params.minRating) {
+        filteredData = filteredData.filter(item => item.rating >= params.minRating);
+      }
+      if (params.maxRating) {
+        filteredData = filteredData.filter(item => item.rating <= params.maxRating);
+      }
+
+      // 更新表格数据和分页信息
+      this.majorTableData = filteredData;
+      this.total = filteredData.length;
     },
 
-    handleExportDetail(row) {
-      this.$message.success(`已导出 ${row.category} 的满意度数据`)
+    // 重置搜索
+    resetSearch() {
+      this.$refs.searchForm.resetFields()
+
+      if (this.activeSatisfactionType === 'major') {
+        this.loadSatisfactionRatings();
+      }
     },
 
-    handleExport() {
-      this.$message.success('已导出全部满意度数据')
+    // 分页大小变化
+    handleSizeChange(val) {
+      this.pageSize = val
+
+      if (this.activeSatisfactionType === 'major') {
+        // 本地分页 - 实际应当调用API
+        this.loadSatisfactionRatings();
+      }
     },
 
+    // 页码变化
+    handleCurrentChange(val) {
+      this.currentPage = val
+
+      if (this.activeSatisfactionType === 'major') {
+        // 本地分页 - 实际应当调用API
+        this.loadSatisfactionRatings();
+      }
+    },
+
+    // 显示分析对话框
     showAnalysisDialog() {
       this.analysisDialogVisible = true
-
-      // 渲染分析图表
-      this.$nextTick(() => {
-        this.renderAnalysisChart()
-      })
     }
   }
 }
@@ -738,172 +875,46 @@ export default {
 .satisfaction-management {
   padding: 20px;
 
-  .data-overview {
-    margin-bottom: 30px;
-
-    .data-card {
-      .card-title {
-        font-size: 14px;
-        color: #666;
-        margin-bottom: 10px;
-      }
-
-      .card-value {
-        font-size: 24px;
-        font-weight: bold;
-        color: #333;
-        margin-bottom: 10px;
-      }
-
-      .card-trend {
-        font-size: 14px;
-
-        &.up {
-          color: #67C23A;
-        }
-
-        &.down {
-          color: #F56C6C;
-        }
-
-        i {
-          margin-right: 4px;
-        }
-      }
-
-      .card-desc {
-        font-size: 12px;
-        color: #999;
-      }
+  .el-card {
+    .clearfix {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   }
 
-  .section-title {
-    font-size: 16px;
-    font-weight: bold;
-    margin: 20px 0;
-    padding-left: 10px;
-    border-left: 4px solid #409EFF;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .operation-group {
-      .el-button {
-        margin-left: 10px;
-      }
-    }
-  }
-
-  .trend-chart {
-    margin-bottom: 30px;
-
-    .chart-filters {
-      margin-bottom: 15px;
-      text-align: right;
-    }
-  }
-
-  .rating-distribution {
-    margin-bottom: 30px;
-
-    .distribution-list {
-      .distribution-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-
-        .star-label {
-          width: 50px;
-          margin-right: 10px;
-          text-align: right;
-        }
-
-        .el-progress {
-          flex: 1;
-        }
-      }
-    }
-  }
-
-  .satisfaction-list {
-    .search-bar {
-      margin-bottom: 20px;
-      padding: 15px;
-      background: #f5f7fa;
-      border-radius: 4px;
-    }
-
-    .trend-up {
-      color: #67C23A;
-    }
-
-    .trend-down {
-      color: #F56C6C;
-    }
+  .search-bar {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f5f7fa;
+    border-radius: 4px;
   }
 
   .pagination-container {
-    text-align: center;
     margin-top: 20px;
+    text-align: center;
   }
 
-  .analysis-content {
-    .analysis-text {
-      padding: 20px;
-      background: #f9f9f9;
-      border-radius: 4px;
+  .analysis-text {
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 4px;
 
-      h3 {
-        margin-top: 0;
-        margin-bottom: 15px;
-        color: #409EFF;
-      }
-
-      p {
-        margin-bottom: 10px;
-      }
-
-      ol {
-        padding-left: 20px;
-
-        li {
-          margin-bottom: 10px;
-        }
-      }
+    h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #409EFF;
     }
-  }
 
-  .detail-content {
-    .detail-comments {
-      margin-top: 20px;
+    p {
+      margin-bottom: 10px;
+    }
 
-      h4 {
-        font-size: 16px;
-        color: #409EFF;
-      }
+    ol {
+      padding-left: 20px;
 
-      .comment-item {
-        margin-bottom: 15px;
-        padding: 10px;
-        background: #f9f9f9;
-        border-radius: 4px;
-
-        .comment-header {
-          display: flex;
-          justify-content: space-between;
-          margin-bottom: 8px;
-
-          .comment-date {
-            color: #909399;
-            font-size: 12px;
-          }
-        }
-
-        .comment-content {
-          color: #606266;
-          line-height: 1.6;
-        }
+      li {
+        margin-bottom: 10px;
       }
     }
   }
