@@ -122,9 +122,14 @@
 </template>
 
 <script>
-// 导入正确的API函数
+// 导入API函数
 import { getMajorRecommendations } from '@/api/university'
-import { updateRecommendationRating, deleteRecommendationRating } from '@/api/university'
+import {
+  getRecommendationRatingDetail,
+  deleteRecommendationRating,
+  getUniversityRecommendations,
+  updateUniversityRecommendation
+} from '@/api/recommendationRating'
 
 export default {
   name: 'UniversityRecommendationManagement',
@@ -207,8 +212,6 @@ export default {
     async fetchData() {
       try {
         this.loading = true
-
-        // 使用正确的API获取专业推荐数据
         await this.fetchRecommendationData()
       } catch (error) {
         console.error('获取专业推荐列表失败:', error)
@@ -218,13 +221,22 @@ export default {
       }
     },
 
-    // 获取专业推荐数据 - 使用正确的API
+    // 获取专业推荐数据
     async fetchRecommendationData() {
       try {
         console.log('获取专业推荐数据, universityId:', this.universityId)
 
-        // 使用正确的API
-        const response = await getMajorRecommendations(this.universityId)
+        // 优先尝试使用新的专门API
+        let response
+        try {
+          response = await getUniversityRecommendations(this.universityId)
+          console.log('使用专门API获取数据成功')
+        } catch (error) {
+          console.log('专门API调用失败，回退使用通用API', error)
+          // 如果新API失败，回退到旧API
+          response = await getMajorRecommendations(this.universityId)
+        }
+
         console.log('专业推荐API返回数据:', response)
 
         if (response && response.data) {
@@ -237,9 +249,9 @@ export default {
             recommendationData = response.data.index.map(item => ({
               id: item.id,
               universityId: this.universityId,
-              majorCategory: item.name,
+              majorCategory: item.name || item.majorCategory,
               rating: parseFloat(item.rating) || 0,
-              recommendationCount: item.count || 0
+              recommendationCount: item.count || item.recommendationCount || 0
             }))
           } else if (Array.isArray(response.data)) {
             // 如果直接是数组
@@ -376,8 +388,21 @@ export default {
 
             console.log('保存专业推荐数据:', data)
 
-            // 调用API保存
-            await updateRecommendationRating(data)
+            // 优先使用新的专门API
+            try {
+              await updateUniversityRecommendation(this.universityId, data)
+              console.log('使用专门API保存成功')
+            } catch (error) {
+              console.log('专门API调用失败，回退使用通用API', error)
+              // 如果专门API失败，回退到通用API
+              await saveRecommendationRating({
+                id: data.id,
+                universityId: data.universityId,
+                majorCategory: data.name,
+                rating: data.rating,
+                recommendationCount: data.count
+              })
+            }
 
             this.$message.success(this.editForm.id ? '更新成功' : '添加成功')
             this.editDialogVisible = false

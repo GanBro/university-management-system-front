@@ -50,3 +50,29 @@ export function deleteRecommendationRating(id) {
     method: 'delete'
   })
 }
+
+/**
+ * 获取大学专业推荐列表
+ * @param {Number} universityId 大学ID
+ * @returns {Promise} Promise对象
+ */
+export function getUniversityRecommendations(universityId) {
+  return request({
+    url: `/recommendation-rating/university/${universityId}`,
+    method: 'get'
+  })
+}
+
+/**
+ * 更新大学专业推荐
+ * @param {Number} universityId 大学ID
+ * @param {Object} data 推荐数据
+ * @returns {Promise} Promise对象
+ */
+export function updateUniversityRecommendation(universityId, data) {
+  return request({
+    url: `/recommendation-rating/university/${universityId}/update-recommendation`,
+    method: 'post',
+    data
+  })
+}
